@@ -27,7 +27,7 @@ Input filename comes before flags. Output defaults to stdout. Conversion works w
 
 - **Overview:** collection, record, endpoint, and source-size totals.
 - **Collections:** expandable multi-file imports and drag-and-drop, editable names, per-file jobs, refresh/retry and endpoint controls. Remove preserves the source and persistently excludes it from discovery; Excluded files provides Restore. Delete source file is separate and explicitly confirmed.
-- **Collection details:** paginated object tables, raw JSON/schema tabs, original-source downloads, background exports, API configuration and declarative transformations.
+- **Collection details:** paginated object tables and Raw JSON tabs, one Download chooser, compact processing status and collapsed management. More tools opens Quality, Schema, SQL and API configuration; existing direct links still work.
 - **Format converter:** raw and collapsible tree previews, uploaded-input previews, conversion reports, optional round-trip checks, CSV column controls, actionable errors, clipboard copy, and downloads. See [converter inspection](converter-inspection.md).
 - **API explorer:** same-origin requests, method, endpoint, query parameters, headers, JSON request body, status, response preview, and cURL copy. API keys are held only in the page, never browser storage. The preview is capped at 1 MB.
 - **Settings:** persistent watcher toggle and instance configuration information. No polling.
@@ -111,6 +111,8 @@ Completed generations are atomically published only while source size/mtime, con
 Native SSE pushes progress/completion/cancellation into HTMX fragments; no periodic browser polling runs. Watcher events debounce affected files/subtrees for 250 ms. Full scans are for startup, explicit reconciliation and overflow/event-storm recovery. Symlinks, hidden files/directories and private staging files are excluded.
 
 Large conversions/exports stream to temporary downloadable files. Downloads and private conversion inputs have 24-hour retention, with cleanup on startup/new conversions. Regenerate expired exports or re-upload expired inputs. Streamed TOML wraps object records in `records`; synchronous small conversions retain object-root behavior. CLI file/stdin streaming uses bounded records and staged output; CSV output needs a schema pass before writing.
+
+`GET /collections/:id/export?original=1` streams the exact current source bytes, including whitespace and line endings, even while indexing. Existing export requests retain their behavior. Dashboard callers can opt into a single-export HTML fragment with `POST /collections/:id/export`, `download_view=compact`, a supported `format` and the usual CSRF token. HTMX requests receive the fragment; ordinary form submissions redirect to the collection's export status. Updates reuse server-sent events rather than polling. The same compact mode supports job cancellation and retry; it does not expose the full job history. Excel stores values as text and Parquet preserves records in one JSON column.
 
 Static assets carry content-derived ETags and one-hour caching; dynamic responses use `no-store`. HTTP responses can be compressed. There are no unbounded caches or per-file watcher goroutines.
 

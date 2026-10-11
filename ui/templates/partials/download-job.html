@@ -1,0 +1,8 @@
+{{if .DownloadError}}<p class="notice error" role="alert">{{.DownloadError}} Choose another format or try again.</p>{{end}}
+{{range .Jobs}}<article class="download-job" data-download-job="{{.ID}}" aria-live="polite">
+{{if eq .State "ready"}}<strong>Your download is ready</strong><a class="button primary" href="/jobs/{{.ID}}/download">Download file</a>
+{{else if or (eq .State "queued") (eq .State "running") (eq .State "staged")}}<strong>Preparing your download…</strong><p class="muted small-text">{{.Records}} records processed</p>{{if .Total}}<progress max="{{.Total}}" value="{{.Processed}}" aria-label="Download progress"></progress>{{end}}
+<form method="post" action="/jobs/{{.ID}}/cancel" hx-post="/jobs/{{.ID}}/cancel" hx-target="#collection-download-status"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="download_view" value="compact"><button class="button small">Cancel download</button></form>
+{{else}}<strong>{{if eq .State "cancelled"}}Download cancelled{{else}}Unable to prepare download{{end}}</strong>{{if .Error}}<p class="error small-text">{{.Error}}</p>{{end}}<form method="post" action="/jobs/{{.ID}}/retry" hx-post="/jobs/{{.ID}}/retry" hx-target="#collection-download-status"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="download_view" value="compact"><button class="button small">Try again</button></form>{{end}}
+<noscript><form method="get" action="/collections/{{.Resource}}"><input type="hidden" name="download_job" value="{{.ID}}"><button class="button small">Refresh download status</button></form></noscript>
+</article>{{end}}

@@ -39,7 +39,9 @@ Download a Windows or Linux amd64 executable from [Releases](https://github.com/
 
 Open **http://127.0.0.1:8080**. Import a file in **Collections**, or click **Load demo data** for six small synthetic examples. Normal installations load examples only when requested. The public demo preloads JSON, CSV, YAML, XML, NDJSON and TOML examples and its API needs no bearer token.
 
-Use **Data workflow** for the import → inspect → convert → download steps. Collection previews support full-dataset search, 20/50/100-row pages, page jumps and remembered visible columns. In **Convert data**, choose **Use an existing collection** to convert its complete source without uploading it again. Nested documents keep their original root; large conversions run in File activity. Creating a conversion snapshot temporarily needs additional disk space.
+Collection pages put the data preview first. Use **Edit data** to open Explorer, **Download** for the exact original file or any of the eight output formats, and **More tools** for Quality, Schema, SQL and API settings. Converted downloads show their progress and retry controls in the chooser. Without JavaScript, the same form opens a status page with a manual refresh button. Original files remain downloadable while processing.
+
+Collection previews support full-dataset search, 20/50/100-row pages, page jumps and remembered visible columns. In **Convert data**, choose **Use an existing collection** to convert its complete source without uploading it again. Nested documents keep their original root; large conversions run in File activity. Creating a conversion snapshot temporarily needs additional disk space.
 
 The default data and state folders are <code>data/</code> and <code>.fluxport/</code>, relative to the working directory. Back up both. The hosted instance is a public demo with a shared workspace; download FluxPort to use your own instance.
 

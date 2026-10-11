@@ -57,7 +57,7 @@
  const activity=document.getElementById('job-activity');
  if(activity && window.EventSource) {
   const source=new EventSource('/events'); let pending;
-  let refreshDetail=false;source.addEventListener('progress',event=>{try{const message=JSON.parse(event.data);if(message.resource==='*'||(message.resource && message.resource===location.pathname.split('/')[2]))refreshDetail=true;}catch(_){if(document.querySelector('#detail-content .notice'))refreshDetail=true;}if(pending)return;pending=setTimeout(()=>{pending=null;
+  let refreshDetail=false;source.addEventListener('progress',event=>{try{const message=JSON.parse(event.data);window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:message}));if(message.resource==='*'||(message.resource && message.resource===location.pathname.split('/')[2]))refreshDetail=true;}catch(_){window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:{connected:true}}));if(document.querySelector('#detail-content .notice'))refreshDetail=true;}if(pending)return;pending=setTimeout(()=>{pending=null;
    if(window.htmx){htmx.ajax('GET','/jobs',{target:'#job-activity',swap:'innerHTML'});htmx.trigger(document.body,'collectionsChanged');
     const detail=document.getElementById('detail-content');if(detail && refreshDetail && !detail.contains(document.activeElement)){const tab=detail.querySelector('[data-active-tab]')?.dataset.activeTab;if(tab!=='configuration'){const url=new URL(location.href);url.searchParams.set('tab',tab||'preview');url.searchParams.set('page',detail.querySelector('[data-page]')?.dataset.page||'1');htmx.ajax('GET',url.pathname+url.search,{target:detail,swap:'innerHTML'});}}refreshDetail=false;
    }

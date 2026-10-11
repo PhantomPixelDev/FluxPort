@@ -31,7 +31,47 @@ async (page) => {
   await page.getByRole('button', {name: 'Rename', exact: true}).click();
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
   const collectionID = new URL(page.url()).pathname.split('/')[2];
-  await page.getByRole('link', {name:'Inspect data quality',exact:true}).click();
+  await page.locator('#download>summary').click();
+  if (await page.locator('#collection-download-format').inputValue() !== 'original') throw Error('Original download must be the default');
+  for (const format of ['xlsx', 'parquet']) {
+    const previous = page.locator('#collection-download-status [data-download-job]');
+    const previousJob = await previous.count() ? await previous.getAttribute('data-download-job') : null;
+    await page.locator('#collection-download-format').selectOption(format);
+    await page.locator('[data-download-note]').filter({visible:true}).waitFor();
+    await page.locator('[data-collection-download]').getByRole('button', {name:'Download',exact:true}).click();
+    await page.waitForFunction(previous => {
+      const job = document.querySelector('#collection-download-status [data-download-job]');
+      return job && job.dataset.downloadJob !== previous;
+    }, previousJob);
+    const ready = page.locator('#collection-download-status').getByRole('link', {name:'Download file',exact:true});
+    await ready.waitFor();
+    const downloading = page.waitForEvent('download');
+    await ready.click();
+    if (await (await downloading).failure()) throw Error('Converted download failed');
+    if (await page.locator('#collection-download-status [data-download-job]').count() !== 1) throw Error('Chooser should show one export');
+  }
+  await page.keyboard.press('Escape');
+  if (await page.locator('#download').getAttribute('open') !== null) throw Error('Escape must close the chooser');
+  const nativeContext = await page.context().browser().newContext({javaScriptEnabled:false,acceptDownloads:true});
+  try {
+    const nativePage = await nativeContext.newPage();
+    await nativePage.goto(`${base}/collections/${collectionID}`);
+    await nativePage.locator('#download>summary').click();
+    const downloading = nativePage.waitForEvent('download');
+    await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
+    if (await (await downloading).failure()) throw Error('No-JavaScript original download failed');
+    await nativePage.locator('#collection-download-format').selectOption('xlsx');
+    await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
+    if (!new URL(nativePage.url()).searchParams.get('download_job')) throw Error('Native export must navigate to its status');
+    for (let attempt=0;attempt<20;attempt++) {
+      if (await nativePage.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).isVisible()) break;
+      await nativePage.waitForTimeout(250);
+      await nativePage.getByRole('button',{name:'Refresh download status',exact:true}).click();
+    }
+    await nativePage.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).waitFor();
+  } finally { await nativeContext.close(); }
+  await page.locator('.collection-more>summary').click();
+  await page.getByRole('link', {name:'Quality',exact:true}).click();
   await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Records to check').fill('10');
   await page.getByLabel('Rules (JSON array)').fill('[{"field":"missing","required":true}]');
@@ -59,7 +99,7 @@ async (page) => {
   await page.getByText('Recipe settings and API',{exact:true}).click();
   await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
-  await page.getByRole('link',{name:'Open data explorer',exact:true}).click();
+  await page.getByRole('link',{name:'Edit data',exact:true}).click();
   await page.getByText('Saved views and exports',{exact:true}).click();
   await page.locator('form[action$="/workbench/export"] select[name="format"]').selectOption('csv');
   await page.getByRole('button', {name: 'Prepare filtered download', exact: true}).click();
@@ -72,6 +112,19 @@ async (page) => {
   await page.goto(`${base}/collections`);
   await page.getByRole('link', {name: display, exact: true}).click();
   await page.locator('#detail-content tbody tr').first().waitFor();
+  for (const width of [1440,390]) {
+    await page.setViewportSize({width,height:width===390?844:1000});
+    for (let theme=0;theme<2;theme++) {
+      await page.locator('#download>summary').click();
+      await page.locator('#collection-download-format').selectOption('xlsx');
+      const panel = await page.locator('.download-chooser').boundingBox();
+      if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
+      await page.screenshot({path:`C:/Users/tpwin/Documents/github/FluxPort/output/playwright/download-${width}-${theme}.png`});
+      await page.keyboard.press('Escape');
+      await page.getByRole('button',{name:'Switch color theme',exact:true}).click();
+      await page.waitForTimeout(300);
+    }
+  }
   await page.getByText('Manage this collection',{exact:true}).click();
   for (const width of [1440, 390]) {
     await page.setViewportSize({width, height: width === 390 ? 844 : 1000});

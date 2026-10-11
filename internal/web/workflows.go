@@ -197,6 +197,13 @@ func tableRows(rows []any, fields []collections.Field) ([]string, [][]string) {
 }
 
 func (s *Server) jobs(c fiber.Ctx) error {
+	if c.Query("download_view") == "compact" {
+		job, err := s.Service.Jobs.Get(c.Query("id"))
+		if err != nil || job.Kind != "convert" {
+			return fiber.NewError(404, "Download not found")
+		}
+		return s.compactDownload(c, job)
+	}
 	p := s.base(c, "Processing", "collections")
 	var err error
 	p.Jobs, err = s.Service.Jobs.List()
@@ -209,11 +216,22 @@ func (s *Server) cancelJob(c fiber.Ctx) error {
 	if err := s.Service.Jobs.Cancel(c.Params("id")); err != nil {
 		return err
 	}
+	if c.FormValue("download_view") == "compact" {
+		job, err := s.Service.Jobs.Get(c.Params("id"))
+		if err != nil {
+			return err
+		}
+		return s.compactDownload(c, job)
+	}
 	return s.jobs(c)
 }
 func (s *Server) retryJob(c fiber.Ctx) error {
-	if _, err := s.Service.RetryJob(c.Params("id")); err != nil {
-		return fiber.NewError(422, err.Error())
+	job, err := s.Service.RetryJob(c.Params("id"))
+	if err != nil {
+		return s.downloadError(c, err)
+	}
+	if c.FormValue("download_view") == "compact" {
+		return s.compactDownload(c, job)
 	}
 	return s.jobs(c)
 }
@@ -222,7 +240,9 @@ func (s *Server) download(c fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(404, err.Error())
 	}
-	return c.Download(path)
+	c.Attachment(path)
+	// Disposable outputs must not keep cached file handles after a download.
+	return c.SendFile(path, fiber.SendFile{CacheDuration: -1})
 }
 func (s *Server) events(c fiber.Ctx) error {
 	ch, close, err := s.Service.Jobs.Subscribe()
@@ -327,8 +347,15 @@ func (s *Server) exportJob(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if _, err = s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"}); err != nil {
-		return fiber.NewError(422, err.Error())
+	if c.FormValue("format") == "original" && c.FormValue("download_view") == "compact" {
+		return s.originalDownload(c, col)
+	}
+	job, err := s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"})
+	if err != nil {
+		return s.downloadError(c, err)
+	}
+	if c.FormValue("download_view") == "compact" {
+		return s.compactDownload(c, job)
 	}
 	return s.jobs(c)
 }

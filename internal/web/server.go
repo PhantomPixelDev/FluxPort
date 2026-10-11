@@ -56,6 +56,8 @@ type Page struct {
 	ConversionNotes                                                                        []string
 	CSVDelimiters                                                                          []string
 	Jobs                                                                                   []jobs.Job
+	DownloadOpen                                                                           bool
+	DownloadError                                                                          string
 	Excluded                                                                               []collections.Excluded
 	Headers                                                                                []string
 	Cells                                                                                  [][]string
@@ -95,6 +97,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
 	})
 	engine.AddFunc("upper", strings.ToUpper)
+	engine.AddFunc("formatName", downloadFormatName)
+	engine.AddFunc("formatNote", downloadFormatNote)
 	engine.AddFunc("has", func(s string) bool { return s != "" })
 	if err = engine.Load(); err != nil {
 		return nil, err
@@ -335,6 +339,18 @@ func (s *Server) detail(c fiber.Ctx) error {
 	}
 	p := s.base(c, col.Name, "collections")
 	p.Collection = col
+	if message, ok := c.Locals("download_error").(string); ok {
+		p.DownloadError = message
+		p.DownloadOpen = true
+	}
+	if id := c.Query("download_job"); id != "" {
+		job, e := s.Service.Jobs.Get(id)
+		if e != nil || job.Resource != col.ID || job.Kind != "convert" {
+			return fiber.NewError(404, "Download not found")
+		}
+		p.Jobs = []jobs.Job{job}
+		p.DownloadOpen = true
+	}
 	p.Query = strings.TrimSpace(c.Query("q"))
 	p.Pages = 1
 	if len(p.Query) > 256 {
@@ -434,6 +450,9 @@ func (s *Server) export(c fiber.Ctx) error {
 	col, err := s.Service.Get(c.Params("id"))
 	if err != nil {
 		return err
+	}
+	if c.Query("original") == "1" {
+		return s.originalDownload(c, col)
 	}
 	if col.Size > s.Service.MaxBytes {
 		f := conversion.Format(c.Query("format", col.Format))
