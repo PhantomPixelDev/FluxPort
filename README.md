@@ -6,7 +6,7 @@ FluxPort is a small, self-hosted workspace for JSON, CSV, YAML, XML, NDJSON and 
 
 [Download](https://github.com/PhantomPixelDev/FluxPort/releases/latest) · [Documentation](docs/reference.md) · [Hosted instance](https://fluxport.ppxl.dev) · [Report an issue](https://github.com/PhantomPixelDev/FluxPort/issues)
 
-![FluxPort converter with uploaded input, conversion report and structure previews](docs/images/converter.png)
+![FluxPort in light mode, converting nested JSON to YAML with readable input and output panels](docs/images/converter.png)
 
 ## Why FluxPort?
 

@@ -20,5 +20,5 @@
 <div class="editor-footer"><label class="file-picker">Upload file<input id="converter-file" type="file" name="file" accept=".json,.csv,.yaml,.yml,.xml,.ndjson,.jsonl,.toml"></label><span class="muted small-text" id="input-size">Document files: {{bytes .MaxBytes}}; streaming files: disk limited</span></div></section>
 <section class="panel" id="conversion-result" aria-live="polite">{{template "partials/output" .}}</section>
 </div></form>
-<p class="muted small-text converter-note">Tree previews show up to 500 nodes and 10 levels. Round-trip checks examine up to 10,000 values and report up to 50 differences; reaching either limit is reported. CSV is flat text; nested cells contain JSON text. Large conversions run in File activity without document previews or round-trip comparison.</p>
+<details class="panel format-help"><summary>Format notes and preview limits</summary><p>Tree previews show up to 500 nodes and 10 levels. Round-trip checks examine up to 10,000 values and report up to 50 differences; reaching either limit is reported. CSV is flat text; nested cells contain JSON text. Large conversions run in File activity without document previews or round-trip comparison.</p></details>
 <details id="activity" class="panel activity-panel"><summary>File activity</summary><div id="job-activity" hx-get="/jobs" hx-trigger="load"></div></details>
