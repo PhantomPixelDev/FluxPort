@@ -52,6 +52,6 @@ Use scripts/measure.ps1 for Windows release measurements and compile/run scripts
 
 ## Remaining environment limitation
 
-Docker CLI was unavailable. Docker image build and Compose runtime remain unverified. The Linux release and tests did run under WSL2, which differs from native Linux storage and a container deployment.
+Docker was unavailable locally during the original measurements. On 2026-10-11, the 0.2.2 image was built and deployed successfully with Compose on an Ubuntu VPS. Container health, HTTPS login, authenticated API access and a nested conversion round-trip passed. The Linux test suite also ran under WSL2, which differs from native Linux storage. See [hosted deployment](deployment.md).
 
 The preview uses a separate directory under artifacts/preview. Production remains empty until files are imported or demo loading is explicitly selected. No Node.js or browser tooling is required to build or run FluxPort.

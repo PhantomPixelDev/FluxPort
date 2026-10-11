@@ -51,6 +51,6 @@ Startup with existing collections also verifies source hashes in background; the
 
 Frontend payloads use Accept-Encoding: gzip and exclude headers, TCP/TLS overhead and browser caching. The logo uses identity encoding. No external fonts or JavaScript CDN are required.
 
-Docker CLI was unavailable. Container image builds and Compose runtime remain unverified.
+Docker CLI was unavailable during these original measurements. The 0.2.2 image build and Compose deployment were subsequently verified on an Ubuntu VPS; see [deployment](deployment.md). No container performance benchmark is implied by that deployment check.
 
 Raw reports: [Windows](performance-windows.json), [Linux](performance-linux.json), [large Windows](large-windows.json), [large Linux](large-linux.json), [process sampler](large-process-memory.json).
