@@ -69,7 +69,14 @@ func (a *API) Register(app *fiber.App) {
 		return c.JSON(fiber.Map{"collections": items, "total": total, "page": p, "limit": limit})
 	})
 	g.Get("/openapi.json", a.openapi)
+	g.Post("/sql", a.sql)
+	g.Get("/queries/:query", a.savedSQL)
 	g.Get("/collections/:id/schema", a.schema)
+	g.Post("/collections/:id/query", a.query)
+	g.Post("/collections/:id/bulk", a.bulk)
+	g.Get("/collections/:id/views", a.views)
+	g.Post("/collections/:id/views", a.saveView)
+	g.Delete("/collections/:id/views/:view", a.deleteView)
 	g.Get("/collections/:id", a.read)
 	g.Get("/collections/:id/rows/:row", a.readRow)
 	g.Post("/collections/:id/rows", a.mutate)
@@ -169,6 +176,9 @@ func send(c fiber.Ctx, v any) error {
 	return c.Send(b)
 }
 func indexedError(c fiber.Ctx, err error) error {
+	if errors.Is(err, collections.ErrConflict) {
+		return fiber.NewError(409, err.Error())
+	}
 	if errors.Is(err, collections.ErrPending) {
 		c.Set("Retry-After", "2")
 		return fiber.NewError(503, err.Error())
@@ -329,6 +339,9 @@ func (a *API) mutate(c fiber.Ctx) error {
 }
 func (a *API) openapi(c fiber.Ctx) error {
 	paths := map[string]any{}
+	queryBody := fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"collections", "sql"}, "properties": fiber.Map{"collections": fiber.Map{"type": "array", "minItems": 1, "maxItems": 8, "items": fiber.Map{"type": "string"}}, "sql": fiber.Map{"type": "string", "maxLength": 16384}}}}}}
+	paths["/api/sql"] = fiber.Map{"post": fiber.Map{"summary": "Run an isolated read-only SQL query on selected collections", "requestBody": queryBody, "responses": fiber.Map{"200": fiber.Map{"description": "Columns, rows, duration and truncation status"}, "422": fiber.Map{"description": "Invalid, unsafe or resource-limited query"}, "504": fiber.Map{"description": "Query timed out"}}}}
+	paths["/api/queries/{query}"] = fiber.Map{"get": fiber.Map{"summary": "Execute a published saved query", "parameters": []any{fiber.Map{"name": "query", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Read-only SQL results"}, "404": fiber.Map{"description": "Published query not found"}}}}
 	paths["/api/jobs"] = fiber.Map{"get": fiber.Map{"summary": "List recent background jobs", "responses": fiber.Map{"200": fiber.Map{"description": "Job states and progress"}}}}
 	jobParam := []any{fiber.Map{"name": "id", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}
 	paths["/api/jobs/{id}"] = fiber.Map{"get": fiber.Map{"summary": "Read background job status", "parameters": jobParam, "responses": fiber.Map{"200": fiber.Map{"description": "Job status"}}}}
@@ -346,6 +359,10 @@ func (a *API) openapi(c fiber.Ctx) error {
 				continue
 			}
 			base := "/api/collections/" + col.ID
+			paths[base+"/query"] = fiber.Map{"post": fiber.Map{"summary": "Filter and sort indexed source records with stable IDs", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "properties": fiber.Map{"search": fiber.Map{"type": "string", "maxLength": 256}, "filters": fiber.Map{"type": "array", "maxItems": 20, "items": fiber.Map{"type": "object"}}, "sort": fiber.Map{"type": "array", "maxItems": 8, "items": fiber.Map{"type": "object"}}, "page": fiber.Map{"type": "integer", "minimum": 1}, "limit": fiber.Map{"type": "integer", "minimum": 1, "maximum": 100}}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Records, total, page, limit and index generation"}, "503": fiber.Map{"description": "Indexing pending"}}}}
+			if col.CRUD && !col.ReadOnly {
+				paths[base+"/bulk"] = fiber.Map{"post": fiber.Map{"summary": "Atomically edit up to 1000 stable record IDs; requires generation", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"generation", "changes"}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Batch committed"}, "409": fiber.Map{"description": "Source changed; reload before editing"}, "422": fiber.Map{"description": "Batch rejected without changing the source"}}}}
+			}
 			paths[base] = fiber.Map{"get": fiber.Map{"summary": "Read " + col.Name, "parameters": []any{fiber.Map{"name": "page", "in": "query", "schema": fiber.Map{"type": "integer", "minimum": 1}}, fiber.Map{"name": "limit", "in": "query", "schema": fiber.Map{"type": "integer", "minimum": 1, "maximum": 100}}, fiber.Map{"name": "format", "in": "query", "schema": fiber.Map{"type": "string", "enum": conversion.Formats}}, fiber.Map{"name": "q", "in": "query", "schema": fiber.Map{"type": "string"}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Paginated collection data"}, "503": fiber.Map{"description": "Source is being indexed; Retry-After: 2"}}}}
 			paths[base+"/schema"] = fiber.Map{"get": fiber.Map{"summary": "Inspect inferred schema", "responses": fiber.Map{"200": fiber.Map{"description": "Field names and observed types"}}}}
 			rowParam := []any{fiber.Map{"name": "row", "in": "path", "required": true, "schema": fiber.Map{"type": "integer", "minimum": 0}}}

@@ -53,5 +53,5 @@ func (s *Service) Invalidate(path string) error {
 	return nil
 }
 func (s *Service) indexPolicy(format string) string {
-	return fmt.Sprintf("v2:%s:%d:%d", format, s.RecordBytes, s.MaxBytes)
+	return fmt.Sprintf("v3:%s:%d:%d", format, s.RecordBytes, s.MaxBytes)
 }

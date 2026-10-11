@@ -13,6 +13,8 @@ FluxPort is a small, self-hosted workspace for JSON, CSV, YAML, XML, NDJSON and 
 - **Files stay files.** SQLite stores metadata and disposable indexes; your source files remain accessible.
 - **Six formats, one workspace.** JSON, CSV, YAML, XML, NDJSON and TOML.
 - **Practical APIs.** Pagination, search, schema inspection, transformations, bearer authentication and optional CRUD for small collections.
+- **Data explorer.** Typed filters, multi-column sorting, saved views, resizable columns, stable record identities, inline edits, atomic batch edits and filtered downloads.
+- **SQL playground.** Read-only joins and aggregates on isolated collection indexes, query history, saved queries, result exports and published REST queries.
 - **Conversions you can inspect.** Exact-value tree previews, conversion reports, field-path round-trip differences and useful errors.
 - **CSV controls.** Delimiter detection, optional type inference, per-column rules, nested JSON cells and spreadsheet-safe downloads.
 - **Large-file workflows.** Streaming JSON arrays, CSV and NDJSON, disk-backed pagination, background jobs, progress, cancellation and retry.
@@ -67,7 +69,7 @@ Import a file, open its collection, and copy its endpoint from the dashboard or 
 
 Search with <code>q</code>, inspect <code>/schema</code>, and choose output with <code>?format=csv</code> or the <code>Accept</code> header. Page sizes are capped at 100. Collections being indexed return <code>503</code> with <code>Retry-After</code>.
 
-CRUD is opt-in, limited to supported small collections, and uses **zero-based row positions**, not an <code>id</code> field. Large collections are read-only. [API and configuration reference →](docs/reference.md)
+CRUD is opt-in and limited to supported small collections. Existing row endpoints use **zero-based row positions**; the data explorer and new batch API use stable record identities with generation checks. Large collections are read-only. [Data explorer and SQL guide →](docs/explorer-sql.md) · [API and configuration reference →](docs/reference.md)
 
 ## Self-host with Docker
 

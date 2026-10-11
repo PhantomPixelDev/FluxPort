@@ -37,6 +37,8 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	SQL                                                                                    *SQLPage
+	Workbench                                                                              *Workbench
 	AssetVersion                                                                           string
 	InputMode, CollectionID                                                                string
 	Limit                                                                                  int
@@ -153,6 +155,12 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/collections/:id/export", server.export)
 	app.Post("/collections/:id/export", server.exportJob)
 	app.Get("/collections/:id", server.detail)
+	app.Get("/collections/:id/workbench", server.workbench)
+	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
+	app.Post("/collections/:id/workbench/edit", server.editRecords)
+	app.Post("/collections/:id/workbench/export", server.exportWorkbench)
+	app.Post("/collections/:id/workbench/views", server.saveWorkbenchView)
+	app.Post("/collections/:id/workbench/views/:view/delete", server.deleteWorkbenchView)
 	app.Post("/collections/:id/config", server.update)
 	app.Post("/collections/:id/toggle", server.toggle)
 	app.Post("/collections/:id/rename", server.rename)
@@ -162,6 +170,9 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/converter", server.converter)
 	app.Get("/converter/collections", server.converterCollections)
 	app.Get("/workflow", server.workflow)
+	app.Get("/sql", server.sqlPage)
+	app.Post("/sql", server.sqlPage)
+	app.Post("/sql/:query/delete", server.deleteSQL)
 	app.Post("/converter", server.convert)
 	app.Get("/explorer", server.explorer)
 	app.Get("/settings", server.settings)
@@ -178,7 +189,7 @@ func (s *Server) base(c fiber.Ctx, title, active string) Page {
 // while retaining normal asset caching between releases.
 var frontendVersion = func() string {
 	h := sha256.New()
-	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/js/app.js", "static/js/workspace.js"} {
+	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js"} {
 		b, _ := ui.Files.ReadFile(name)
 		h.Write(b)
 	}

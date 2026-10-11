@@ -113,9 +113,20 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 	}
 	db.SetMaxOpenConns(1)
 	defer db.Close()
-	for _, q := range []string{`PRAGMA journal_mode=OFF`, `PRAGMA synchronous=OFF`, `PRAGMA cache_size=-4096`, `PRAGMA temp_store=FILE`, `CREATE TABLE records (ordinal INTEGER PRIMARY KEY,payload TEXT NOT NULL)`} {
+	for _, q := range []string{`PRAGMA journal_mode=OFF`, `PRAGMA synchronous=OFF`, `PRAGMA cache_size=-4096`, `PRAGMA temp_store=FILE`, `CREATE TABLE records (ordinal INTEGER PRIMARY KEY,record_id TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,identity_key TEXT NOT NULL,occurrence INTEGER NOT NULL,UNIQUE(identity_key,occurrence))`, `CREATE TABLE identity_counts (key TEXT PRIMARY KEY,n INTEGER NOT NULL)`} {
 		if _, err = db.Exec(q); err != nil {
 			return "", err
+		}
+	}
+	prior := false
+	if c.Generation != "" && c.IndexLimits == policy && filepath.Base(c.Generation) == c.Generation {
+		s.retainGeneration(c.Generation)
+		defer s.releaseGeneration(c.ID, c.Generation)
+		if _, e := os.Stat(filepath.Join(s.IndexDir, c.Generation)); e == nil {
+			if _, err = db.Exec(`ATTACH DATABASE ? AS prior`, filepath.Join(s.IndexDir, c.Generation)); err != nil {
+				return "", err
+			}
+			prior = true
 		}
 	}
 	tx, err := db.Begin()
@@ -127,7 +138,7 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 			tx.Rollback()
 		}
 	}()
-	stmt, err := tx.Prepare(`INSERT INTO records(ordinal,payload) VALUES(?,?)`)
+	stmt, err := tx.Prepare(`INSERT INTO records(ordinal,record_id,payload,identity_key,occurrence) VALUES(?,?,?,?,?)`)
 	if err != nil {
 		return "", err
 	}
@@ -154,7 +165,18 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 		if int64(len(b)) > s.RecordBytes {
 			return fmt.Errorf("normalized record exceeds %d byte limit", s.RecordBytes)
 		}
-		if _, err = stmt.Exec(count, string(b)); err != nil {
+		key := identityKey(row, b)
+		var occurrence int64
+		if err = tx.QueryRow(`INSERT INTO identity_counts(key,n) VALUES(?,0) ON CONFLICT(key) DO UPDATE SET n=n+1 RETURNING n`, key).Scan(&occurrence); err != nil {
+			return err
+		}
+		rid := newRecordID()
+		if prior {
+			if e := tx.QueryRow(`SELECT record_id FROM prior.records WHERE identity_key=? AND occurrence=?`, key, occurrence).Scan(&rid); e != nil && !errors.Is(e, sql.ErrNoRows) {
+				return e
+			}
+		}
+		if _, err = stmt.Exec(count, rid, string(b), key, occurrence); err != nil {
 			return err
 		}
 		count++
@@ -183,7 +205,7 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 			if err != nil {
 				return err
 			}
-			stmt, err = tx.Prepare(`INSERT INTO records(ordinal,payload) VALUES(?,?)`)
+			stmt, err = tx.Prepare(`INSERT INTO records(ordinal,record_id,payload,identity_key,occurrence) VALUES(?,?,?,?,?)`)
 			if err != nil {
 				return err
 			}
@@ -224,6 +246,9 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 	}
 	if verified != digest {
 		return "", fmt.Errorf("source contents changed during indexing; refresh to retry")
+	}
+	if err = s.applyRecordOverrides(ctx, tmp, c.ID, digest); err != nil {
+		return "", err
 	}
 	after, err = os.Stat(payload.Path)
 	if err != nil {

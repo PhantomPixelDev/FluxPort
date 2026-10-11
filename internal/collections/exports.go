@@ -16,6 +16,34 @@ import (
 type convertPayload struct {
 	CollectionID, Path, From, To string
 	Options                      conversion.Options
+	Query                        *Query `json:",omitempty"`
+	Generation                   string `json:",omitempty"`
+}
+
+func (s *Service) ExportQueryJob(id, generation, format string, q Query) (jobs.Job, error) {
+	if err := ValidateQuery(q); err != nil {
+		return jobs.Job{}, err
+	}
+	c, err := s.Get(id)
+	if err != nil {
+		return jobs.Job{}, err
+	}
+	c, err = s.ready(c)
+	if err != nil {
+		return jobs.Job{}, err
+	}
+	if generation == "" || generation != c.Generation {
+		return jobs.Job{}, ErrConflict
+	}
+	format = conversion.Format(format)
+	if !conversion.Supported(format) {
+		return jobs.Job{}, fmt.Errorf("unsupported export format")
+	}
+	b, err := json.Marshal(convertPayload{CollectionID: id, To: format, Query: &q, Generation: generation})
+	if err != nil {
+		return jobs.Job{}, err
+	}
+	return s.Jobs.Submit("convert", id, c.Name+" · filtered export → "+format, string(b), c.Size)
 }
 
 func (s *Service) ExportJob(id, format string) (jobs.Job, error) {
@@ -164,7 +192,11 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 		return nil
 	}
 	if p.CollectionID != "" {
-		err = s.Each(ctx, c, emit)
+		if p.Query != nil {
+			err = s.EachQuery(ctx, c, *p.Query, p.Generation, emit)
+		} else {
+			err = s.Each(ctx, c, emit)
+		}
 	} else {
 		input, e := os.Open(p.Path)
 		if e != nil {

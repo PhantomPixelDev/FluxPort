@@ -10,10 +10,10 @@ func migrate(db *sql.DB) error {
 	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
 		return err
 	}
-	if version > 3 {
-		return fmt.Errorf("metadata schema %d is newer than supported schema 3", version)
+	if version > 5 {
+		return fmt.Errorf("metadata schema %d is newer than supported schema 5", version)
 	}
-	if version == 3 {
+	if version == 5 {
 		return nil
 	}
 	tx, err := db.Begin()
@@ -33,10 +33,23 @@ func migrate(db *sql.DB) error {
 		`CREATE INDEX jobs_state ON jobs(state,created)`,
 		`PRAGMA user_version=2`,
 	}
-	if version == 2 {
+	if version >= 2 {
 		queries = nil
 	}
-	queries = append(queries, `ALTER TABLE collections ADD COLUMN source_sha256 TEXT NOT NULL DEFAULT ''`, `ALTER TABLE collections ADD COLUMN index_limits TEXT NOT NULL DEFAULT ''`, `PRAGMA user_version=3`)
+	if version < 3 {
+		queries = append(queries, `ALTER TABLE collections ADD COLUMN source_sha256 TEXT NOT NULL DEFAULT ''`, `ALTER TABLE collections ADD COLUMN index_limits TEXT NOT NULL DEFAULT ''`, `PRAGMA user_version=3`)
+	}
+	if version < 4 {
+		queries = append(queries,
+			`CREATE TABLE saved_views (id TEXT PRIMARY KEY,collection_id TEXT NOT NULL,name TEXT NOT NULL,query_json TEXT NOT NULL,columns_json TEXT NOT NULL DEFAULT '[]',updated TEXT NOT NULL,UNIQUE(collection_id,name))`,
+			`CREATE INDEX saved_views_collection ON saved_views(collection_id)`,
+			`CREATE TABLE record_overrides (collection_id TEXT NOT NULL,source_sha256 TEXT NOT NULL,ordinal INTEGER NOT NULL,record_id TEXT NOT NULL,PRIMARY KEY(collection_id,source_sha256,ordinal))`,
+			`PRAGMA user_version=4`)
+	}
+	queries = append(queries,
+		`CREATE TABLE sql_queries (id TEXT PRIMARY KEY,name TEXT NOT NULL UNIQUE,sql_text TEXT NOT NULL,collections_json TEXT NOT NULL,published INTEGER NOT NULL DEFAULT 0,updated TEXT NOT NULL)`,
+		`CREATE TABLE sql_history (id TEXT PRIMARY KEY,sql_text TEXT NOT NULL,collections_json TEXT NOT NULL,error TEXT NOT NULL,duration_ms INTEGER NOT NULL,created TEXT NOT NULL)`,
+		`PRAGMA user_version=5`)
 	for _, q := range queries {
 		if _, err = tx.Exec(q); err != nil {
 			return err

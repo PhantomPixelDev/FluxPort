@@ -115,3 +115,59 @@ func TestExportJobsAndHiddenConversionStaging(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestFilteredExportIncludesAllPagesAndSortOrder(t *testing.T) {
+	s := testService(t)
+	c, err := s.Import("rows.json", strings.NewReader(`[{"id":1,"active":true},{"id":2,"active":false},{"id":3,"active":true},{"id":4,"active":true}]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Start(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+	defer s.Stop()
+	if err = s.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	waitCollection(t, s, c.ID, "ready")
+	c, err = s.Get(c.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := Query{Filters: []Filter{{Field: "active", Op: "eq", Value: true}}, Sort: []Sort{{Field: "id", Desc: true}}, Page: 2, Limit: 1}
+	for _, format := range conversion.Formats {
+		j, e := s.ExportQueryJob(c.ID, c.Generation, format, q)
+		if e != nil {
+			t.Fatal(e)
+		}
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			j, _ = s.Jobs.Get(j.ID)
+			if j.State == "ready" || j.State == "failed" {
+				break
+			}
+			time.Sleep(time.Millisecond)
+		}
+		if j.State != "ready" || j.Records != 3 {
+			t.Fatal(format, j)
+		}
+		path, e := s.Download(j.ID)
+		if e != nil {
+			t.Fatal(e)
+		}
+		b, e := os.ReadFile(path)
+		if e != nil {
+			t.Fatal(e)
+		}
+		v, e := conversion.Decode(b, format)
+		if e != nil {
+			t.Fatal(format, e)
+		}
+		if format == "json" {
+			rows := v.([]any)
+			if len(rows) != 3 || rows[0].(map[string]any)["id"] != json.Number("4") || rows[2].(map[string]any)["id"] != json.Number("1") {
+				t.Fatal("pagination leaked into full export", v)
+			}
+		}
+	}
+}
