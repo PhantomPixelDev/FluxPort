@@ -1,0 +1,2 @@
+<div class="notice success" role="status">{{.Message}}</div>
+{{if .Collection.ID}}<strong id="endpoint-state" hx-swap-oob="outerHTML">{{if .Collection.Enabled}}<span class="status-dot"></span> Active{{else}}Disabled{{end}}</strong>{{end}}

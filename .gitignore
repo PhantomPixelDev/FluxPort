@@ -1,0 +1,13 @@
+.fluxport/
+data/
+dist/
+artifacts/
+output/
+.playwright-cli/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_*
+*.exe

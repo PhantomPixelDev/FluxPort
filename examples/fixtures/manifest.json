@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "suite": "smoke",
+  "seed": 42,
+  "files": [
+    {
+      "file": "users-100.json",
+      "profile": "users",
+      "format": "json",
+      "records": 100,
+      "bytes": 25492,
+      "sha256": "5a35ea7208183b987b9db55e4b35ee5b4c549a48c817aef9439eec65eb229875",
+      "notes": "Top-level record array; JSON numeric lexemes are preserved."
+    },
+    {
+      "file": "products-100.csv",
+      "profile": "products",
+      "format": "csv",
+      "records": 100,
+      "bytes": 16261,
+      "sha256": "99f67654753ae75b0ff42b49f3e46be7777d6d6525c0de2b77a112b104b016df",
+      "notes": "Cells are strings; missing and null values become empty cells; nested values use JSON text."
+    },
+    {
+      "file": "orders-100.yaml",
+      "profile": "orders",
+      "format": "yaml",
+      "records": 100,
+      "bytes": 30932,
+      "sha256": "d49affd36d89fd11975eb1b757da21c93704b656645072cf8670c846d07e4766",
+      "notes": "Record sequence; numeric formatting can normalize decimals."
+    },
+    {
+      "file": "events-100.xml",
+      "profile": "events",
+      "format": "xml",
+      "records": 100,
+      "bytes": 48091,
+      "sha256": "1f63397b1035c580cc3ad7fdca6f511a1b1956207e1b9c2cb346a52cfda31ace",
+      "notes": "Lossless fluxport JSON envelope."
+    },
+    {
+      "file": "users-100.ndjson",
+      "profile": "users",
+      "format": "ndjson",
+      "records": 100,
+      "bytes": 25389,
+      "sha256": "4d1d9b4e8899a62decc0ccdea81f7fdd21db8a77d30e87e349943bc71a69e6c2",
+      "notes": "One JSON record per line; blank lines are ignored on import."
+    },
+    {
+      "file": "products-100.toml",
+      "profile": "products",
+      "format": "toml",
+      "records": 100,
+      "bytes": 28291,
+      "sha256": "8ffb030d5219e460d59921f7cca8488cad32647f021a7ed301fbc161ae1d31f5",
+      "notes": "Record sequence is wrapped in records; TOML imports expose one root object. Nulls are unsupported; integers are signed 64-bit."
+    }
+  ]
+}

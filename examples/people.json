@@ -1,0 +1,5 @@
+[
+  {"id": 1, "name": "Ada Lovelace", "team": "Engineering", "active": true},
+  {"id": 2, "name": "Grace Hopper", "team": "Platform", "active": true},
+  {"id": 3, "name": "Margaret Hamilton", "team": "Engineering", "active": false}
+]

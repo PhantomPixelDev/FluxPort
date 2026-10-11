@@ -1,0 +1,1500 @@
+-
+  active: true
+  amount: 8606.06
+  category: retail
+  currency: EUR
+  email: user0398606@example.test
+  id: 1
+  name: Order FP-00000001
+  note: orders record 1 · synthetic test data
+  product_id: 607
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:00Z"
+  user_id: 8607
+-
+  active: true
+  amount: 6525.25
+  category: platform
+  currency: EUR
+  email: user0406525@example.test
+  id: 2
+  name: Order FP-00000002
+  note: orders record 2 · synthetic test data
+  product_id: 526
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:01Z"
+  user_id: 6526
+-
+  active: false
+  amount: 4444.44
+  category: engineering
+  currency: EUR
+  email: user0414444@example.test
+  id: 3
+  name: Order FP-00000003
+  note: orders record 3 · synthetic test data
+  product_id: 445
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:02Z"
+  user_id: 4445
+-
+  active: true
+  amount: 2363.63
+  category: analytics
+  currency: EUR
+  email: user0422363@example.test
+  id: 4
+  name: Order FP-00000004
+  note: orders record 4 · synthetic test data
+  product_id: 364
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:03Z"
+  user_id: 2364
+-
+  active: true
+  amount: 282.82
+  category: retail
+  currency: EUR
+  email: user0430282@example.test
+  id: 5
+  name: Order FP-00000005
+  note: orders record 5 · synthetic test data
+  product_id: 283
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:04Z"
+  user_id: 283
+-
+  active: false
+  amount: 8201.01
+  category: platform
+  currency: EUR
+  email: user0438201@example.test
+  id: 6
+  name: Order FP-00000006
+  note: orders record 6 · synthetic test data
+  product_id: 202
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:05Z"
+  user_id: 8202
+-
+  active: true
+  amount: 6120.20
+  category: engineering
+  currency: EUR
+  email: user0446120@example.test
+  id: 7
+  name: Order FP-00000007
+  note: orders record 7 · synthetic test data
+  product_id: 121
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:06Z"
+  user_id: 6121
+-
+  active: true
+  amount: 4039.39
+  category: analytics
+  currency: EUR
+  email: user0454039@example.test
+  id: 8
+  name: Order FP-00000008
+  note: orders record 8 · synthetic test data
+  product_id: 40
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:07Z"
+  user_id: 4040
+-
+  active: false
+  amount: 1958.58
+  category: retail
+  currency: EUR
+  email: user0461958@example.test
+  id: 9
+  name: Order FP-00000009
+  note: orders record 9 · synthetic test data
+  product_id: 959
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:08Z"
+  user_id: 1959
+-
+  active: true
+  amount: 9877.77
+  category: platform
+  currency: EUR
+  email: user0469877@example.test
+  id: 10
+  name: Order FP-00000010
+  note: orders record 10 · synthetic test data
+  product_id: 878
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:09Z"
+  user_id: 9878
+-
+  active: true
+  amount: 7796.96
+  category: engineering
+  currency: EUR
+  email: user0477796@example.test
+  id: 11
+  name: Order FP-00000011
+  note: orders record 11 · synthetic test data
+  product_id: 797
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:10Z"
+  user_id: 7797
+-
+  active: false
+  amount: 5715.15
+  category: analytics
+  currency: EUR
+  email: user0485715@example.test
+  id: 12
+  name: Order FP-00000012
+  note: orders record 12 · synthetic test data
+  product_id: 716
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:11Z"
+  user_id: 5716
+-
+  active: true
+  amount: 3634.34
+  category: retail
+  currency: EUR
+  email: user0493634@example.test
+  id: 13
+  name: Order FP-00000013
+  note: orders record 13 · synthetic test data
+  product_id: 635
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:12Z"
+  user_id: 3635
+-
+  active: true
+  amount: 1553.53
+  category: platform
+  currency: EUR
+  email: user0501553@example.test
+  id: 14
+  name: Order FP-00000014
+  note: orders record 14 · synthetic test data
+  product_id: 554
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:13Z"
+  user_id: 1554
+-
+  active: false
+  amount: 9472.72
+  category: engineering
+  currency: EUR
+  email: user0509472@example.test
+  id: 15
+  name: Order FP-00000015
+  note: orders record 15 · synthetic test data
+  product_id: 473
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:14Z"
+  user_id: 9473
+-
+  active: true
+  amount: 7391.91
+  category: analytics
+  currency: EUR
+  email: user0517391@example.test
+  id: 16
+  name: Order FP-00000016
+  note: orders record 16 · synthetic test data
+  product_id: 392
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:15Z"
+  user_id: 7392
+-
+  active: true
+  amount: 5310.10
+  category: retail
+  currency: EUR
+  email: user0525310@example.test
+  id: 17
+  name: Order FP-00000017
+  note: orders record 17 · synthetic test data
+  product_id: 311
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:16Z"
+  user_id: 5311
+-
+  active: false
+  amount: 3229.29
+  category: platform
+  currency: EUR
+  email: user0533229@example.test
+  id: 18
+  name: Order FP-00000018
+  note: orders record 18 · synthetic test data
+  product_id: 230
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:17Z"
+  user_id: 3230
+-
+  active: true
+  amount: 1148.48
+  category: engineering
+  currency: EUR
+  email: user0541148@example.test
+  id: 19
+  name: Order FP-00000019
+  note: orders record 19 · synthetic test data
+  product_id: 149
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:18Z"
+  user_id: 1149
+-
+  active: true
+  amount: 9067.67
+  category: analytics
+  currency: EUR
+  email: user0549067@example.test
+  id: 20
+  name: Order FP-00000020
+  note: orders record 20 · synthetic test data
+  product_id: 68
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:19Z"
+  user_id: 9068
+-
+  active: false
+  amount: 6986.86
+  category: retail
+  currency: EUR
+  email: user0556986@example.test
+  id: 21
+  name: Order FP-00000021
+  note: orders record 21 · synthetic test data
+  product_id: 987
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:20Z"
+  user_id: 6987
+-
+  active: true
+  amount: 4905.05
+  category: platform
+  currency: EUR
+  email: user0564905@example.test
+  id: 22
+  name: Order FP-00000022
+  note: orders record 22 · synthetic test data
+  product_id: 906
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:21Z"
+  user_id: 4906
+-
+  active: true
+  amount: 2824.24
+  category: engineering
+  currency: EUR
+  email: user0572824@example.test
+  id: 23
+  name: Order FP-00000023
+  note: orders record 23 · synthetic test data
+  product_id: 825
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:22Z"
+  user_id: 2825
+-
+  active: false
+  amount: 743.43
+  category: analytics
+  currency: EUR
+  email: user0580743@example.test
+  id: 24
+  name: Order FP-00000024
+  note: orders record 24 · synthetic test data
+  product_id: 744
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:23Z"
+  user_id: 744
+-
+  active: true
+  amount: 8662.62
+  category: retail
+  currency: EUR
+  email: user0588662@example.test
+  id: 25
+  name: Order FP-00000025
+  note: orders record 25 · synthetic test data
+  product_id: 663
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:24Z"
+  user_id: 8663
+-
+  active: true
+  amount: 6581.81
+  category: platform
+  currency: EUR
+  email: user0596581@example.test
+  id: 26
+  name: Order FP-00000026
+  note: orders record 26 · synthetic test data
+  product_id: 582
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:25Z"
+  user_id: 6582
+-
+  active: false
+  amount: 4500.00
+  category: engineering
+  currency: EUR
+  email: user0604500@example.test
+  id: 27
+  name: Order FP-00000027
+  note: orders record 27 · synthetic test data
+  product_id: 501
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:26Z"
+  user_id: 4501
+-
+  active: true
+  amount: 2419.19
+  category: analytics
+  currency: EUR
+  email: user0612419@example.test
+  id: 28
+  name: Order FP-00000028
+  note: orders record 28 · synthetic test data
+  product_id: 420
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:27Z"
+  user_id: 2420
+-
+  active: true
+  amount: 338.38
+  category: retail
+  currency: EUR
+  email: user0620338@example.test
+  id: 29
+  name: Order FP-00000029
+  note: orders record 29 · synthetic test data
+  product_id: 339
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:28Z"
+  user_id: 339
+-
+  active: false
+  amount: 8257.57
+  category: platform
+  currency: EUR
+  email: user0628257@example.test
+  id: 30
+  name: Order FP-00000030
+  note: orders record 30 · synthetic test data
+  product_id: 258
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:29Z"
+  user_id: 8258
+-
+  active: true
+  amount: 6176.76
+  category: engineering
+  currency: EUR
+  email: user0636176@example.test
+  id: 31
+  name: Order FP-00000031
+  note: orders record 31 · synthetic test data
+  product_id: 177
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:30Z"
+  user_id: 6177
+-
+  active: true
+  amount: 4095.95
+  category: analytics
+  currency: EUR
+  email: user0644095@example.test
+  id: 32
+  name: Order FP-00000032
+  note: orders record 32 · synthetic test data
+  product_id: 96
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:31Z"
+  user_id: 4096
+-
+  active: false
+  amount: 2014.14
+  category: retail
+  currency: EUR
+  email: user0652014@example.test
+  id: 33
+  name: Order FP-00000033
+  note: orders record 33 · synthetic test data
+  product_id: 15
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:32Z"
+  user_id: 2015
+-
+  active: true
+  amount: 9933.33
+  category: platform
+  currency: EUR
+  email: user0659933@example.test
+  id: 34
+  name: Order FP-00000034
+  note: orders record 34 · synthetic test data
+  product_id: 934
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:33Z"
+  user_id: 9934
+-
+  active: true
+  amount: 7852.52
+  category: engineering
+  currency: EUR
+  email: user0667852@example.test
+  id: 35
+  name: Order FP-00000035
+  note: orders record 35 · synthetic test data
+  product_id: 853
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:34Z"
+  user_id: 7853
+-
+  active: false
+  amount: 5771.71
+  category: analytics
+  currency: EUR
+  email: user0675771@example.test
+  id: 36
+  name: Order FP-00000036
+  note: orders record 36 · synthetic test data
+  product_id: 772
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:35Z"
+  user_id: 5772
+-
+  active: true
+  amount: 3690.90
+  category: retail
+  currency: EUR
+  email: user0683690@example.test
+  id: 37
+  name: Order FP-00000037
+  note: orders record 37 · synthetic test data
+  product_id: 691
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:36Z"
+  user_id: 3691
+-
+  active: true
+  amount: 1609.09
+  category: platform
+  currency: EUR
+  email: user0691609@example.test
+  id: 38
+  name: Order FP-00000038
+  note: orders record 38 · synthetic test data
+  product_id: 610
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:37Z"
+  user_id: 1610
+-
+  active: false
+  amount: 9528.28
+  category: engineering
+  currency: EUR
+  email: user0699528@example.test
+  id: 39
+  name: Order FP-00000039
+  note: orders record 39 · synthetic test data
+  product_id: 529
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:38Z"
+  user_id: 9529
+-
+  active: true
+  amount: 7447.47
+  category: analytics
+  currency: EUR
+  email: user0707447@example.test
+  id: 40
+  name: Order FP-00000040
+  note: orders record 40 · synthetic test data
+  product_id: 448
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:39Z"
+  user_id: 7448
+-
+  active: true
+  amount: 5366.66
+  category: retail
+  currency: EUR
+  email: user0715366@example.test
+  id: 41
+  name: Order FP-00000041
+  note: orders record 41 · synthetic test data
+  product_id: 367
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:40Z"
+  user_id: 5367
+-
+  active: false
+  amount: 3285.85
+  category: platform
+  currency: EUR
+  email: user0723285@example.test
+  id: 42
+  name: Order FP-00000042
+  note: orders record 42 · synthetic test data
+  product_id: 286
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:41Z"
+  user_id: 3286
+-
+  active: true
+  amount: 1204.04
+  category: engineering
+  currency: EUR
+  email: user0731204@example.test
+  id: 43
+  name: Order FP-00000043
+  note: orders record 43 · synthetic test data
+  product_id: 205
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:42Z"
+  user_id: 1205
+-
+  active: true
+  amount: 9123.23
+  category: analytics
+  currency: EUR
+  email: user0739123@example.test
+  id: 44
+  name: Order FP-00000044
+  note: orders record 44 · synthetic test data
+  product_id: 124
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:43Z"
+  user_id: 9124
+-
+  active: false
+  amount: 7042.42
+  category: retail
+  currency: EUR
+  email: user0747042@example.test
+  id: 45
+  name: Order FP-00000045
+  note: orders record 45 · synthetic test data
+  product_id: 43
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:44Z"
+  user_id: 7043
+-
+  active: true
+  amount: 4961.61
+  category: platform
+  currency: EUR
+  email: user0754961@example.test
+  id: 46
+  name: Order FP-00000046
+  note: orders record 46 · synthetic test data
+  product_id: 962
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:45Z"
+  user_id: 4962
+-
+  active: true
+  amount: 2880.80
+  category: engineering
+  currency: EUR
+  email: user0762880@example.test
+  id: 47
+  name: Order FP-00000047
+  note: orders record 47 · synthetic test data
+  product_id: 881
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:46Z"
+  user_id: 2881
+-
+  active: false
+  amount: 799.99
+  category: analytics
+  currency: EUR
+  email: user0770799@example.test
+  id: 48
+  name: Order FP-00000048
+  note: orders record 48 · synthetic test data
+  product_id: 800
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:47Z"
+  user_id: 800
+-
+  active: true
+  amount: 8718.18
+  category: retail
+  currency: EUR
+  email: user0778718@example.test
+  id: 49
+  name: Order FP-00000049
+  note: orders record 49 · synthetic test data
+  product_id: 719
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:48Z"
+  user_id: 8719
+-
+  active: true
+  amount: 6637.37
+  category: platform
+  currency: EUR
+  email: user0786637@example.test
+  id: 50
+  name: Order FP-00000050
+  note: orders record 50 · synthetic test data
+  product_id: 638
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:49Z"
+  user_id: 6638
+-
+  active: false
+  amount: 4556.56
+  category: engineering
+  currency: EUR
+  email: user0794556@example.test
+  id: 51
+  name: Order FP-00000051
+  note: orders record 51 · synthetic test data
+  product_id: 557
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:50Z"
+  user_id: 4557
+-
+  active: true
+  amount: 2475.75
+  category: analytics
+  currency: EUR
+  email: user0802475@example.test
+  id: 52
+  name: Order FP-00000052
+  note: orders record 52 · synthetic test data
+  product_id: 476
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:51Z"
+  user_id: 2476
+-
+  active: true
+  amount: 394.94
+  category: retail
+  currency: EUR
+  email: user0810394@example.test
+  id: 53
+  name: Order FP-00000053
+  note: orders record 53 · synthetic test data
+  product_id: 395
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:52Z"
+  user_id: 395
+-
+  active: false
+  amount: 8313.13
+  category: platform
+  currency: EUR
+  email: user0818313@example.test
+  id: 54
+  name: Order FP-00000054
+  note: orders record 54 · synthetic test data
+  product_id: 314
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:53Z"
+  user_id: 8314
+-
+  active: true
+  amount: 6232.32
+  category: engineering
+  currency: EUR
+  email: user0826232@example.test
+  id: 55
+  name: Order FP-00000055
+  note: orders record 55 · synthetic test data
+  product_id: 233
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:54Z"
+  user_id: 6233
+-
+  active: true
+  amount: 4151.51
+  category: analytics
+  currency: EUR
+  email: user0834151@example.test
+  id: 56
+  name: Order FP-00000056
+  note: orders record 56 · synthetic test data
+  product_id: 152
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:00:55Z"
+  user_id: 4152
+-
+  active: false
+  amount: 2070.70
+  category: retail
+  currency: EUR
+  email: user0842070@example.test
+  id: 57
+  name: Order FP-00000057
+  note: orders record 57 · synthetic test data
+  product_id: 71
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:00:56Z"
+  user_id: 2071
+-
+  active: true
+  amount: 9989.89
+  category: platform
+  currency: EUR
+  email: user0849989@example.test
+  id: 58
+  name: Order FP-00000058
+  note: orders record 58 · synthetic test data
+  product_id: 990
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:00:57Z"
+  user_id: 9990
+-
+  active: true
+  amount: 7908.08
+  category: engineering
+  currency: EUR
+  email: user0857908@example.test
+  id: 59
+  name: Order FP-00000059
+  note: orders record 59 · synthetic test data
+  product_id: 909
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:00:58Z"
+  user_id: 7909
+-
+  active: false
+  amount: 5827.27
+  category: analytics
+  currency: EUR
+  email: user0865827@example.test
+  id: 60
+  name: Order FP-00000060
+  note: orders record 60 · synthetic test data
+  product_id: 828
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:00:59Z"
+  user_id: 5828
+-
+  active: true
+  amount: 3746.46
+  category: retail
+  currency: EUR
+  email: user0873746@example.test
+  id: 61
+  name: Order FP-00000061
+  note: orders record 61 · synthetic test data
+  product_id: 747
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:00Z"
+  user_id: 3747
+-
+  active: true
+  amount: 1665.65
+  category: platform
+  currency: EUR
+  email: user0881665@example.test
+  id: 62
+  name: Order FP-00000062
+  note: orders record 62 · synthetic test data
+  product_id: 666
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:01Z"
+  user_id: 1666
+-
+  active: false
+  amount: 9584.84
+  category: engineering
+  currency: EUR
+  email: user0889584@example.test
+  id: 63
+  name: Order FP-00000063
+  note: orders record 63 · synthetic test data
+  product_id: 585
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:02Z"
+  user_id: 9585
+-
+  active: true
+  amount: 7503.03
+  category: analytics
+  currency: EUR
+  email: user0897503@example.test
+  id: 64
+  name: Order FP-00000064
+  note: orders record 64 · synthetic test data
+  product_id: 504
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:03Z"
+  user_id: 7504
+-
+  active: true
+  amount: 5422.22
+  category: retail
+  currency: EUR
+  email: user0905422@example.test
+  id: 65
+  name: Order FP-00000065
+  note: orders record 65 · synthetic test data
+  product_id: 423
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:04Z"
+  user_id: 5423
+-
+  active: false
+  amount: 3341.41
+  category: platform
+  currency: EUR
+  email: user0913341@example.test
+  id: 66
+  name: Order FP-00000066
+  note: orders record 66 · synthetic test data
+  product_id: 342
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:05Z"
+  user_id: 3342
+-
+  active: true
+  amount: 1260.60
+  category: engineering
+  currency: EUR
+  email: user0921260@example.test
+  id: 67
+  name: Order FP-00000067
+  note: orders record 67 · synthetic test data
+  product_id: 261
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:06Z"
+  user_id: 1261
+-
+  active: true
+  amount: 9179.79
+  category: analytics
+  currency: EUR
+  email: user0929179@example.test
+  id: 68
+  name: Order FP-00000068
+  note: orders record 68 · synthetic test data
+  product_id: 180
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:07Z"
+  user_id: 9180
+-
+  active: false
+  amount: 7098.98
+  category: retail
+  currency: EUR
+  email: user0937098@example.test
+  id: 69
+  name: Order FP-00000069
+  note: orders record 69 · synthetic test data
+  product_id: 99
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:08Z"
+  user_id: 7099
+-
+  active: true
+  amount: 5017.17
+  category: platform
+  currency: EUR
+  email: user0945017@example.test
+  id: 70
+  name: Order FP-00000070
+  note: orders record 70 · synthetic test data
+  product_id: 18
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:09Z"
+  user_id: 5018
+-
+  active: true
+  amount: 2936.36
+  category: engineering
+  currency: EUR
+  email: user0952936@example.test
+  id: 71
+  name: Order FP-00000071
+  note: orders record 71 · synthetic test data
+  product_id: 937
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:10Z"
+  user_id: 2937
+-
+  active: false
+  amount: 855.55
+  category: analytics
+  currency: EUR
+  email: user0960855@example.test
+  id: 72
+  name: Order FP-00000072
+  note: orders record 72 · synthetic test data
+  product_id: 856
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:11Z"
+  user_id: 856
+-
+  active: true
+  amount: 8774.74
+  category: retail
+  currency: EUR
+  email: user0968774@example.test
+  id: 73
+  name: Order FP-00000073
+  note: orders record 73 · synthetic test data
+  product_id: 775
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:12Z"
+  user_id: 8775
+-
+  active: true
+  amount: 6693.93
+  category: platform
+  currency: EUR
+  email: user0976693@example.test
+  id: 74
+  name: Order FP-00000074
+  note: orders record 74 · synthetic test data
+  product_id: 694
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:13Z"
+  user_id: 6694
+-
+  active: false
+  amount: 4612.12
+  category: engineering
+  currency: EUR
+  email: user0984612@example.test
+  id: 75
+  name: Order FP-00000075
+  note: orders record 75 · synthetic test data
+  product_id: 613
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:14Z"
+  user_id: 4613
+-
+  active: true
+  amount: 2531.31
+  category: analytics
+  currency: EUR
+  email: user0992531@example.test
+  id: 76
+  name: Order FP-00000076
+  note: orders record 76 · synthetic test data
+  product_id: 532
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:15Z"
+  user_id: 2532
+-
+  active: false
+  amount: 447.47
+  category: analytics
+  currency: EUR
+  email: user0000447@example.test
+  id: 77
+  name: Order FP-00000077
+  note: orders record 77 · synthetic test data
+  product_id: 448
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:16Z"
+  user_id: 448
+-
+  active: true
+  amount: 8366.66
+  category: retail
+  currency: EUR
+  email: user0008366@example.test
+  id: 78
+  name: Order FP-00000078
+  note: orders record 78 · synthetic test data
+  product_id: 367
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:17Z"
+  user_id: 8367
+-
+  active: true
+  amount: 6285.85
+  category: platform
+  currency: EUR
+  email: user0016285@example.test
+  id: 79
+  name: Order FP-00000079
+  note: orders record 79 · synthetic test data
+  product_id: 286
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:18Z"
+  user_id: 6286
+-
+  active: false
+  amount: 4204.04
+  category: engineering
+  currency: EUR
+  email: user0024204@example.test
+  id: 80
+  name: Order FP-00000080
+  note: orders record 80 · synthetic test data
+  product_id: 205
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:19Z"
+  user_id: 4205
+-
+  active: true
+  amount: 2123.23
+  category: analytics
+  currency: EUR
+  email: user0032123@example.test
+  id: 81
+  name: Order FP-00000081
+  note: orders record 81 · synthetic test data
+  product_id: 124
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:20Z"
+  user_id: 2124
+-
+  active: true
+  amount: 42.42
+  category: retail
+  currency: EUR
+  email: user0040042@example.test
+  id: 82
+  name: Order FP-00000082
+  note: orders record 82 · synthetic test data
+  product_id: 43
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:21Z"
+  user_id: 43
+-
+  active: false
+  amount: 7961.61
+  category: platform
+  currency: EUR
+  email: user0047961@example.test
+  id: 83
+  name: Order FP-00000083
+  note: orders record 83 · synthetic test data
+  product_id: 962
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:22Z"
+  user_id: 7962
+-
+  active: true
+  amount: 5880.80
+  category: engineering
+  currency: EUR
+  email: user0055880@example.test
+  id: 84
+  name: Order FP-00000084
+  note: orders record 84 · synthetic test data
+  product_id: 881
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:23Z"
+  user_id: 5881
+-
+  active: true
+  amount: 3799.99
+  category: analytics
+  currency: EUR
+  email: user0063799@example.test
+  id: 85
+  name: Order FP-00000085
+  note: orders record 85 · synthetic test data
+  product_id: 800
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:24Z"
+  user_id: 3800
+-
+  active: false
+  amount: 1718.18
+  category: retail
+  currency: EUR
+  email: user0071718@example.test
+  id: 86
+  name: Order FP-00000086
+  note: orders record 86 · synthetic test data
+  product_id: 719
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:25Z"
+  user_id: 1719
+-
+  active: true
+  amount: 9637.37
+  category: platform
+  currency: EUR
+  email: user0079637@example.test
+  id: 87
+  name: Order FP-00000087
+  note: orders record 87 · synthetic test data
+  product_id: 638
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:26Z"
+  user_id: 9638
+-
+  active: true
+  amount: 7556.56
+  category: engineering
+  currency: EUR
+  email: user0087556@example.test
+  id: 88
+  name: Order FP-00000088
+  note: orders record 88 · synthetic test data
+  product_id: 557
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:27Z"
+  user_id: 7557
+-
+  active: false
+  amount: 5475.75
+  category: analytics
+  currency: EUR
+  email: user0095475@example.test
+  id: 89
+  name: Order FP-00000089
+  note: orders record 89 · synthetic test data
+  product_id: 476
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:28Z"
+  user_id: 5476
+-
+  active: true
+  amount: 3394.94
+  category: retail
+  currency: EUR
+  email: user0103394@example.test
+  id: 90
+  name: Order FP-00000090
+  note: orders record 90 · synthetic test data
+  product_id: 395
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:29Z"
+  user_id: 3395
+-
+  active: true
+  amount: 1313.13
+  category: platform
+  currency: EUR
+  email: user0111313@example.test
+  id: 91
+  name: Order FP-00000091
+  note: orders record 91 · synthetic test data
+  product_id: 314
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:30Z"
+  user_id: 1314
+-
+  active: false
+  amount: 9232.32
+  category: engineering
+  currency: EUR
+  email: user0119232@example.test
+  id: 92
+  name: Order FP-00000092
+  note: orders record 92 · synthetic test data
+  product_id: 233
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:31Z"
+  user_id: 9233
+-
+  active: true
+  amount: 7151.51
+  category: analytics
+  currency: EUR
+  email: user0127151@example.test
+  id: 93
+  name: Order FP-00000093
+  note: orders record 93 · synthetic test data
+  product_id: 152
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:32Z"
+  user_id: 7152
+-
+  active: true
+  amount: 5070.70
+  category: retail
+  currency: EUR
+  email: user0135070@example.test
+  id: 94
+  name: Order FP-00000094
+  note: orders record 94 · synthetic test data
+  product_id: 71
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:33Z"
+  user_id: 5071
+-
+  active: false
+  amount: 2989.89
+  category: platform
+  currency: EUR
+  email: user0142989@example.test
+  id: 95
+  name: Order FP-00000095
+  note: orders record 95 · synthetic test data
+  product_id: 990
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:34Z"
+  user_id: 2990
+-
+  active: true
+  amount: 908.08
+  category: engineering
+  currency: EUR
+  email: user0150908@example.test
+  id: 96
+  name: Order FP-00000096
+  note: orders record 96 · synthetic test data
+  product_id: 909
+  profile: orders
+  quantity: 4
+  status: delivered
+  timestamp: "2024-01-01T00:01:35Z"
+  user_id: 909
+-
+  active: true
+  amount: 8827.27
+  category: analytics
+  currency: EUR
+  email: user0158827@example.test
+  id: 97
+  name: Order FP-00000097
+  note: orders record 97 · synthetic test data
+  product_id: 828
+  profile: orders
+  quantity: 3
+  status: shipped
+  timestamp: "2024-01-01T00:01:36Z"
+  user_id: 8828
+-
+  active: false
+  amount: 6746.46
+  category: retail
+  currency: EUR
+  email: user0166746@example.test
+  id: 98
+  name: Order FP-00000098
+  note: orders record 98 · synthetic test data
+  product_id: 747
+  profile: orders
+  quantity: 2
+  status: paid
+  timestamp: "2024-01-01T00:01:37Z"
+  user_id: 6747
+-
+  active: true
+  amount: 4665.65
+  category: platform
+  currency: EUR
+  email: user0174665@example.test
+  id: 99
+  name: Order FP-00000099
+  note: orders record 99 · synthetic test data
+  product_id: 666
+  profile: orders
+  quantity: 1
+  status: pending
+  timestamp: "2024-01-01T00:01:38Z"
+  user_id: 4666
+-
+  active: true
+  amount: 2584.84
+  category: engineering
+  currency: EUR
+  email: user0182584@example.test
+  id: 100
+  name: Order FP-00000100
+  note: orders record 100 · synthetic test data
+  product_id: 585
+  profile: orders
+  quantity: 5
+  status: refunded
+  timestamp: "2024-01-01T00:01:39Z"
+  user_id: 2585

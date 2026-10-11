@@ -1,0 +1,46 @@
+[
+  {
+    "baseline_heap_bytes": 357144,
+    "bytes": 104858560,
+    "format": "ndjson",
+    "index_seconds": 5.298589694,
+    "mib_per_second": 18.87311932089825,
+    "os": "linux",
+    "page_ms": 2.084,
+    "peak_heap_bytes": 3892968,
+    "records": 102210
+  },
+  {
+    "baseline_heap_bytes": 399128,
+    "bytes": 104857989,
+    "format": "csv",
+    "index_seconds": 3.093784425,
+    "mib_per_second": 32.32299256898259,
+    "os": "linux",
+    "page_ms": 1.214,
+    "peak_heap_bytes": 4073216,
+    "records": 104136
+  },
+  {
+    "baseline_heap_bytes": 423600,
+    "bytes": 104858561,
+    "format": "json",
+    "index_seconds": 4.710497696,
+    "mib_per_second": 21.22937382305389,
+    "os": "linux",
+    "page_ms": 3.648,
+    "peak_heap_bytes": 3856736,
+    "records": 102210
+  },
+  {
+    "baseline_heap_bytes": 433712,
+    "bytes": 1073742046,
+    "format": "ndjson",
+    "index_seconds": 40.956788362,
+    "mib_per_second": 25.00196555122894,
+    "os": "linux",
+    "page_ms": 2.088,
+    "peak_heap_bytes": 4644256,
+    "records": 1045577
+  }
+]

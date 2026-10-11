@@ -1,0 +1,69 @@
+{
+  "measured_at": "2026-10-10T22:03:50.7780918Z",
+  "platform": "Microsoft Windows 10.0.26200",
+  "architecture": "X64",
+  "binary_bytes": 19295744,
+  "dataset": "Empty data folder, fresh SQLite database each run",
+  "startup_method": "Process launch through first successful HTTP health check; 10 ms retry interval",
+  "idle_method": "Working set and private bytes at one second after health check",
+  "runs": [
+    {
+      "startup_ms": 184.21,
+      "idle_working_set_bytes": 18894848,
+      "idle_private_bytes": 51142656
+    },
+    {
+      "startup_ms": 104.81,
+      "idle_working_set_bytes": 18690048,
+      "idle_private_bytes": 50839552
+    },
+    {
+      "startup_ms": 105.76,
+      "idle_working_set_bytes": 18997248,
+      "idle_private_bytes": 51265536
+    },
+    {
+      "startup_ms": 89.05,
+      "idle_working_set_bytes": 18866176,
+      "idle_private_bytes": 51396608
+    },
+    {
+      "startup_ms": 118.16,
+      "idle_working_set_bytes": 18874368,
+      "idle_private_bytes": 51433472
+    }
+  ],
+  "frontend_gzip": [
+    {
+      "path": "/",
+      "transfer_bytes": 1561,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/static/css/app.css",
+      "transfer_bytes": 5293,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/static/js/htmx.min.js",
+      "transfer_bytes": 17186,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/static/js/app.js",
+      "transfer_bytes": 3752,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/static/icons/icons.svg",
+      "transfer_bytes": 547,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/static/icons/logo.svg",
+      "transfer_bytes": 187,
+      "encoding": ""
+    }
+  ],
+  "log_directory": "C:\\Users\\tpwin\\AppData\\Local\\Temp\\fluxport-measure-8ab03cf7e8de44adb59e8ca735f1ad98"
+}

@@ -1,0 +1,12 @@
+{
+  "method": "Sample OS process high-water counters every two seconds during the large-test run; includes the Go test harness and fixture generation",
+  "windows": {
+    "samples": 1,
+    "peak_working_set_bytes": 31625216,
+    "peak_private_bytes": 62758912
+  },
+  "linux": {
+    "samples": 61,
+    "peak_rss_bytes": 26206208
+  }
+}

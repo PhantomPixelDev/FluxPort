@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{.CSRF}}">
+  <title>{{.Title}} · FluxPort</title>
+  <link rel="icon" href="/static/icons/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <button type="button" class="icon-button mobile-close" id="menu-close" aria-label="Close navigation">×</button>
+    <a class="brand" href="/"><img src="/static/icons/logo.svg" alt="" width="30" height="30">FluxPort</a>
+    <div class="workspace"><span class="workspace-icon">F</span><div>Personal workspace<small>Self-hosted instance</small></div><span class="status-dot"></span></div>
+    <div class="nav-label">WORKSPACE</div>
+    <nav>
+      <a href="/" {{if eq .Active "overview"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#overview"/></svg>Overview</a>
+      <a href="/collections" {{if eq .Active "collections"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#collections"/></svg>Collections</a>
+      <a href="/converter" {{if eq .Active "converter"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Format converter</a>
+      <a href="/explorer" {{if eq .Active "explorer"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>API explorer</a>
+      <a href="/settings" {{if eq .Active "settings"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#settings"/></svg>Settings</a>
+    </nav>
+    <div class="sidebar-bottom"><a href="/api/openapi.json" class="subtle-link">OpenAPI specification ↗</a></div>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar"><div class="breadcrumbs"><button type="button" class="icon-button mobile-menu" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">☰</button><span>Workspace</span><span class="divider">/</span><strong>{{.Title}}</strong></div><div class="topbar-actions"><button type="button" id="theme-toggle" class="icon-button" aria-label="Switch color theme"><svg><use href="/static/icons/icons.svg#sun"/></svg></button>{{if .Authenticated}}<form action="/logout" method="post"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button small ghost">Sign out</button></form>{{end}}</div></header>
+    <main id="main"><div id="feedback" role="status" aria-live="polite"></div>{{embed}}</main>
+    <footer class="footer"><span>FluxPort <span class="muted">/</span> Runs on this machine</span><span>Go templates + HTMX · No Node.js or frontend build</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

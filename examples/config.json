@@ -1,0 +1,10 @@
+{
+  "address": "127.0.0.1:8080",
+  "data_dir": "data",
+  "state_dir": ".fluxport",
+  "max_file_bytes": 16777216,
+  "workers": 2,
+  "max_record_bytes": 1048576,
+  "min_free_disk_bytes": 268435456,
+  "max_stream_bytes": 0
+}

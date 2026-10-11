@@ -1,0 +1,1 @@
+{{range .}}<div class="tree-node">{{if .Children}}<details><summary><strong>{{.Label}}</strong> <span class="muted">{{.Value}}</span></summary><div class="tree-children">{{template "partials/tree" .Children}}</div></details>{{else}}<div><strong>{{.Label}}</strong> <code>{{.Value}}</code></div>{{end}}</div>{{end}}

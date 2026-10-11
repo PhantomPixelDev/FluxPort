@@ -1,0 +1,16 @@
+services:
+  fluxport:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      FLUXPORT_ADMIN_PASSWORD: ${FLUXPORT_ADMIN_PASSWORD:?Set FLUXPORT_ADMIN_PASSWORD in your environment or .env}
+      FLUXPORT_API_KEY: ${FLUXPORT_API_KEY:?Set FLUXPORT_API_KEY in your environment or .env}
+    volumes:
+      - data:/data
+      - state:/state
+    restart: unless-stopped
+    init: true
+volumes:
+  data:
+  state:

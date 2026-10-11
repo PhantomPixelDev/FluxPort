@@ -1,0 +1,98 @@
+package config
+
+import (
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+)
+
+type Config struct {
+	Workers          int    `json:"workers"`
+	MaxRecordBytes   int64  `json:"max_record_bytes"`
+	MinFreeDiskBytes uint64 `json:"min_free_disk_bytes"`
+	MaxStreamBytes   int64  `json:"max_stream_bytes"`
+	Address          string `json:"address"`
+	DataDir          string `json:"data_dir"`
+	StateDir         string `json:"state_dir"`
+	AdminPassword    string `json:"admin_password"`
+	APIKey           string `json:"api_key"`
+	MaxFileBytes     int64  `json:"max_file_bytes"`
+}
+
+func Load() (Config, error) {
+	c := Config{Workers: min(2, runtime.GOMAXPROCS(0)), MaxRecordBytes: 1 << 20, MinFreeDiskBytes: 256 << 20, Address: "127.0.0.1:8080", DataDir: "data", StateDir: ".fluxport", MaxFileBytes: 16 << 20}
+	if file := os.Getenv("FLUXPORT_CONFIG"); file != "" {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return c, err
+		}
+		if err = json.Unmarshal(b, &c); err != nil {
+			return c, fmt.Errorf("config: %w", err)
+		}
+	}
+	for key, dst := range map[string]*string{"FLUXPORT_ADDRESS": &c.Address, "FLUXPORT_DATA_DIR": &c.DataDir, "FLUXPORT_STATE_DIR": &c.StateDir, "FLUXPORT_ADMIN_PASSWORD": &c.AdminPassword, "FLUXPORT_API_KEY": &c.APIKey} {
+		if value, ok := os.LookupEnv(key); ok {
+			*dst = value
+		}
+	}
+	if v := os.Getenv("FLUXPORT_MAX_FILE_BYTES"); v != "" {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return c, fmt.Errorf("max file bytes: %w", err)
+		}
+		c.MaxFileBytes = n
+	}
+	for key, dst := range map[string]*int64{"FLUXPORT_MAX_RECORD_BYTES": &c.MaxRecordBytes, "FLUXPORT_MAX_STREAM_BYTES": &c.MaxStreamBytes} {
+		if v := os.Getenv(key); v != "" {
+			n, e := strconv.ParseInt(v, 10, 64)
+			if e != nil {
+				return c, e
+			}
+			*dst = n
+		}
+	}
+	if v := os.Getenv("FLUXPORT_WORKERS"); v != "" {
+		n, e := strconv.Atoi(v)
+		if e != nil {
+			return c, e
+		}
+		c.Workers = n
+	}
+	if v := os.Getenv("FLUXPORT_MIN_FREE_DISK_BYTES"); v != "" {
+		n, e := strconv.ParseUint(v, 10, 64)
+		if e != nil {
+			return c, e
+		}
+		c.MinFreeDiskBytes = n
+	}
+	if c.Workers < 1 || c.Workers > 32 || c.MaxRecordBytes < 1024 || c.MaxRecordBytes > 16<<20 || c.MaxStreamBytes < 0 || c.MinFreeDiskBytes > 1<<50 {
+		return c, fmt.Errorf("invalid worker or streaming limits")
+	}
+	if c.MaxFileBytes < 1024 || c.MaxFileBytes > 256<<20 {
+		return c, fmt.Errorf("max_file_bytes must be between 1024 and 268435456")
+	}
+	host, _, err := net.SplitHostPort(c.Address)
+	if err != nil {
+		return c, fmt.Errorf("address: %w", err)
+	}
+	ip := net.ParseIP(host)
+	if (ip == nil || !ip.IsLoopback()) && c.AdminPassword == "" {
+		return c, fmt.Errorf("set FLUXPORT_ADMIN_PASSWORD before binding to a non-loopback address")
+	}
+	if c.DataDir == "" || c.StateDir == "" {
+		return c, fmt.Errorf("data and state directories must not be empty")
+	}
+	c.DataDir, err = filepath.Abs(c.DataDir)
+	if err != nil {
+		return c, err
+	}
+	c.StateDir, err = filepath.Abs(c.StateDir)
+	if err != nil {
+		return c, err
+	}
+	return c, nil
+}

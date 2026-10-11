@@ -1,0 +1,9 @@
+.git
+.fluxport
+data
+dist
+artifacts
+output
+.playwright-cli
+.env
+*.exe

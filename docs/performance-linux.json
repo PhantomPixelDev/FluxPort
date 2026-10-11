@@ -1,0 +1,67 @@
+{
+  "binary_bytes": 18997410,
+  "dataset": "Empty source folder, fresh metadata database each run",
+  "frontend_gzip": [
+    {
+      "encoding": "gzip",
+      "path": "/",
+      "transfer_bytes": 1564
+    },
+    {
+      "encoding": "gzip",
+      "path": "/static/css/app.css",
+      "transfer_bytes": 5293
+    },
+    {
+      "encoding": "gzip",
+      "path": "/static/js/htmx.min.js",
+      "transfer_bytes": 17186
+    },
+    {
+      "encoding": "gzip",
+      "path": "/static/js/app.js",
+      "transfer_bytes": 3752
+    },
+    {
+      "encoding": "gzip",
+      "path": "/static/icons/icons.svg",
+      "transfer_bytes": 547
+    },
+    {
+      "encoding": "",
+      "path": "/static/icons/logo.svg",
+      "transfer_bytes": 187
+    }
+  ],
+  "measured_at": "2026-10-10T22:04:00Z",
+  "memory_method": "Linux /proc VmRSS and VmHWM at one second after health",
+  "platform": "Linux 6.6.87.2-microsoft-standard-WSL2",
+  "runs": [
+    {
+      "idle_rss_bytes": 16515072,
+      "peak_rss_bytes": 16515072,
+      "startup_ms": 296.374
+    },
+    {
+      "idle_rss_bytes": 16252928,
+      "peak_rss_bytes": 16252928,
+      "startup_ms": 203.171
+    },
+    {
+      "idle_rss_bytes": 15990784,
+      "peak_rss_bytes": 15990784,
+      "startup_ms": 193.791
+    },
+    {
+      "idle_rss_bytes": 16384000,
+      "peak_rss_bytes": 16384000,
+      "startup_ms": 245.831
+    },
+    {
+      "idle_rss_bytes": 16252928,
+      "peak_rss_bytes": 16252928,
+      "startup_ms": 204.432
+    }
+  ],
+  "startup_method": "Process launch to first HTTP health response; 10 ms retries"
+}
