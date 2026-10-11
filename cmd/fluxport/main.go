@@ -209,6 +209,11 @@ func serve() error {
 		return err
 	}
 	defer s.Stop()
+	if cfg.PublicDemo {
+		if err = s.Demo(); err != nil {
+			return fmt.Errorf("load public demo examples: %w", err)
+		}
+	}
 	if err = s.Sync(); err != nil {
 		return err
 	}

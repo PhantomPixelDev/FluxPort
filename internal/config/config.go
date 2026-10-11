@@ -54,6 +54,9 @@ func Load() (Config, error) {
 		}
 		c.PublicDemo = enabled
 	}
+	if c.PublicDemo {
+		c.APIKey = ""
+	}
 	for key, dst := range map[string]*int64{"FLUXPORT_MAX_RECORD_BYTES": &c.MaxRecordBytes, "FLUXPORT_MAX_STREAM_BYTES": &c.MaxStreamBytes} {
 		if v := os.Getenv(key); v != "" {
 			n, e := strconv.ParseInt(v, 10, 64)

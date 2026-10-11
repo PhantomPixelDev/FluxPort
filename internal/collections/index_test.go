@@ -156,9 +156,35 @@ func TestDemoIdempotent(t *testing.T) {
 	if e := s.Demo(); e != nil {
 		t.Fatal(e)
 	}
-	_, n, e := s.List("", 1, 20)
+	cols, n, e := s.List("", 1, 20)
 	if e != nil || n != 6 {
 		t.Fatalf("%d %v", n, e)
+	}
+	formats := map[string]bool{}
+	for _, col := range cols {
+		formats[col.Format] = true
+		if col.Status != "ready" || col.Error != "" {
+			t.Fatalf("demo %s not usable: %+v", col.Format, col)
+		}
+		rows, total, err := s.Page(context.Background(), col, 1, 20, false, "")
+		if err != nil || total < 1 || len(rows) == 0 {
+			t.Fatalf("demo %s has no readable records: %v", col.Format, err)
+		}
+	}
+	for _, format := range []string{"json", "csv", "yaml", "xml", "ndjson", "toml"} {
+		if !formats[format] {
+			t.Fatalf("missing demo format %s", format)
+		}
+	}
+	if e = s.Remove(cols[0].ID); e != nil {
+		t.Fatal(e)
+	}
+	if e = s.Demo(); e != nil {
+		t.Fatal(e)
+	}
+	_, n, e = s.List("", 1, 20)
+	if e != nil || n != 5 {
+		t.Fatal("restart duplicated or restored a removed example", n, e)
 	}
 }
 

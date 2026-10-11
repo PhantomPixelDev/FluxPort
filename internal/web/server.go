@@ -63,6 +63,9 @@ type Page struct {
 }
 
 func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
+	if cfg.PublicDemo {
+		cfg.APIKey = ""
+	}
 	a, err := auth.New(cfg.AdminPassword)
 	if err != nil {
 		return nil, err
