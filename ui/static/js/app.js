@@ -29,7 +29,7 @@
   });
   document.body.addEventListener('htmx:xhr:progress', event => {const el=$('upload-progress');if(el&&event.detail.total){el.hidden=false;el.value=event.detail.loaded/event.detail.total*100;}});
   document.body.addEventListener('htmx:afterRequest', () => {const el=$('upload-progress');if(el)el.hidden=true;});
-  $('converter-file')?.addEventListener('change', async event => {const file=event.target.files[0];if(!file)return;const ext=file.name.split('.').pop().toLowerCase();const format={yml:'yaml',jsonl:'ndjson'}[ext]||ext; if([...$('source-format').options].some(o=>o.value===format))$('source-format').value=format;$('input-size').textContent=file.name;$('convert-input').value='';$('input-tree')?.replaceChildren();try {const text=await file.slice(0,256*1024).text();if(event.target.files[0]!==file)return;$('convert-input').value=text;if(file.size>256*1024)$('input-size').textContent=file.name+' · preview first 256 KiB; full file will be converted';}catch{$('input-size').textContent=file.name+' · preview unavailable; full file will be converted';}});
+  $('converter-file')?.addEventListener('change', async event => {const file=event.target.files[0];if(!file)return;const ext=file.name.split('.').pop().toLowerCase();const format={yml:'yaml',jsonl:'ndjson'}[ext]||ext;if(!['json','csv','yaml','xml','ndjson','toml'].includes(format)){event.target.value='';$('input-size').textContent=file.name+' · rejected: unsupported file type';toast('Choose JSON, CSV, YAML, XML, NDJSON or TOML.');return;} if([...$('source-format').options].some(o=>o.value===format))$('source-format').value=format;$('input-size').textContent=file.name;$('convert-input').value='';$('input-tree')?.replaceChildren();try {const text=await file.slice(0,256*1024).text();if(event.target.files[0]!==file)return;$('convert-input').value=text;if(file.size>256*1024)$('input-size').textContent=file.name+' · preview first 256 KiB; full file will be converted';}catch{$('input-size').textContent=file.name+' · preview unavailable; full file will be converted';}});
   $('convert-input')?.addEventListener('input',()=>{const el=$('converter-file');if(el)el.value='';$('input-tree')?.replaceChildren(); const status=document.querySelector('[data-output-status]');if(status)status.textContent='Previous result · input changed';});
   $('converter-form')?.addEventListener('change',()=>{const status=document.querySelector('[data-output-status]');if(status)status.textContent='Previous result · options changed';});
   $('endpoint-selector')?.addEventListener('change',event=>{$('request-path').value=event.target.value;});
@@ -65,7 +65,7 @@
   window.addEventListener('pagehide',()=>source.close());
  }
  const input=document.getElementById('import-file'), zone=input?.closest('.drop-zone');
- const names=()=>{const list=document.getElementById('upload-files');if(list){list.replaceChildren(...[...input.files].map(f=>{const e=document.createElement('p');e.textContent=f.name+' · selected';return e}));}};
+ const names=()=>{const list=document.getElementById('upload-files');if(list){list.replaceChildren(...[...input.files].map(f=>{const e=document.createElement('p');const supported=/\.(json|csv|ya?ml|xml|ndjson|jsonl|toml)$/i.test(f.name);e.textContent=f.name+(supported?' · selected':' · rejected: unsupported file type');return e}));}};
  input?.addEventListener('change',names);
  zone?.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-active')});
  zone?.addEventListener('dragleave',()=>zone.classList.remove('drag-active'));
@@ -75,7 +75,7 @@
  if(location.hash==='#import'){const el=document.getElementById('import');if(el)el.open=true;}
 })();
 
-document.body.addEventListener('htmx:afterRequest',event=>{if(event.detail.elt?.closest('.drop-zone'))document.querySelectorAll('#upload-files p').forEach(e=>e.textContent=e.textContent.replace('uploading','uploaded — see file activity'));});
+document.body.addEventListener('htmx:afterRequest',event=>{if(event.detail.elt?.closest('.drop-zone')&&!event.detail.successful)document.querySelectorAll('#upload-files p').forEach(e=>e.textContent=e.textContent.replace('uploading','failed — see error message'));});
 
 document.getElementById('cancel-upload')?.addEventListener('click',()=>{const form=document.getElementById('import-file')?.form;if(form&&window.htmx)htmx.trigger(form,'htmx:abort');document.querySelectorAll('#upload-files p').forEach(e=>e.textContent=e.textContent.replace(/uploading|selected/,'cancelled'));});
 

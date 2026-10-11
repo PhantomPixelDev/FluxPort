@@ -37,6 +37,7 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	UploadResults                                                                          []UploadResult
 	RoundTrip, ParseJSON                                                                   bool
 	ColumnRules, ConversionSummary                                                         string
 	InputTree, OutputTree                                                                  []conversion.TreeNode

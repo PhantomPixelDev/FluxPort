@@ -60,12 +60,17 @@ func (s *Server) boundForms(c fiber.Ctx) error {
 	return c.Next()
 }
 
+type UploadResult struct {
+	Name, State, Error string
+}
+
 func (s *Server) importFile(c fiber.Ctx) error {
 	r, ok := c.Locals("multipart_reader").(*multipart.Reader)
 	if !ok {
 		return fiber.NewError(400, "Choose files to import.")
 	}
 	count := 0
+	results := []UploadResult{}
 	for parts := 0; parts < 200; parts++ {
 		p, e := r.NextPart()
 		if e == io.EOF {
@@ -90,12 +95,17 @@ func (s *Server) importFile(c fiber.Ctx) error {
 		if count > 100 {
 			return fiber.NewError(400, "Import at most 100 files per batch.")
 		}
-		_, e = s.Service.Import(p.FileName(), p)
+		col, e := s.Service.Import(p.FileName(), p)
+		result := UploadResult{Name: p.FileName(), State: "processing"}
 		if e != nil {
+			result.State, result.Error = "rejected", e.Error()
 			if _, err := s.Service.Jobs.Failed(p.FileName(), e); err != nil {
 				return err
 			}
+		} else if col.Status == "ready" {
+			result.State = "ready"
 		}
+		results = append(results, result)
 		p.Close()
 	}
 	if count == 0 {
@@ -103,7 +113,14 @@ func (s *Server) importFile(c fiber.Ctx) error {
 	}
 	c.Set("HX-Trigger", "collectionsChanged")
 	if c.Get("HX-Request") == "true" {
-		return s.jobs(c)
+		page := s.base(c, "Processing", "collections")
+		page.UploadResults = results
+		var err error
+		page.Jobs, err = s.Service.Jobs.List()
+		if err != nil {
+			return err
+		}
+		return c.Render("partials/jobs", page)
 	}
 	return c.Redirect().Status(303).To("/collections")
 }

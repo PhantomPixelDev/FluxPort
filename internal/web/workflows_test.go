@@ -7,10 +7,45 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestUnsupportedBatchFileReportsRejectionAndKeepsValidFile(t *testing.T) {
+	app, s, _ := setup(t, "", "")
+	resp, body := call(t, app, "GET", "/collections", "", nil, nil)
+	cookies := resp.Cookies()
+	token := csrf(t, body)
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	for _, file := range []struct{ name, data string }{{"nstalls.ini", "[settings]\ninstall=true"}, {"accepted.JSON", `[{"id":1}]`}} {
+		p, err := w.CreateFormFile("file", file.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		io.WriteString(p, file.data)
+	}
+	w.Close()
+	resp, body = call(t, app, "POST", "/collections/import", buf.String(), map[string]string{"Content-Type": w.FormDataContentType(), "HX-Request": "true", "X-CSRF-Token": token}, cookies)
+	if resp.StatusCode != 200 || !strings.Contains(body, "nstalls.ini · rejected") || !strings.Contains(body, "accepted.JSON · ready") || !strings.Contains(body, `hx-swap-oob="innerHTML"`) {
+		t.Fatalf("missing actual per-file results: %d %s", resp.StatusCode, body)
+	}
+	files, err := os.ReadDir(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(strings.ToLower(file.Name()), ".ini") {
+			t.Fatal("unsupported source persisted", file.Name())
+		}
+	}
+	cols, n, err := s.List("", 1, 20)
+	if err != nil || n != 2 {
+		t.Fatal("valid batch file lost", cols, err)
+	}
+}
 
 func TestBatchPartialFailureAndNativeCSRF(t *testing.T) {
 	app, s, _ := setup(t, "", "")
