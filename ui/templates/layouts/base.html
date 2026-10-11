@@ -5,11 +5,11 @@
   <meta name="csrf-token" content="{{.CSRF}}">
   <title>{{.Title}} · FluxPort</title>
   <link rel="icon" href="/static/icons/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <link rel="stylesheet" href="/static/css/usability.css">
+  <link rel="stylesheet" href="/static/css/app.css?v={{.AssetVersion}}">
+  <link rel="stylesheet" href="/static/css/usability.css?v={{.AssetVersion}}">
   <script src="/static/js/htmx.min.js" defer></script>
-  <script src="/static/js/app.js" defer></script>
-  <script src="/static/js/workspace.js" defer></script>
+  <script src="/static/js/app.js?v={{.AssetVersion}}" defer></script>
+  <script src="/static/js/workspace.js?v={{.AssetVersion}}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>

@@ -37,6 +37,7 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	AssetVersion                                                                           string
 	InputMode, CollectionID                                                                string
 	Limit                                                                                  int
 	UploadResults                                                                          []UploadResult
@@ -170,8 +171,20 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	return app, nil
 }
 func (s *Server) base(c fiber.Ctx, title, active string) Page {
-	return Page{Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
+	return Page{AssetVersion: frontendVersion, Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
 }
+
+// Content-based URLs let an existing browser pick up UI updates immediately
+// while retaining normal asset caching between releases.
+var frontendVersion = func() string {
+	h := sha256.New()
+	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/js/app.js", "static/js/workspace.js"} {
+		b, _ := ui.Files.ReadFile(name)
+		h.Write(b)
+	}
+	return hex.EncodeToString(h.Sum(nil))[:12]
+}()
+
 func (s *Server) render(c fiber.Ctx, name, title string, fill func(*Page)) error {
 	p := s.base(c, title, name)
 	if fill != nil {
