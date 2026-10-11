@@ -6,8 +6,10 @@
   <title>{{.Title}} · FluxPort</title>
   <link rel="icon" href="/static/icons/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/usability.css">
   <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/app.js" defer></script>
+  <script src="/static/js/workspace.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -19,6 +21,7 @@
     <nav>
       <a href="/" {{if eq .Active "overview"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#overview"/></svg>Overview</a>
       <a href="/collections" {{if eq .Active "collections"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#collections"/></svg>Collections</a>
+      <a href="/workflow" {{if eq .Active "workflow"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Data workflow</a>
       <a href="/converter" {{if eq .Active "converter"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Format converter</a>
       <a href="/explorer" {{if eq .Active "explorer"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>API explorer</a>
       <a href="/settings" {{if eq .Active "settings"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#settings"/></svg>Settings</a>
@@ -28,7 +31,7 @@
   <div class="app-shell">
     <header class="topbar"><div class="breadcrumbs"><button type="button" class="icon-button mobile-menu" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">☰</button><span>Workspace</span><span class="divider">/</span><strong>{{.Title}}</strong></div><div class="topbar-actions"><button type="button" id="theme-toggle" class="icon-button" aria-label="Switch color theme"><svg><use href="/static/icons/icons.svg#sun"/></svg></button>{{if .Authenticated}}<form action="/logout" method="post"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button small ghost">Sign out</button></form>{{end}}</div></header>
     <main id="main"><div id="feedback" role="status" aria-live="polite"></div>{{embed}}</main>
-    <footer class="footer"><span>FluxPort <span class="muted">/</span> Runs on this machine</span><span>Go templates + HTMX · No Node.js or frontend build</span></footer>
+    <footer class="footer"><span>FluxPort <span class="muted">/</span> Your files, ready to use</span><a href="/workflow">Import → Inspect → Convert → Download</a></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

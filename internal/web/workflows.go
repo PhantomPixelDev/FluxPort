@@ -145,7 +145,7 @@ func tableRows(rows []any, fields []collections.Field) ([]string, [][]string) {
 		}
 	}
 	for _, name := range names {
-		if len(headers) == 12 {
+		if len(headers) == 48 {
 			break
 		}
 		visible := false
@@ -370,7 +370,7 @@ func (s *Server) multipartConvert(c fiber.Ctx) error {
 			if e != nil || int64(len(b)) > limit {
 				return fiber.NewError(413, "Input exceeds document limit.")
 			}
-			if p.FormName() == "input" || p.FormName() == "from" || p.FormName() == "to" || p.FormName() == "infer_types" || p.FormName() == "csv_delimiter" || p.FormName() == "spreadsheet_safe" || p.FormName() == "column_types" || p.FormName() == "parse_json" || p.FormName() == "roundtrip" {
+			if p.FormName() == "input_mode" || p.FormName() == "collection_id" || p.FormName() == "input" || p.FormName() == "from" || p.FormName() == "to" || p.FormName() == "infer_types" || p.FormName() == "csv_delimiter" || p.FormName() == "spreadsheet_safe" || p.FormName() == "column_types" || p.FormName() == "parse_json" || p.FormName() == "roundtrip" {
 				values[p.FormName()] = string(b)
 			}
 		}
@@ -383,6 +383,9 @@ func (s *Server) multipartConvert(c fiber.Ctx) error {
 	c.Locals("column_rules", values["column_types"])
 	c.Locals("roundtrip", values["roundtrip"] == "on")
 	c.Locals("conversion_options", conversion.Options{CSVInferTypes: values["infer_types"] == "on", CSVDelimiter: defaultFormat(values["csv_delimiter"], "auto"), SpreadsheetSafe: values["spreadsheet_safe"] == "on", CSVColumnTypes: columns, CSVParseJSON: values["parse_json"] == "on"})
+	if values["input_mode"] == "collection" {
+		return s.convertCollection(c, values["collection_id"], values["to"])
+	}
 	if path == "" {
 		return s.convertValues(c, []byte(values["input"]), values["from"], values["to"])
 	}

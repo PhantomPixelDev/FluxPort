@@ -37,6 +37,8 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	InputMode, CollectionID                                                                string
+	Limit                                                                                  int
 	UploadResults                                                                          []UploadResult
 	RoundTrip, ParseJSON                                                                   bool
 	ColumnRules, ConversionSummary                                                         string
@@ -156,7 +158,9 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/refresh", server.refreshOne)
 	app.Post("/collections/:id/remove", server.remove)
 	app.Post("/collections/:id/delete", server.delete)
-	app.Get("/converter", func(c fiber.Ctx) error { return server.render(c, "converter", "Format converter", nil) })
+	app.Get("/converter", server.converter)
+	app.Get("/converter/collections", server.converterCollections)
+	app.Get("/workflow", server.workflow)
 	app.Post("/converter", server.convert)
 	app.Get("/explorer", server.explorer)
 	app.Get("/settings", server.settings)
@@ -296,6 +300,15 @@ func (s *Server) detail(c fiber.Ctx) error {
 	}
 	p := s.base(c, col.Name, "collections")
 	p.Collection = col
+	p.Query = strings.TrimSpace(c.Query("q"))
+	p.Pages = 1
+	if len(p.Query) > 256 {
+		return fiber.NewError(400, "Search is limited to 256 characters.")
+	}
+	p.Limit = 20
+	if n, err := strconv.Atoi(c.Query("limit")); err == nil && (n == 20 || n == 50 || n == 100) {
+		p.Limit = n
+	}
 	p.Tab = c.Query("tab", "preview")
 	switch p.Tab {
 	case "preview", "raw", "schema", "configuration":
@@ -308,13 +321,13 @@ func (s *Server) detail(c fiber.Ctx) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
-	rows, total, readErr := s.Service.Page(ctx, col, p.Page, 20, false, "")
+	rows, total, readErr := s.Service.Page(ctx, col, p.Page, p.Limit, false, p.Query)
 	if readErr != nil {
 		p.Message = readErr.Error()
 	} else {
 		p.Fields, _ = s.Service.Fields(col)
 		p.Total = int(total)
-		p.Pages = (p.Total + 19) / 20
+		p.Pages = max(1, (p.Total+p.Limit-1)/p.Limit)
 		if p.Page > 1 {
 			p.Prev = p.Page - 1
 		}
@@ -417,6 +430,9 @@ func (s *Server) convert(c fiber.Ctx) error {
 	if c.Locals("multipart_reader") != nil {
 		return s.multipartConvert(c)
 	}
+	if c.FormValue("input_mode") == "collection" {
+		return s.convertCollection(c, c.FormValue("collection_id"), c.FormValue("to"))
+	}
 	input := []byte(c.FormValue("input"))
 	if f, err := c.FormFile("file"); err == nil && f.Size > 0 {
 		r, err := f.Open()
@@ -437,6 +453,9 @@ func (s *Server) convert(c fiber.Ctx) error {
 func (s *Server) convertValues(c fiber.Ctx, input []byte, from, to string) error {
 	options := converterOptions(c)
 	p := s.base(c, "Format converter", "converter")
+	if err := s.fillConverter(c, &p); err != nil {
+		return err
+	}
 	p.ConverterSubmitted = true
 	p.Fragment = c.Get("HX-Request") == "true"
 	p.Input = string(input)

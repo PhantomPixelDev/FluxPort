@@ -336,7 +336,7 @@ func (s *Service) Page(ctx context.Context, c Collection, page, limit int, apply
 	}
 	defer db.Close()
 	out := []any{}
-	if !apply || (strings.TrimSpace(c.Rules) == "" && q == "") {
+	if (!apply || strings.TrimSpace(c.Rules) == "") && q == "" {
 		rows, err := db.QueryContext(ctx, `SELECT payload FROM records WHERE ordinal>=? ORDER BY ordinal LIMIT ?`, start, limit)
 		if err != nil {
 			return nil, 0, err
@@ -355,7 +355,11 @@ func (s *Service) Page(ctx context.Context, c Collection, page, limit int, apply
 		}
 		return out, c.Rows, rows.Err()
 	}
-	rules, err := transformations.Parse(c.Rules)
+	ruleText := ""
+	if apply {
+		ruleText = c.Rules
+	}
+	rules, err := transformations.Parse(ruleText)
 	if err != nil {
 		return nil, 0, err
 	}

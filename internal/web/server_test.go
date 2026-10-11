@@ -221,12 +221,17 @@ func TestConverterRoundTripThroughHandler(t *testing.T) {
 // textareaValue pulls the rendered output out of the converter fragment.
 func textareaValue(t *testing.T, body string) string {
 	t.Helper()
-	const marker = `placeholder="Waiting for a little data…">`
+	const marker = `<textarea id="convert-output"`
 	start := strings.Index(body, marker)
 	if start < 0 {
 		t.Fatalf("no output panel rendered: %s", body)
 	}
 	start += len(marker)
+	openEnd := strings.Index(body[start:], ">")
+	if openEnd < 0 {
+		t.Fatal("unterminated textarea opening tag")
+	}
+	start += openEnd + 1
 	end := strings.Index(body[start:], "</textarea>")
 	if end < 0 {
 		t.Fatal("unterminated textarea")
