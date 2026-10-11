@@ -1,2 +1,41 @@
 .sheet-query form{display:grid;gap:16px}.sheet-query details>summary{cursor:pointer;font-weight:600;padding:10px 0}.filter-row,.sort-row{display:flex;gap:12px;align-items:end;margin:12px 0;flex-wrap:wrap}.filter-row label,.sort-row label{flex:1;min-width:150px}.filter-row select,.sort-row select{width:100%}.sheet-table{table-layout:fixed;min-width:800px;width:max-content}.sheet-table th,.sheet-table td{width:190px;max-width:600px;min-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sheet-table th{position:relative}.sheet-table th:first-child,.sheet-table td:first-child{width:48px}.sheet-table th:nth-child(2),.sheet-table td:nth-child(2){width:85px}.column-resizer{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;border-right:2px solid var(--border)}.column-resizer:focus-visible{outline:3px solid var(--accent)}.sheet-edit-controls{display:grid;gap:12px;padding:20px;background:var(--panel-raised);border-radius:12px;margin-top:16px}.sheet-edit-controls textarea{width:100%}.sheet-data .panel-toolbar{flex-wrap:wrap}dialog{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:16px;max-width:780px;width:calc(100% - 32px);padding:24px}dialog::backdrop{background:#0008}dialog textarea{width:100%;margin:12px 0}dialog form{display:flex;justify-content:end}.sheet-query>form>label{max-width:600px}.sql-form{display:grid;gap:16px}.sql-form textarea{width:100%;min-height:220px}.sql-keyword{color:var(--violet);font-weight:700}#sql-highlight{max-height:160px;overflow:auto}.sql-form[aria-busy=true]{opacity:.75}.sql-form summary{cursor:pointer;font-weight:600;padding:10px 0}@media(max-width:600px){.filter-row,.sort-row{display:grid;grid-template-columns:1fr}.sheet-query,.sheet-data{padding:16px}.sheet-data .pagination{flex-wrap:wrap}}
 .sheet-tools,.sql-panel{padding:22px}.sheet-tools .panel-toolbar{padding:0 0 14px}.sheet-tools>.inline-form{flex-wrap:wrap}.sheet-table td:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.sheet-table td input{width:100%;min-width:60px} .sheet-tools form label{min-width:160px}@media(max-width:600px){.sheet-tools,.sql-panel{padding:16px}}
+
+/* Keep the everyday query compact; secondary tools open on demand. */
+.sheet-query{padding:22px}
+.sheet-query form{gap:12px}
+.sheet-query-bar{display:grid;grid-template-columns:minmax(180px,1fr) 120px auto;gap:14px;align-items:end}
+.sheet-query-bar label,.filter-row label,.sort-row label{display:grid;gap:6px;min-width:0}
+.sheet-query-bar input,.sheet-query-bar select,.sheet-query textarea{width:100%}
+.sheet-query details{border-top:1px solid var(--border);margin:0}
+.sheet-query details>summary{padding:10px 0;font-size:13px;margin-bottom:0}
+.sheet-query details[open]>summary{margin-bottom:10px}
+.sheet-query details>summary:hover,.tools-disclosure>summary:hover{color:var(--accent)}
+.sheet-query-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.tools-disclosure>summary{cursor:pointer;font-weight:600;padding:0;font-size:14px;margin-bottom:0}
+.tools-disclosure[open]>summary{margin-bottom:18px}
+.tool-section+.tool-section{border-top:1px solid var(--border);padding-top:18px;margin-top:18px}
+.tool-section .inline-form,.sql-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.tool-section .inline-form label,.sql-actions label{display:grid;gap:6px;min-width:140px}
+.tool-section h2{font-size:15px;margin-bottom:12px}
+.tools-disclosure .table-wrap{overflow-x:auto;max-width:100%}
+.sql-panel>h2{font-size:16px}
+.sql-form>details>summary{font-size:13px}
+.sql-form>details[open]>summary{margin-bottom:8px}
+.sql-form>details:not([open])>summary{margin-bottom:0}
+.sql-form .column-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.sql-form .column-options label{display:flex;align-items:center;gap:8px;margin:0;padding:8px 10px;background:var(--input);border:1px solid var(--border);border-radius:8px;min-width:0}
+.sql-form .column-options .format-tag{white-space:nowrap;flex-shrink:0;margin-left:auto}
+.sql-actions .button.primary{min-width:120px}
+.sql-panel>.quality-notes{margin-top:16px}
+.sheet-table th,.sheet-table td{padding:10px 12px}
+.sheet-data>form>p{padding:12px 22px;margin:0;font-size:13px}
+@media(max-width:600px){
+  .sheet-query{padding:16px}
+  .sheet-query-bar{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+  .sheet-query-bar>label:first-child{grid-column:1/-1}
+  .sheet-query-bar>.button{width:100%}
+  .sheet-query-footer{align-items:start;flex-wrap:wrap}
+  .tool-section .inline-form{align-items:stretch}
+  .tool-section .inline-form>label{flex:1}
+}

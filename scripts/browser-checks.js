@@ -32,10 +32,12 @@ async (page) => {
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
   const collectionID = new URL(page.url()).pathname.split('/')[2];
   await page.getByRole('link', {name:'Inspect data quality',exact:true}).click();
+  await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Records to check').fill('10');
   await page.getByLabel('Rules (JSON array)').fill('[{"field":"missing","required":true}]');
   await page.getByRole('button',{name:'Run checks',exact:true}).click();
   await page.getByRole('heading',{name:'Validation issues',exact:true}).waitFor();
+  if (!await page.getByLabel('Rules (JSON array)').isVisible()) await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Rules (JSON array)').fill('[{"field":"id","required":true,"type":"integer","unique":true}]');
   await page.getByRole('button',{name:'Save rules and check',exact:true}).click();
   await page.getByText('Validation rules saved.',{exact:true}).waitFor();
@@ -53,10 +55,12 @@ async (page) => {
   await page.getByRole('button',{name:'Preview final result',exact:true}).click();
   await page.getByRole('heading',{name:'Preview through step 2',exact:true}).waitFor();
   await page.getByRole('button',{name:'Save recipe',exact:true}).click();
-  await page.getByRole('heading',{name:'Recipe revisions',exact:true}).waitFor();
+  await page.getByText('Recipe revisions',{exact:true}).waitFor();
+  await page.getByText('Recipe settings and API',{exact:true}).click();
   await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
   await page.getByRole('link',{name:'Open data explorer',exact:true}).click();
+  await page.getByText('Saved views and exports',{exact:true}).click();
   await page.locator('form[action$="/workbench/export"] select[name="format"]').selectOption('csv');
   await page.getByRole('button', {name: 'Prepare filtered download', exact: true}).click();
   await page.locator('#job-activity .job-row').filter({hasText: display}).getByRole('link', {name: 'Download', exact: true}).first().waitFor();
