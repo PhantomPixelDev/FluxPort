@@ -11,3 +11,5 @@ output/
 *.key
 id_*
 *.exe
+compose.vps.yaml
+.hosting/
