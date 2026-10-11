@@ -33,7 +33,7 @@ Download a Windows or Linux amd64 executable from [Releases](https://github.com/
 
 Open **http://127.0.0.1:8080**. Import a file in **Collections**, or click **Load demo data** for six small synthetic examples. Demo data is opt-in.
 
-The default data and state folders are <code>data/</code> and <code>.fluxport/</code>, relative to the working directory. Back up both. The hosted instance is password-protected; download FluxPort to use your own workspace.
+The default data and state folders are <code>data/</code> and <code>.fluxport/</code>, relative to the working directory. Back up both. The hosted instance is a public demo with a shared workspace; download FluxPort to use your own instance.
 
 ### Build from source
 
@@ -80,6 +80,7 @@ Compose binds to <code>127.0.0.1:8080</code> and persists data/state in named vo
 | Setting | Default |
 | --- | --- |
 | FLUXPORT_ADDRESS | 127.0.0.1:8080 |
+| FLUXPORT_PUBLIC_DEMO | false; explicitly allows a password-free remote dashboard |
 | FLUXPORT_DATA_DIR / FLUXPORT_STATE_DIR | data / .fluxport |
 | FLUXPORT_MAX_FILE_BYTES | 16 MiB for buffered documents and CRUD |
 | FLUXPORT_MAX_RECORD_BYTES | 1 MiB per streaming record |

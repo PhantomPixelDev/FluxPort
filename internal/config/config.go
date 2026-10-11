@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	PublicDemo       bool   `json:"public_demo"`
 	Workers          int    `json:"workers"`
 	MaxRecordBytes   int64  `json:"max_record_bytes"`
 	MinFreeDiskBytes uint64 `json:"min_free_disk_bytes"`
@@ -46,6 +47,13 @@ func Load() (Config, error) {
 		}
 		c.MaxFileBytes = n
 	}
+	if v, ok := os.LookupEnv("FLUXPORT_PUBLIC_DEMO"); ok {
+		enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("public demo: %w", err)
+		}
+		c.PublicDemo = enabled
+	}
 	for key, dst := range map[string]*int64{"FLUXPORT_MAX_RECORD_BYTES": &c.MaxRecordBytes, "FLUXPORT_MAX_STREAM_BYTES": &c.MaxStreamBytes} {
 		if v := os.Getenv(key); v != "" {
 			n, e := strconv.ParseInt(v, 10, 64)
@@ -80,7 +88,7 @@ func Load() (Config, error) {
 		return c, fmt.Errorf("address: %w", err)
 	}
 	ip := net.ParseIP(host)
-	if (ip == nil || !ip.IsLoopback()) && c.AdminPassword == "" {
+	if (ip == nil || !ip.IsLoopback()) && c.AdminPassword == "" && !c.PublicDemo {
 		return c, fmt.Errorf("set FLUXPORT_ADMIN_PASSWORD before binding to a non-loopback address")
 	}
 	if c.DataDir == "" || c.StateDir == "" {

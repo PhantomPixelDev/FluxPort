@@ -1,11 +1,11 @@
 # Hosted deployment
 
-FluxPort 0.2.2 is hosted at https://fluxport.ppxl.dev. The workspace requires a dashboard password; API endpoints require a separate bearer key. The portfolio overview and project page are at https://ppxl.dev and https://ppxl.dev/fluxport/.
+FluxPort 0.2.3 is hosted at https://fluxport.ppxl.dev. The public demo opens directly without a dashboard password. API endpoints retain a separate bearer key. The portfolio overview and project page are at https://ppxl.dev and https://ppxl.dev/fluxport/.
 
 The public source and Windows/Linux downloads are on GitHub:
 
 - https://github.com/PhantomPixelDev/FluxPort
-- https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.2.2
+- https://github.com/PhantomPixelDev/FluxPort/releases/latest
 
 Deployment uses the owner's portfolio hosting control repository. Its registry defines the domain and internal port; its FluxPort Compose file manages an internal-only service on the shared edge network, persistent data/state volumes, a 512 MiB memory limit and one CPU. The hosted configuration caps individual source files at 1 GiB and reserves 1 GiB free disk. These hosted limits do not change the application's local defaults.
 
@@ -16,7 +16,7 @@ Verified on 2026-10-11:
 - Docker image build and Compose startup on Ubuntu.
 - Running, healthy FluxPort container.
 - HTTPS health/login and portfolio routes return 200.
-- Dashboard login succeeds; unauthenticated dashboard traffic redirects to login.
+- The initial protected deployment validated login; the current public demo opens without authentication.
 - Authenticated API requests and a nested JSON-to-YAML round-trip succeed.
 - Strong CSP, DENY framing and Secure cookies are present.
 - English/German portfolio card/detail page, screenshot loading and mobile layouts work in Chromium.
