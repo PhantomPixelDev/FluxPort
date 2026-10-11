@@ -19,6 +19,9 @@ type PipelineCard struct {
 	Parameters         PipelineParameters
 }
 type PipelinePage struct {
+	Cleanup        PipelineParameters
+	BeforeHeaders  []string
+	BeforeCells    [][]string
 	Schedule       collections.Schedule
 	ValidationJSON string
 	Revisions      []collections.PipelineRevision
@@ -60,9 +63,17 @@ func decodePipelineSteps(values [][]byte) ([]collections.PipelineStep, error) {
 }
 func (s *Server) pipelines(c fiber.Ctx) error {
 	p := s.base(c, "Pipelines", "pipelines")
-	pp := &PipelinePage{Definition: collections.Pipeline{Version: 1}, Through: -1}
+	pp := &PipelinePage{Definition: collections.Pipeline{Version: 1}, Through: -1, Cleanup: PipelineParameters{Kind: "deduplicate", Direction: "asc"}}
 	p.Pipeline = pp
 	var err error
+	workspace := c.Params("id") != ""
+	if workspace {
+		p.Collection, err = s.Service.Get(c.Params("id"))
+		if err != nil {
+			return err
+		}
+		p.Title, p.Active, p.Tab = p.Collection.Name, "collections", "changes"
+	}
 	pp.Saved, err = s.Service.Pipelines()
 	if err != nil {
 		return err
@@ -72,20 +83,32 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		if err != nil {
 			return fiber.NewError(404, "Pipeline not found.")
 		}
+		if workspace && pp.Definition.Source != p.Collection.ID {
+			return fiber.NewError(404, "Saved steps not found for this dataset")
+		}
 	}
 	pp.SourceQuery = c.Query("q")
 	if c.Query("collection") != "" {
 		pp.Definition.Source = c.Query("collection")
 	}
 	if c.Method() == "POST" {
+		if workspace {
+			pp.Cleanup = PipelineParameters{Kind: c.FormValue("cleanup", "deduplicate"), Field: c.FormValue("field"), To: c.FormValue("new_name"), Value: c.FormValue("fill_value"), Direction: c.FormValue("direction", "asc")}
+		}
 		pp.ValidationJSON = c.FormValue("validation", "[]")
 		pp.ImportText = c.FormValue("definition")
 		pp.Definition.Name = strings.TrimSpace(c.FormValue("name"))
 		pp.Definition.Source = c.FormValue("source")
+		if workspace {
+			pp.Definition.Source = p.Collection.ID
+		}
 		pp.Definition.Revision, _ = strconv.Atoi(c.FormValue("revision"))
 		pp.SourceQuery = c.FormValue("q")
 		posted := c.Request().PostArgs().PeekMulti("steps")
 		pp.Definition.Steps, err = decodePipelineSteps(posted)
+		if err == nil && workspace {
+			pp.Definition.Steps, err = adjustCleanup(c, pp.Definition.Steps)
+		}
 		if err == nil {
 			text := c.FormValue("validation", "[]")
 			var rules []quality.Rule
@@ -143,11 +166,28 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 					return c.Send(b)
 				}
 			case "save", "run":
-				pp.Definition, err = s.Service.SavePipeline(pp.Definition)
-				if err == nil && c.FormValue("action") == "run" {
-					_, err = s.Service.PipelineJob(pp.Definition, c.FormValue("format", "json"))
+				if workspace {
+					for _, recipe := range pp.Saved {
+						if recipe.Name == pp.Definition.Name && recipe.Source != p.Collection.ID {
+							err = fmt.Errorf("That name is used by another dataset. Choose a different name for these steps")
+							break
+						}
+					}
 				}
 				if err == nil {
+					pp.Definition, err = s.Service.SavePipeline(pp.Definition)
+				}
+				if err == nil && c.FormValue("action") == "run" {
+					var job jobs.Job
+					job, err = s.Service.PipelineJob(pp.Definition, c.FormValue("format", "json"))
+					if err == nil && workspace {
+						return c.Redirect().Status(303).To("/collections/" + p.Collection.ID + "?tab=downloads&steps=" + pp.Definition.ID + "&download_job=" + job.ID + "#download")
+					}
+				}
+				if err == nil {
+					if workspace {
+						return c.Redirect().Status(303).To("/collections/" + p.Collection.ID + "/changes?saved=" + pp.Definition.ID)
+					}
 					suffix := ""
 					if c.FormValue("action") == "run" {
 						suffix = "#activity"
@@ -181,6 +221,26 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		if err != nil {
 			p.Message = err.Error()
 			c.Status(422)
+		}
+	}
+	if workspace {
+		pp.Definition.Source = p.Collection.ID
+		if pp.Definition.Name == "" {
+			pp.Definition.Name = defaultCleanupName(p.Collection.Name)
+		}
+		filtered := []collections.Pipeline{}
+		for _, recipe := range pp.Saved {
+			if recipe.Source == p.Collection.ID {
+				filtered = append(filtered, recipe)
+			}
+		}
+		pp.Saved = filtered
+		p.Fields, _ = s.Service.Fields(p.Collection)
+		if pp.HasPreview {
+			rows, _, e := s.Service.Page(c.Context(), p.Collection, 1, 20, false, "")
+			if e == nil {
+				pp.BeforeHeaders, pp.BeforeCells = tableRows(rows, collections.Schema(rows))
+			}
 		}
 	}
 	p.Collections, pp.AvailableCount, err = s.Service.List(pp.SourceQuery, 1, 100)
@@ -231,6 +291,13 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
+	}
+	if workspace {
+		return c.Render("pages/changes", p, "layouts/base")
+	}
+	if c.Method() == "GET" && pp.Definition.Source == "" {
+		p.Title = "Saved steps"
+		return c.Render("pages/saved-steps", p, "layouts/base")
 	}
 	return c.Render("pages/pipelines", p, "layouts/base")
 }

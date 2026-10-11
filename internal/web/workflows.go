@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fluxport/internal/collections"
 	"fluxport/internal/conversion"
+	"fluxport/internal/jobs"
 	"fmt"
 	"github.com/gofiber/fiber/v3"
 	"io"
@@ -348,9 +349,21 @@ func (s *Server) exportJob(c fiber.Ctx) error {
 		return err
 	}
 	if c.FormValue("format") == "original" && c.FormValue("download_view") == "compact" {
+		if c.FormValue("pipeline") != "" {
+			return s.downloadError(c, fmt.Errorf("Choose an output format to download saved changes"))
+		}
 		return s.originalDownload(c, col)
 	}
-	job, err := s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"})
+	var job jobs.Job
+	if id := c.FormValue("pipeline"); id != "" && c.FormValue("download_view") == "compact" {
+		recipe, e := s.Service.GetPipeline(id)
+		if e != nil || recipe.Source != col.ID {
+			return s.downloadError(c, fmt.Errorf("Saved steps not found for this dataset"))
+		}
+		job, err = s.Service.PipelineJob(recipe, c.FormValue("format", "json"))
+	} else {
+		job, err = s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"})
+	}
 	if err != nil {
 		return s.downloadError(c, err)
 	}

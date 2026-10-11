@@ -50,12 +50,10 @@ func decodeQuery(text string) (collections.Query, error) {
 	return q, collections.ValidateQuery(q)
 }
 func (s *Server) workbench(c fiber.Ctx) error {
-	col, err := s.Service.Get(c.Params("id"))
-	if err != nil {
-		return err
-	}
-	p := s.base(c, "Data explorer", "collections")
-	p.Collection = col
+	return s.detail(c)
+}
+func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection) error {
+	var err error
 	w := &Workbench{ColumnsJSON: "null"}
 	p.Workbench = w
 	w.Views, err = s.Service.Views(col.ID)
@@ -69,6 +67,19 @@ func (s *Server) workbench(c fiber.Ctx) error {
 	w.Query, err = decodeQuery(query)
 	if err != nil {
 		return fiber.NewError(400, err.Error())
+	}
+	if query == "" {
+		w.Query.Limit = 20
+		w.Query.Search = c.Query("q")
+		if n, e := strconv.Atoi(c.Query("limit")); e == nil && (n == 20 || n == 50 || n == 100) {
+			w.Query.Limit = n
+		}
+	}
+	if c.Request().URI().QueryArgs().Has("q") {
+		w.Query.Search = c.Query("q")
+	}
+	if n, e := strconv.Atoi(c.Query("limit")); e == nil && (n == 20 || n == 50 || n == 100) {
+		w.Query.Limit = n
 	}
 	if id := c.Query("view"); id != "" {
 		found := false
@@ -149,7 +160,7 @@ func (s *Server) workbench(c fiber.Ctx) error {
 		label := map[string]string{"eq": "equals", "neq": "does not equal", "contains": "contains", "starts": "starts with", "gt": "greater than", "gte": "at least", "lt": "less than", "lte": "at most", "null": "missing / null", "notnull": "has a value"}[filter.Op]
 		w.Filters = append(w.Filters, SheetFilter{Field: filter.Field, Op: filter.Op, Value: string(value), Label: label})
 	}
-	return c.Render("pages/workbench", p, "layouts/base")
+	return nil
 }
 func (s *Server) workbenchStatus(c fiber.Ctx) error {
 	col, err := s.Service.Get(c.Params("id"))
@@ -221,8 +232,12 @@ func (s *Server) exportWorkbench(c fiber.Ctx) error {
 	if err != nil {
 		return s.workbenchFailure(c, err)
 	}
-	if _, err = s.Service.ExportQueryJob(c.Params("id"), c.FormValue("generation"), c.FormValue("format"), q); err != nil {
+	job, err := s.Service.ExportQueryJob(c.Params("id"), c.FormValue("generation"), c.FormValue("format"), q)
+	if err != nil {
 		return s.workbenchFailure(c, err)
+	}
+	if c.FormValue("download_view") == "compact" {
+		return s.compactDownload(c, job)
 	}
 	return c.Redirect().Status(303).To("/converter?collection=" + c.Params("id") + "#activity")
 }

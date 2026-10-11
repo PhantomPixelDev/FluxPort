@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"mime"
 	"os"
@@ -12,6 +13,27 @@ import (
 	"fluxport/internal/jobs"
 	"github.com/gofiber/fiber/v3"
 )
+
+func downloadJobFormat(job jobs.Job) string {
+	var payload struct{ To string }
+	if json.Unmarshal([]byte(job.Payload), &payload) != nil {
+		return ""
+	}
+	for _, format := range collections.DatasetFormats() {
+		if format == payload.To {
+			return format
+		}
+	}
+	return ""
+}
+
+func downloadJobSteps(job jobs.Job) string {
+	var payload struct{ Pipeline *struct{ ID string } }
+	if json.Unmarshal([]byte(job.Payload), &payload) == nil && payload.Pipeline != nil {
+		return payload.Pipeline.ID
+	}
+	return ""
+}
 
 func downloadFormatName(f string) string {
 	switch f {
@@ -70,7 +92,7 @@ func (s *Server) originalDownload(c fiber.Ctx, col collections.Collection) error
 
 func (s *Server) compactDownload(c fiber.Ctx, job jobs.Job) error {
 	if c.Get("HX-Request") != "true" {
-		return c.Redirect().Status(303).To(fmt.Sprintf("/collections/%s?download_job=%s#download", job.Resource, job.ID))
+		return c.Redirect().Status(303).To(fmt.Sprintf("/collections/%s?tab=downloads&download_job=%s#download", job.Resource, job.ID))
 	}
 	p := s.base(c, "Download", "collections")
 	p.Jobs = []jobs.Job{job}

@@ -27,7 +27,7 @@ Input filename comes before flags. Output defaults to stdout. Conversion works w
 
 - **Overview:** collection, record, endpoint, and source-size totals.
 - **Collections:** expandable multi-file imports and drag-and-drop, editable names, per-file jobs, refresh/retry and endpoint controls. Remove preserves the source and persistently excludes it from discovery; Excluded files provides Restore. Delete source file is separate and explicitly confirmed.
-- **Collection details:** paginated object tables and Raw JSON tabs, one Download chooser, compact processing status and collapsed management. More tools opens Quality, Schema, SQL and API configuration; existing direct links still work.
+- **Dataset workspace:** Data combines collection preview and Explorer, including filters, sorting, saved views and optional source editing. Changes offers common cleanup controls, before/after previews, undo and reusable saved steps. Downloads offers originals, converted files and saved cleanup results. More tools opens Raw JSON, Quality, Schema, SQL and API configuration. Existing direct links and workbench endpoints still work.
 - **Format converter:** raw and collapsible tree previews, uploaded-input previews, conversion reports, optional round-trip checks, CSV column controls, actionable errors, clipboard copy, and downloads. See [converter inspection](converter-inspection.md).
 - **API explorer:** same-origin requests, method, endpoint, query parameters, headers, JSON request body, status, response preview, and cURL copy. API keys are held only in the page, never browser storage. The preview is capped at 1 MB.
 - **Settings:** persistent watcher toggle and instance configuration information. No polling.

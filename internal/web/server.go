@@ -58,6 +58,7 @@ type Page struct {
 	Jobs                                                                                   []jobs.Job
 	DownloadOpen                                                                           bool
 	DownloadError                                                                          string
+	DownloadFormat                                                                         string
 	Excluded                                                                               []collections.Excluded
 	Headers                                                                                []string
 	Cells                                                                                  [][]string
@@ -99,6 +100,16 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	engine.AddFunc("upper", strings.ToUpper)
 	engine.AddFunc("formatName", downloadFormatName)
 	engine.AddFunc("formatNote", downloadFormatNote)
+	engine.AddFunc("jobFormat", func(j jobs.Job) string {
+		f := downloadJobFormat(j)
+		if f == "" {
+			return ""
+		}
+		return downloadFormatName(f)
+	})
+	engine.AddFunc("stepName", cleanupStepName)
+	engine.AddFunc("stepJSON", cleanupStepJSON)
+	engine.AddFunc("rowNumber", func(n int64) int64 { return n + 1 })
 	engine.AddFunc("has", func(s string) bool { return s != "" })
 	if err = engine.Load(); err != nil {
 		return nil, err
@@ -147,7 +158,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/login", func(c fiber.Ctx) error { return server.render(c, "login", "Sign in", nil) })
 	app.Post("/login", limiter.New(limiter.Config{Max: 5, Expiration: time.Minute}), a.Login)
 	app.Post("/logout", a.Logout)
-	app.Get("/", server.overview)
+	app.Get("/", server.collectionList)
+	app.Get("/overview", server.overview)
 	app.Get("/collections", server.collectionList)
 	app.Post("/collections/import", server.importFile)
 	app.Post("/collections/demo", server.demo)
@@ -163,6 +175,9 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/export", server.exportJob)
 	app.Get("/collections/:id", server.detail)
 	app.Get("/collections/:id/workbench", server.workbench)
+	app.Get("/collections/:id/changes", server.datasetChanges)
+	app.Post("/collections/:id/changes", server.datasetChanges)
+	app.Post("/collections/:id/workbench/enable", server.enableDatasetEditing)
 	app.Get("/collections/:id/quality", server.qualityPage)
 	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
@@ -204,7 +219,7 @@ func (s *Server) base(c fiber.Ctx, title, active string) Page {
 // while retaining normal asset caching between releases.
 var frontendVersion = func() string {
 	h := sha256.New()
-	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/css/pipelines.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js", "static/js/pipelines.js"} {
+	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/css/pipelines.css", "static/css/collection.css", "static/css/dataset-workspace.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js", "static/js/pipelines.js", "static/js/downloads.js", "static/js/dataset-workspace.js"} {
 		b, _ := ui.Files.ReadFile(name)
 		h.Write(b)
 	}
@@ -266,7 +281,7 @@ func (s *Server) static(c fiber.Ctx) error {
 	return c.Send(b)
 }
 func (s *Server) listData(c fiber.Ctx) (Page, error) {
-	p := s.base(c, "Collections", "collections")
+	p := s.base(c, "Your datasets", "collections")
 	p.Query = c.Query("q")
 	if c.Method() == "POST" {
 		p.Query = c.FormValue("q")
@@ -349,6 +364,7 @@ func (s *Server) detail(c fiber.Ctx) error {
 			return fiber.NewError(404, "Download not found")
 		}
 		p.Jobs = []jobs.Job{job}
+		p.DownloadFormat = downloadJobFormat(job)
 		p.DownloadOpen = true
 	}
 	p.Query = strings.TrimSpace(c.Query("q"))
@@ -362,9 +378,46 @@ func (s *Server) detail(c fiber.Ctx) error {
 	}
 	p.Tab = c.Query("tab", "preview")
 	switch p.Tab {
-	case "preview", "raw", "schema", "configuration":
+	case "preview", "raw", "schema", "configuration", "downloads":
 	default:
 		p.Tab = "preview"
+	}
+	if p.Tab == "preview" {
+		if err := s.fillWorkbench(c, &p, col); err != nil {
+			return err
+		}
+		if c.Get("HX-Request") == "true" {
+			p.Fragment = true
+			return c.Render("partials/detail", p)
+		}
+		return c.Render("pages/detail", p, "layouts/base")
+	}
+	if p.Tab == "downloads" {
+		p.Pipeline = &PipelinePage{}
+		all, e := s.Service.Pipelines()
+		if e != nil {
+			return e
+		}
+		for _, recipe := range all {
+			if recipe.Source == col.ID {
+				p.Pipeline.Saved = append(p.Pipeline.Saved, recipe)
+			}
+		}
+		id := c.Query("steps")
+		if id == "" && len(p.Jobs) > 0 {
+			id = downloadJobSteps(p.Jobs[0])
+		}
+		if id != "" {
+			recipe, e := s.Service.GetPipeline(id)
+			if e != nil || recipe.Source != col.ID {
+				if len(p.Jobs) > 0 {
+					return c.Render("pages/detail", p, "layouts/base")
+				}
+				return fiber.NewError(404, "Saved steps not found for this dataset")
+			}
+			p.Pipeline.Definition = recipe
+		}
+		return c.Render("pages/detail", p, "layouts/base")
 	}
 	p.Page = 1
 	if n, e := strconv.Atoi(c.Query("page")); e == nil && n > 0 && n <= 1000000000 {

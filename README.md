@@ -6,7 +6,7 @@ FluxPort is a self-hosted data workspace for JSON, CSV, YAML, XML, NDJSON, TOML,
 
 [Download](https://github.com/PhantomPixelDev/FluxPort/releases/latest) · [Documentation](docs/reference.md) · [Hosted instance](https://fluxport.ppxl.dev) · [Report an issue](https://github.com/PhantomPixelDev/FluxPort/issues)
 
-![FluxPort in light mode, converting nested JSON to YAML with readable input and output panels](docs/images/converter.png)
+![FluxPort in light mode, with one dataset workspace for Data, Changes and Downloads](docs/images/workspace.png)
 
 ## Why FluxPort?
 
@@ -39,7 +39,15 @@ Download a Windows or Linux amd64 executable from [Releases](https://github.com/
 
 Open **http://127.0.0.1:8080**. Import a file in **Collections**, or click **Load demo data** for six small synthetic examples. Normal installations load examples only when requested. The public demo preloads JSON, CSV, YAML, XML, NDJSON and TOML examples and its API needs no bearer token.
 
-Collection pages put the data preview first. Use **Edit data** to open Explorer, **Download** for the exact original file or any of the eight output formats, and **More tools** for Quality, Schema, SQL and API settings. Converted downloads show their progress and retry controls in the chooser. Without JavaScript, the same form opens a status page with a manual refresh button. Original files remain downloadable while processing.
+Start in **Your datasets** with **Add files**, or choose **Try an example**. Each dataset has one workspace:
+
+1. **Data:** search, filter, sort and inspect rows. Source editing is optional and explicitly enabled.
+2. **Changes:** remove duplicates, trim spaces, fill empty values, rename or remove columns, and sort. Compare before/after previews and undo steps. Cleanup preserves the source file.
+3. **Downloads:** save the exact original, export into any of eight formats, or download the result of saved changes. Progress and retry stay beside the download controls.
+
+Choose **Save these steps** to reuse cleanup later. SQL, API publishing, schema and raw JSON remain under advanced tools. Cleanup and downloads also work without JavaScript; asynchronous downloads then offer a manual refresh button. Original files remain downloadable while processing.
+
+[Walk through the dataset workspace →](docs/dataset-workspace.md)
 
 Collection previews support full-dataset search, 20/50/100-row pages, page jumps and remembered visible columns. In **Convert data**, choose **Use an existing collection** to convert its complete source without uploading it again. Nested documents keep their original root; large conversions run in File activity. Creating a conversion snapshot temporarily needs additional disk space.
 

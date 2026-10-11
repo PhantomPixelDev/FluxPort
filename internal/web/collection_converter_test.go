@@ -134,7 +134,7 @@ func TestReadablePreviewSearchAndPageSize(t *testing.T) {
 		t.Fatal(err)
 	}
 	resp, body := call(t, app, "GET", "/collections/"+col.ID+"?q=match&limit=50&page=2", "", map[string]string{"HX-Request": "true"}, nil)
-	if resp.StatusCode != 200 || !strings.Contains(body, "65 records · page 2 of 2") || strings.Count(body, `class="preview-cell"`) != 30 || !strings.Contains(body, "q=match") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "65 matching records") || !strings.Contains(body,"Page 2 of 2") || strings.Count(body, `<td data-sheet-cell=`) != 30 || !strings.Contains(body, `value="match"`) {
 		t.Fatal(resp.StatusCode, body)
 	}
 	resp, body = call(t, app, "GET", "/collections/"+col.ID+"?q=absent", "", nil, nil)

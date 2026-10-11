@@ -21,6 +21,14 @@
   }
  }
  document.querySelectorAll('[data-export-format],#collection-download-format').forEach(select=>{note(select);select.addEventListener('change',()=>note(select));});
+ const steps=form?.querySelector('[data-download-steps]');
+ function selectedSteps(){
+  if(!steps)return;
+  const select=form.elements.format,original=select.querySelector('[value=original]');
+  original.disabled=!!steps.value;
+  if(steps.value&&select.value==='original'){select.value='json';note(select);}
+ }
+ steps?.addEventListener('change',selectedSteps);selectedSteps();
  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.collection-actions>details[open]').forEach(d=>{d.open=false;d.querySelector('summary')?.focus();});});
  document.addEventListener('click',e=>{document.querySelectorAll('.collection-actions>details[open]').forEach(d=>{if(!d.contains(e.target))d.open=false;});});
  document.querySelectorAll('.collection-actions>details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)document.querySelectorAll('.collection-actions>details').forEach(other=>{if(other!==d)other.open=false;});}));

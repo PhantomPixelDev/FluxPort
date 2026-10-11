@@ -11,36 +11,29 @@
 	<link rel="stylesheet" href="/static/css/pipelines.css?v={{.AssetVersion}}">
 	<link rel="stylesheet" href="/static/css/quality.css?v={{.AssetVersion}}">
   <link rel="stylesheet" href="/static/css/collection.css?v={{.AssetVersion}}">
+  <link rel="stylesheet" href="/static/css/dataset-workspace.css?v={{.AssetVersion}}">
   <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/app.js?v={{.AssetVersion}}" defer></script>
   <script src="/static/js/workspace.js?v={{.AssetVersion}}" defer></script>
 	<script src="/static/js/workbench.js?v={{.AssetVersion}}" defer></script>
 	<script src="/static/js/pipelines.js?v={{.AssetVersion}}" defer></script>
   <script src="/static/js/downloads.js?v={{.AssetVersion}}" defer></script>
+  <script src="/static/js/dataset-workspace.js?v={{.AssetVersion}}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <aside class="sidebar" id="sidebar" aria-label="Main navigation">
     <button type="button" class="icon-button mobile-close" id="menu-close" aria-label="Close navigation">×</button>
     <a class="brand" href="/"><img src="/static/icons/logo.svg" alt="" width="30" height="30">FluxPort</a>
-    <div class="workspace"><span class="workspace-icon">F</span><div>Personal workspace<small>Self-hosted instance</small></div><span class="status-dot"></span></div>
     <div class="nav-label">WORKSPACE</div>
-    <nav>
-      <a href="/" {{if eq .Active "overview"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#overview"/></svg>Overview</a>
-      <a href="/collections" {{if eq .Active "collections"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#collections"/></svg>Collections</a>
-      <a href="/workflow" {{if eq .Active "workflow"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Data workflow</a>
-	  <a href="/pipelines" {{if eq .Active "pipelines"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Pipelines</a>
-      <a href="/converter" {{if eq .Active "converter"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Format converter</a>
-      <a href="/explorer" {{if eq .Active "explorer"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>API explorer</a>
-	  <a href="/sql" {{if eq .Active "sql"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>SQL playground</a>
-      <a href="/settings" {{if eq .Active "settings"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#settings"/></svg>Settings</a>
-    </nav>
+    <nav><a href="/collections" {{if eq .Active "collections"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#collections"/></svg>Datasets</a><a href="/pipelines" {{if eq .Active "pipelines"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Saved steps</a><a href="/settings" {{if eq .Active "settings"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#settings"/></svg>Settings</a></nav>
+    <details class="advanced-navigation" {{if or (eq .Active "sql") (eq .Active "explorer") (eq .Active "converter") (eq .Active "overview") (eq .Active "workflow")}}open{{end}}><summary>Advanced tools</summary><nav><a href="/converter" {{if eq .Active "converter"}}aria-current="page"{{end}}>Quick conversion</a><a href="/sql" {{if eq .Active "sql"}}aria-current="page"{{end}}>SQL queries</a><a href="/explorer" {{if eq .Active "explorer"}}aria-current="page"{{end}}>API explorer</a><a href="/overview" {{if eq .Active "overview"}}aria-current="page"{{end}}>System overview</a><a href="/workflow" {{if eq .Active "workflow"}}aria-current="page"{{end}}>Workflow guide</a></nav></details>
     <div class="sidebar-bottom"><a href="/api/openapi.json" class="subtle-link">OpenAPI specification ↗</a></div>
   </aside>
   <div class="app-shell">
     <header class="topbar"><div class="breadcrumbs"><button type="button" class="icon-button mobile-menu" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">☰</button><span>Workspace</span><span class="divider">/</span><strong>{{.Title}}</strong></div><div class="topbar-actions"><button type="button" id="theme-toggle" class="icon-button" aria-label="Switch color theme"><svg><use href="/static/icons/icons.svg#sun"/></svg></button>{{if .Authenticated}}<form action="/logout" method="post"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button small ghost">Sign out</button></form>{{end}}</div></header>
     <main id="main"><div id="feedback" role="status" aria-live="polite"></div>{{embed}}</main>
-    <footer class="footer"><span>FluxPort <span class="muted">/</span> Your files, ready to use</span><a href="/workflow">Import → Inspect → Convert → Download</a></footer>
+    <footer class="footer"><span>FluxPort <span class="muted">/</span> Your files, ready to use</span><a href="/collections">Open a file → Make changes → Download</a></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
