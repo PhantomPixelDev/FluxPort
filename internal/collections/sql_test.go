@@ -56,6 +56,21 @@ func TestSQLStatementValidation(t *testing.T) {
 	}
 }
 
+func TestSQLEngineSelection(t *testing.T) {
+	s := testService(t)
+	c, err := s.Import("rows.json", strings.NewReader(`[{"id":1}]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := s.SQLWithEngine(context.Background(), []string{c.ID}, fmt.Sprintf(`SELECT count(*) AS n FROM "c_%s"`, c.ID), "auto")
+	if err != nil || result.Engine != "SQLite" || len(result.Rows) != 1 {
+		t.Fatal(result, err)
+	}
+	if _, err = s.SQLWithEngine(context.Background(), []string{c.ID}, `SELECT 1`, "unknown"); err == nil {
+		t.Fatal("unknown engine was accepted")
+	}
+}
+
 func TestSQLLowDiskAndSavedQueryPersistence(t *testing.T) {
 	s := testService(t)
 	c, err := s.Import("rows.json", strings.NewReader(`[{"id":1}]`))

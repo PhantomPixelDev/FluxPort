@@ -59,7 +59,9 @@ func (s *Service) Views(collection string) ([]View, error) {
 		if err = rows.Scan(&v.ID, &v.CollectionID, &v.Name, &q, &columns, &v.Updated); err != nil {
 			return nil, err
 		}
-		if err = json.Unmarshal([]byte(q), &v.Query); err != nil {
+		decoder := json.NewDecoder(strings.NewReader(q))
+		decoder.UseNumber()
+		if err = decoder.Decode(&v.Query); err != nil {
 			return nil, err
 		}
 		if err = json.Unmarshal([]byte(columns), &v.Columns); err != nil {

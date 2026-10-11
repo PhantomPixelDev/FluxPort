@@ -74,6 +74,22 @@ func (s *Server) convertCollection(c fiber.Ctx, id, to string) error {
 	if !conversion.Supported(to) {
 		return fiber.NewError(422, "Choose a supported output format.")
 	}
+	selected, err := s.Service.Get(id)
+	if err != nil {
+		return err
+	}
+	if selected.Format == "xlsx" || selected.Format == "parquet" {
+		if _, err = s.Service.ExportJobWithOptions(id, to, converterOptions(c)); err != nil {
+			return fiber.NewError(422, err.Error())
+		}
+		if c.Get("HX-Request") != "true" {
+			return c.Redirect().Status(303).To("/converter?collection=" + id + "#activity")
+		}
+		c.Set("HX-Trigger", "jobQueued")
+		p := s.base(c, "Convert data", "converter")
+		p.Message = "Binary dataset conversion queued. Download the result in File activity. Excel cells retain their imported text values; Parquet dates use text values."
+		return c.Render("partials/queued", p)
+	}
 	path, col, err := s.Service.ConversionInput(id)
 	if err != nil {
 		if errors.Is(err, collections.ErrPending) {

@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func (a *API) runSQL(c fiber.Ctx, ids []string, text string) error {
+func (a *API) runSQL(c fiber.Ctx, ids []string, text, engine string) error {
 	for _, id := range ids {
 		col, err := a.Service.Get(id)
 		if err != nil {
@@ -19,7 +19,7 @@ func (a *API) runSQL(c fiber.Ctx, ids []string, text string) error {
 			return fiber.NewError(422, "SQL API requires collections without response transformations.")
 		}
 	}
-	result, err := a.Service.SQL(c.Context(), ids, text)
+	result, err := a.Service.SQLWithEngine(c.Context(), ids, text, engine)
 	if err != nil {
 		return indexedError(c, err)
 	}
@@ -29,16 +29,17 @@ func (a *API) sql(c fiber.Ctx) error {
 	var body struct {
 		Collections []string `json:"collections"`
 		SQL         string   `json:"sql"`
+		Engine      string   `json:"engine"`
 	}
 	if err := decodeRequest(c, &body); err != nil {
 		return err
 	}
-	return a.runSQL(c, body.Collections, body.SQL)
+	return a.runSQL(c, body.Collections, body.SQL, body.Engine)
 }
 func (a *API) savedSQL(c fiber.Ctx) error {
 	q, err := a.Service.GetSQL(c.Params("query"))
 	if err != nil || !q.Published {
 		return fiber.NewError(404, "Published query not found.")
 	}
-	return a.runSQL(c, q.Collections, q.SQL)
+	return a.runSQL(c, q.Collections, q.SQL, "auto")
 }

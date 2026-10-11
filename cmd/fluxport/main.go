@@ -33,10 +33,18 @@ const help = `FluxPort — files into APIs, in one executable.
 Usage:
   fluxport --help
   fluxport version
+  fluxport healthcheck [--url http://127.0.0.1:8080/healthz]
   fluxport serve
   fluxport convert input.json --to xml [--from json] [--output output.xml]
     CSV options: --delimiter auto|comma|semicolon|tab|pipe --infer-types --spreadsheet-safe
   fluxport fixtures --suite smoke|integration|large|stress --out <directory> --seed 42 [--rows N | --bytes N]
+  fluxport import input.xlsx
+  fluxport inspect <collection-id> [--limit 10000]
+  fluxport validate <collection-id> [--rules rules.json] [--limit 10000]
+  fluxport query --collections <id,id> --sql "SELECT * FROM c_<id>" [--engine auto|native|duckdb]
+  fluxport pipeline list
+  fluxport pipeline run <pipeline-id> --format parquet --output result.parquet
+  fluxport export <collection-id> --format xlsx --output result.xlsx
 
 Formats: json, csv, yaml, xml, ndjson, toml
 Configuration: FLUXPORT_CONFIG (optional JSON file), FLUXPORT_ADDRESS,
@@ -67,8 +75,12 @@ func run(args []string) error {
 		return serve()
 	case "fixtures":
 		return fixtureCommand(args[1:])
+	case "healthcheck":
+		return healthcheckCommand(args[1:])
 	case "convert":
 		return convert(args[1:])
+	case "import", "inspect", "validate", "query", "pipeline", "export":
+		return dataCommand(args[0], args[1:])
 	default:
 		return fmt.Errorf("unknown command %q; see fluxport --help", args[0])
 	}

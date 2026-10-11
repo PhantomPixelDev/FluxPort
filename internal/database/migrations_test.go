@@ -28,7 +28,7 @@ func TestVersionOnePreservesCollection(t *testing.T) {
 		t.Fatal(e)
 	}
 	db.QueryRow(`PRAGMA user_version`).Scan(&version)
-	if id != "existing-id" || rules != `{"select":["id"]}` || status != "pending" || version != 5 {
+	if id != "existing-id" || rules != `{"select":["id"]}` || status != "pending" || version != 9 {
 		t.Fatal(id, rules, status, version)
 	}
 	if e = migrate(db); e != nil {

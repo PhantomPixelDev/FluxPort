@@ -9,7 +9,7 @@ import (
 	"fluxport/internal/database"
 )
 
-func testService(t *testing.T) *Service {
+func testService(t testing.TB) *Service {
 	t.Helper()
 	root := t.TempDir()
 	db, err := database.Open(filepath.Join(root, "state"))

@@ -2,7 +2,7 @@
 
 **Turn data files into REST APIs. Convert formats with confidence.**
 
-FluxPort is a small, self-hosted workspace for JSON, CSV, YAML, XML, NDJSON and TOML. Import files, browse records, expose an API, and inspect conversions—all from one executable.
+FluxPort is a self-hosted data workspace for JSON, CSV, YAML, XML, NDJSON, TOML, Excel and Parquet. Import files, inspect their quality, clean records with reusable pipelines, expose an API, and prepare downloads—all from one executable.
 
 [Download](https://github.com/PhantomPixelDev/FluxPort/releases/latest) · [Documentation](docs/reference.md) · [Hosted instance](https://fluxport.ppxl.dev) · [Report an issue](https://github.com/PhantomPixelDev/FluxPort/issues)
 
@@ -11,7 +11,9 @@ FluxPort is a small, self-hosted workspace for JSON, CSV, YAML, XML, NDJSON and 
 ## Why FluxPort?
 
 - **Files stay files.** SQLite stores metadata and disposable indexes; your source files remain accessible.
-- **Six formats, one workspace.** JSON, CSV, YAML, XML, NDJSON and TOML.
+- **Eight dataset formats.** Six text converters plus Excel and Parquet dataset import/export, with explicit fidelity limitations.
+- **Data quality.** Bounded column profiling, saved validation rules and row-specific error reports. Pipeline output validation prevents publishing invalid downloads.
+- **Reusable pipelines.** Ordered cleanup, exact decimal arithmetic, Unicode text operations, joins, aggregates, recipe revisions, undo/redo and interval schedules.
 - **Practical APIs.** Pagination, search, schema inspection, transformations, bearer authentication and optional CRUD for small collections.
 - **Data explorer.** Typed filters, multi-column sorting, saved views, resizable columns, stable record identities, inline edits, atomic batch edits and filtered downloads.
 - **SQL playground.** Read-only joins and aggregates on isolated collection indexes, query history, saved queries, result exports and published REST queries.
@@ -19,6 +21,8 @@ FluxPort is a small, self-hosted workspace for JSON, CSV, YAML, XML, NDJSON and 
 - **CSV controls.** Delimiter detection, optional type inference, per-column rules, nested JSON cells and spreadsheet-safe downloads.
 - **Large-file workflows.** Streaming JSON arrays, CSV and NDJSON, disk-backed pagination, background jobs, progress, cancellation and retry.
 - **Simple to run.** Go + embedded HTML/HTMX + SQLite. No Node.js runtime, frontend build step, CDN or external database.
+
+See the [processing workspace guide](docs/platform.md) for examples, binary-format mappings, CLI commands, limits and unfinished roadmap items. Parquet exports currently preserve exact records in a JSON column; Excel uses text cells. These choices are shown before download.
 
 ## Get started
 
@@ -49,6 +53,8 @@ Requires Go 1.26 or newer to build. The executable needs no Go installation.
     ./fluxport serve
 
 On Windows, build with <code>-o fluxport.exe</code>.
+
+The standard build includes DuckDB for large analytical SQL queries. Automatic engine selection keeps simple and small queries on SQLite; see [DuckDB processing](docs/duckdb.md) for platform requirements, engine selection, limits, and configuration. Building requires a C compiler for DuckDB's Go driver.
 
 ## Convert without starting a server
 

@@ -34,8 +34,8 @@ func (s *Service) Update(id string, enabled, crud bool, rules string) error {
 		if err != nil {
 			return err
 		}
-		if c.Size > s.MaxBytes {
-			return fmt.Errorf("large collections are read-only; CRUD is limited to %d bytes", s.MaxBytes)
+		if c.ReadOnly {
+			return fmt.Errorf("large and binary collections are read-only; CRUD is limited to text datasets under %d bytes", s.MaxBytes)
 		}
 	}
 	if _, err := transformations.Parse(rules); err != nil {

@@ -44,12 +44,16 @@ func TestWorkbenchViewsEditsAndSQLRoutes(t *testing.T) {
 		t.Fatal("stale edit not rejected", resp.StatusCode)
 	}
 	resp, body = call(t, app, "GET", "/sql", "", nil, cookies)
-	if resp.StatusCode != 200 || !strings.Contains(body, "SQL playground") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "SQL playground") || !strings.Contains(body, `name="engine"`) || !strings.Contains(body, "Native SQLite") {
 		t.Fatal(resp.StatusCode, body)
 	}
-	form = url.Values{"csrf": {token}, "collections": {col.ID}, "sql": {"SELECT name FROM \"c_" + col.ID + "\" ORDER BY name"}, "action": {"run"}}
+	resp, body = call(t, app, "GET", "/sql?collection="+col.ID, "", nil, cookies)
+	if resp.StatusCode != 200 || !strings.Contains(body, `SELECT * FROM &#34;c_`+col.ID+`&#34; LIMIT 100`) || !strings.Contains(body, `value="`+col.ID+`" checked`) {
+		t.Fatal("collection SQL shortcut did not select its dataset", resp.StatusCode, body)
+	}
+	form = url.Values{"csrf": {token}, "collections": {col.ID}, "sql": {"SELECT name FROM \"c_" + col.ID + "\" ORDER BY name"}, "action": {"run"}, "engine": {"native"}}
 	resp, body = call(t, app, "POST", "/sql", form.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, cookies)
-	if resp.StatusCode != 200 || !strings.Contains(body, "Updated") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "Updated") || !strings.Contains(body, "SQLite ·") {
 		t.Fatal(resp.StatusCode, body)
 	}
 	form.Set("action", "save")

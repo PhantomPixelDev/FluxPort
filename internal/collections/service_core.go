@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ var ErrTooLarge = errors.New("file exceeds configured buffered document limit")
 var ErrPending = errors.New("collection is being indexed; retry shortly")
 
 type Collection struct {
+	FormatNotes string `json:"format_notes,omitempty"`
 	ID          string `json:"id"`
 	Path        string `json:"-"`
 	Name        string `json:"name"`
@@ -50,19 +52,26 @@ type lockEntry struct {
 	refs int
 }
 type Service struct {
-	DB          *sql.DB
-	Root        string
-	IndexDir    string
-	DownloadDir string
-	MaxBytes    int64
-	RecordBytes int64
-	StreamBytes int64
-	Reserve     uint64
-	Jobs        *jobs.Manager
-	DiskCheck   func(string, uint64) error
-	mu          sync.Mutex
-	locks       map[string]*lockEntry
-	readers     map[string]int
+	duckSlots         chan struct{}
+	scheduleCancel    context.CancelFunc
+	scheduleDone      chan struct{}
+	DB                *sql.DB
+	Root              string
+	IndexDir          string
+	DownloadDir       string
+	MaxBytes          int64
+	RecordBytes       int64
+	StreamBytes       int64
+	Reserve           uint64
+	DuckDBMemoryBytes int64
+	DuckDBTempBytes   uint64
+	DuckDBTimeout     time.Duration
+	DuckDBTempDir     string
+	Jobs              *jobs.Manager
+	DiskCheck         func(string, uint64) error
+	mu                sync.Mutex
+	locks             map[string]*lockEntry
+	readers           map[string]int
 }
 
 func New(db *sql.DB, root string, max int64) (*Service, error) {
@@ -83,7 +92,9 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 		return nil, err
 	}
 	state := filepath.Dir(dbPath)
-	s := &Service{DB: db, Root: resolved, IndexDir: filepath.Join(state, "indexes"), DownloadDir: filepath.Join(state, "downloads"), MaxBytes: max, RecordBytes: 1 << 20, Reserve: 256 << 20, locks: map[string]*lockEntry{}, DiskCheck: resources.Check}
+	s := &Service{DB: db, Root: resolved, IndexDir: filepath.Join(state, "indexes"), DownloadDir: filepath.Join(state, "downloads"), MaxBytes: max, RecordBytes: 1 << 20, Reserve: 256 << 20, DuckDBMemoryBytes: 512 << 20, DuckDBTempBytes: 4 << 30, DuckDBTimeout: 30 * time.Second, locks: map[string]*lockEntry{}, DiskCheck: resources.Check}
+	s.DuckDBTempDir = filepath.Join(state, "duckdb-tmp")
+	s.duckSlots = make(chan struct{}, min(2, runtime.GOMAXPROCS(0)))
 	for _, dir := range []string{s.IndexDir, s.DownloadDir} {
 		if err = os.MkdirAll(dir, 0700); err != nil {
 			return nil, err
@@ -95,12 +106,27 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	return s, nil
 }
 func (s *Service) Configure(c config.Config) {
+	if c.Workers > 0 {
+		s.duckSlots = make(chan struct{}, min(c.Workers, runtime.GOMAXPROCS(0)))
+	}
 	s.RecordBytes = c.MaxRecordBytes
 	if s.RecordBytes == 0 {
 		s.RecordBytes = 1 << 20
 	}
 	s.Reserve = c.MinFreeDiskBytes
 	s.StreamBytes = c.MaxStreamBytes
+	if c.DuckDBMemoryBytes > 0 {
+		s.DuckDBMemoryBytes = c.DuckDBMemoryBytes
+	}
+	if c.DuckDBTempBytes > 0 {
+		s.DuckDBTempBytes = c.DuckDBTempBytes
+	}
+	if c.DuckDBTimeoutSeconds > 0 {
+		s.DuckDBTimeout = time.Duration(c.DuckDBTimeoutSeconds) * time.Second
+	}
+	if c.DuckDBTempDir != "" {
+		s.DuckDBTempDir = c.DuckDBTempDir
+	}
 }
 func (s *Service) Start(ctx context.Context, workers int) error {
 	if err := s.Jobs.Start(ctx, workers); err != nil {
@@ -114,9 +140,17 @@ func (s *Service) Start(ctx context.Context, workers int) error {
 		return err
 	}
 	s.cleanup()
+	s.cleanupDuckDBCaches()
+	s.startScheduler(ctx)
 	return nil
 }
-func (s *Service) Stop() { s.Jobs.Stop() }
+func (s *Service) Stop() {
+	if s.scheduleCancel != nil {
+		s.scheduleCancel()
+		<-s.scheduleDone
+	}
+	s.Jobs.Stop()
+}
 func (s *Service) lock(key string) func() {
 	s.mu.Lock()
 	entry := s.locks[key]
@@ -163,7 +197,8 @@ func (s *Service) byPath(path string) (Collection, error) {
 	return s.decorate(scan(s.DB.QueryRow(`SELECT `+fields+` FROM collections WHERE path=?`, path)))
 }
 func (s *Service) decorate(c Collection, err error) (Collection, error) {
-	c.ReadOnly = c.Size > s.MaxBytes
+	c.FormatNotes = BinaryNotes(c.Format)
+	c.ReadOnly = c.Size > s.MaxBytes || binaryFormat(c.Format)
 	if c.ReadOnly {
 		c.CRUD = false
 	}
@@ -241,7 +276,7 @@ func (s *Service) excluded(path string) (bool, error) {
 }
 func (s *Service) syncFile(path string, force bool) error {
 	format := conversion.FromFilename(path)
-	if !conversion.Supported(format) {
+	if !datasetSupported(format) {
 		return nil
 	}
 	excluded, err := s.excluded(path)
@@ -380,7 +415,7 @@ func (s *Service) Sync() error {
 		if d.IsDir() && path != s.Root && strings.HasPrefix(d.Name(), ".") {
 			return filepath.SkipDir
 		}
-		if d.IsDir() || d.Type()&os.ModeSymlink != 0 || strings.HasPrefix(d.Name(), ".") || !conversion.Supported(conversion.FromFilename(path)) {
+		if d.IsDir() || d.Type()&os.ModeSymlink != 0 || strings.HasPrefix(d.Name(), ".") || !datasetSupported(conversion.FromFilename(path)) {
 			return nil
 		}
 		seen[path] = true
@@ -435,7 +470,7 @@ func (s *Service) Import(name string, r io.Reader) (Collection, error) {
 	if err != nil {
 		return Collection{}, err
 	}
-	if !conversion.Streaming(conversion.FromFilename(name)) {
+	if !conversion.Streaming(conversion.FromFilename(name)) && !binaryFormat(conversion.FromFilename(name)) {
 		b, err := s.read(path)
 		if err != nil {
 			os.Remove(path)
@@ -461,8 +496,8 @@ func (s *Service) Import(name string, r io.Reader) (Collection, error) {
 func (s *Service) Stage(name string, r io.Reader) (string, error) {
 	name = filepath.Base(strings.ReplaceAll(name, "\\", "/"))
 	format := conversion.FromFilename(name)
-	if !conversion.Supported(format) {
-		return "", fmt.Errorf("supported formats: json, csv, yaml, xml, ndjson, toml")
+	if !datasetSupported(format) {
+		return "", fmt.Errorf("supported formats: json, csv, yaml, xml, ndjson, toml, xlsx, parquet")
 	}
 	if len(name) > 180 {
 		return "", fmt.Errorf("filename is too long")
@@ -477,7 +512,7 @@ func (s *Service) Stage(name string, r io.Reader) (string, error) {
 	tmp := f.Name()
 	defer os.Remove(tmp)
 	limit := s.StreamBytes
-	if !conversion.Streaming(format) {
+	if !conversion.Streaming(format) && format != "parquet" {
 		limit = s.MaxBytes
 	}
 	buffer := make([]byte, 64<<10)

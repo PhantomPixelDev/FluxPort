@@ -9,18 +9,19 @@ import (
 )
 
 type SQLPage struct {
-	Text, Name    string
-	Selected      map[string]bool
-	Saved         []collections.SavedQuery
-	History       []collections.SQLHistory
-	Result        *collections.SQLResult
-	Published     bool
-	DatasetTables []collections.SQLDataset
+	Text, Name, Engine   string
+	DuckDBTimeoutSeconds int
+	Selected             map[string]bool
+	Saved                []collections.SavedQuery
+	History              []collections.SQLHistory
+	Result               *collections.SQLResult
+	Published            bool
+	DatasetTables        []collections.SQLDataset
 }
 
 func (s *Server) sqlPage(c fiber.Ctx) error {
 	p := s.base(c, "SQL playground", "sql")
-	sq := &SQLPage{Selected: map[string]bool{}}
+	sq := &SQLPage{Selected: map[string]bool{}, Engine: "auto", DuckDBTimeoutSeconds: int(s.Service.DuckDBTimeout.Seconds())}
 	p.SQL = sq
 	var err error
 	p.Collections, _, err = s.Service.List("", 1, 100)
@@ -47,9 +48,19 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 			sq.Selected[id] = true
 		}
 	}
+	if sq.Text == "" {
+		if id := c.Query("collection"); id != "" {
+			col, e := s.Service.Get(id)
+			if e != nil || col.Status != "ready" {
+				return fiber.NewError(404, "Ready collection not found.")
+			}
+			sq.Selected[id] = true
+		}
+	}
 	if c.Method() == "POST" {
 		sq.Text = c.FormValue("sql")
 		sq.Name = c.FormValue("name")
+		sq.Engine = c.FormValue("engine")
 		sq.Published = c.FormValue("published") == "on"
 		ids := []string{}
 		for _, v := range c.Request().PostArgs().PeekMulti("collections") {
@@ -66,7 +77,7 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 				return c.Redirect().Status(303).To("/sql")
 			}
 		} else {
-			result, e := s.Service.SQL(c.Context(), ids, sq.Text)
+			result, e := s.Service.SQLWithEngine(c.Context(), ids, sq.Text, sq.Engine)
 			sq.Result = &result
 			err = e
 			if e != nil {
@@ -97,8 +108,15 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 		sq.DatasetTables = append(sq.DatasetTables, d)
 	}
 	if sq.Text == "" && len(sq.DatasetTables) > 0 {
-		sq.Text = `SELECT * FROM "` + sq.DatasetTables[0].Table + `" LIMIT 100`
-		sq.Selected[sq.DatasetTables[0].ID] = true
+		selected := sq.DatasetTables[0]
+		for _, dataset := range sq.DatasetTables {
+			if sq.Selected[dataset.ID] {
+				selected = dataset
+				break
+			}
+		}
+		sq.Text = `SELECT * FROM "` + selected.Table + `" LIMIT 100`
+		sq.Selected[selected.ID] = true
 	}
 	return c.Render("pages/sql", p, "layouts/base")
 }

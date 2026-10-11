@@ -10,10 +10,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type convertPayload struct {
+	Pipeline                     *Pipeline         `json:",omitempty"`
+	Generations                  map[string]string `json:",omitempty"`
 	CollectionID, Path, From, To string
 	Options                      conversion.Options
 	Query                        *Query `json:",omitempty"`
@@ -36,7 +39,7 @@ func (s *Service) ExportQueryJob(id, generation, format string, q Query) (jobs.J
 		return jobs.Job{}, ErrConflict
 	}
 	format = conversion.Format(format)
-	if !conversion.Supported(format) {
+	if !datasetSupported(format) {
 		return jobs.Job{}, fmt.Errorf("unsupported export format")
 	}
 	b, err := json.Marshal(convertPayload{CollectionID: id, To: format, Query: &q, Generation: generation})
@@ -58,7 +61,7 @@ func (s *Service) ExportJobWithOptions(id, format string, options conversion.Opt
 	if _, err = s.ready(c); err != nil {
 		return jobs.Job{}, err
 	}
-	if !conversion.Supported(format) {
+	if !datasetSupported(format) {
 		return jobs.Job{}, fmt.Errorf("unsupported format")
 	}
 	b, _ := json.Marshal(convertPayload{CollectionID: id, To: format, Options: options})
@@ -86,8 +89,13 @@ func (s *Service) ConvertJobWithOptions(path, from, to string, options conversio
 func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int64, int64)) (result string, err error) {
 	s.cleanupDownloads()
 	var p convertPayload
-	if err = json.Unmarshal([]byte(j.Payload), &p); err != nil {
+	decoder := json.NewDecoder(strings.NewReader(j.Payload))
+	decoder.UseNumber()
+	if err = decoder.Decode(&p); err != nil {
 		return "", err
+	}
+	if binaryFormat(p.To) {
+		return s.binaryExportJob(ctx, j, p, progress)
 	}
 	if err = s.DiskCheck(s.DownloadDir, s.Reserve); err != nil {
 		return "", err
@@ -105,6 +113,29 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 		}
 		for _, f := range schema {
 			fields = append(fields, f.Name)
+		}
+		if p.Pipeline != nil {
+			fields = nil
+			if p.To == "csv" {
+				observed := map[string]map[string]bool{}
+				err = s.eachPipeline(ctx, *p.Pipeline, p.Generations, func(row any) error {
+					for _, field := range Schema([]any{row}) {
+						if observed[field.Name] == nil {
+							if len(observed) >= 2048 {
+								return fmt.Errorf("pipeline CSV schema exceeds 2048 fields")
+							}
+							observed[field.Name] = map[string]bool{}
+						}
+					}
+					return nil
+				})
+				if err != nil {
+					return "", err
+				}
+				for _, field := range sortedFields(observed) {
+					fields = append(fields, field.Name)
+				}
+			}
 		}
 	} else {
 		if err = s.safe(p.Path); err != nil {
@@ -138,7 +169,7 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 			}
 		}
 	}
-	if p.To == "csv" && len(fields) == 0 {
+	if p.To == "csv" && len(fields) == 0 && p.Pipeline == nil {
 		source := p.Path
 		format := p.From
 		if p.CollectionID != "" {
@@ -192,7 +223,9 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 		return nil
 	}
 	if p.CollectionID != "" {
-		if p.Query != nil {
+		if p.Pipeline != nil {
+			err = s.eachPipeline(ctx, *p.Pipeline, p.Generations, emit)
+		} else if p.Query != nil {
 			err = s.EachQuery(ctx, c, *p.Query, p.Generation, emit)
 		} else {
 			err = s.Each(ctx, c, emit)

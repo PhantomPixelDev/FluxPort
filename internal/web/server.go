@@ -37,6 +37,9 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	DatasetFormats                                                                         []string
+	Quality                                                                                *QualityPage
+	Pipeline                                                                               *PipelinePage
 	SQL                                                                                    *SQLPage
 	Workbench                                                                              *Workbench
 	AssetVersion                                                                           string
@@ -156,6 +159,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/export", server.exportJob)
 	app.Get("/collections/:id", server.detail)
 	app.Get("/collections/:id/workbench", server.workbench)
+	app.Get("/collections/:id/quality", server.qualityPage)
+	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
 	app.Post("/collections/:id/workbench/edit", server.editRecords)
 	app.Post("/collections/:id/workbench/export", server.exportWorkbench)
@@ -170,6 +175,12 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/converter", server.converter)
 	app.Get("/converter/collections", server.converterCollections)
 	app.Get("/workflow", server.workflow)
+	app.Get("/pipelines", server.pipelines)
+	app.Post("/pipelines", server.pipelines)
+	app.Post("/pipelines/:pipeline/delete", server.deletePipeline)
+	app.Post("/pipelines/:pipeline/restore", server.restorePipeline)
+	app.Post("/pipelines/:pipeline/schedule", server.schedulePipeline)
+	app.Get("/pipelines/:pipeline/export", server.exportPipeline)
 	app.Get("/sql", server.sqlPage)
 	app.Post("/sql", server.sqlPage)
 	app.Post("/sql/:query/delete", server.deleteSQL)
@@ -182,14 +193,14 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	return app, nil
 }
 func (s *Server) base(c fiber.Ctx, title, active string) Page {
-	return Page{AssetVersion: frontendVersion, Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
+	return Page{AssetVersion: frontendVersion, Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, DatasetFormats: collections.DatasetFormats(), CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
 }
 
 // Content-based URLs let an existing browser pick up UI updates immediately
 // while retaining normal asset caching between releases.
 var frontendVersion = func() string {
 	h := sha256.New()
-	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js"} {
+	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/css/pipelines.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js", "static/js/pipelines.js"} {
 		b, _ := ui.Files.ReadFile(name)
 		h.Write(b)
 	}

@@ -8,10 +8,13 @@
   <link rel="stylesheet" href="/static/css/app.css?v={{.AssetVersion}}">
   <link rel="stylesheet" href="/static/css/usability.css?v={{.AssetVersion}}">
 	<link rel="stylesheet" href="/static/css/workbench.css?v={{.AssetVersion}}">
+	<link rel="stylesheet" href="/static/css/pipelines.css?v={{.AssetVersion}}">
+	<link rel="stylesheet" href="/static/css/quality.css?v={{.AssetVersion}}">
   <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/app.js?v={{.AssetVersion}}" defer></script>
   <script src="/static/js/workspace.js?v={{.AssetVersion}}" defer></script>
 	<script src="/static/js/workbench.js?v={{.AssetVersion}}" defer></script>
+	<script src="/static/js/pipelines.js?v={{.AssetVersion}}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -24,6 +27,7 @@
       <a href="/" {{if eq .Active "overview"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#overview"/></svg>Overview</a>
       <a href="/collections" {{if eq .Active "collections"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#collections"/></svg>Collections</a>
       <a href="/workflow" {{if eq .Active "workflow"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Data workflow</a>
+	  <a href="/pipelines" {{if eq .Active "pipelines"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Pipelines</a>
       <a href="/converter" {{if eq .Active "converter"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#convert"/></svg>Format converter</a>
       <a href="/explorer" {{if eq .Active "explorer"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>API explorer</a>
 	  <a href="/sql" {{if eq .Active "sql"}}aria-current="page"{{end}}><svg><use href="/static/icons/icons.svg#terminal"/></svg>SQL playground</a>

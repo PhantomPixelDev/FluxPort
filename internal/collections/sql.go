@@ -29,7 +29,58 @@ type SQLResult struct {
 	Rows       [][]any      `json:"rows"`
 	Truncated  bool         `json:"truncated"`
 	DurationMS int64        `json:"duration_ms"`
+	Engine     string       `json:"engine,omitempty"`
 	Datasets   []SQLDataset `json:"datasets"`
+}
+
+// SQLWithEngine selects a processing engine without changing the existing SQL
+// API. Auto keeps small interactive queries on SQLite and delegates larger
+// analytical queries to DuckDB.
+func (s *Service) SQLWithEngine(ctx context.Context, ids []string, text, engine string) (SQLResult, error) {
+	engine = strings.ToLower(strings.TrimSpace(engine))
+	if engine == "" {
+		engine = "auto"
+	}
+	if engine != "auto" && engine != "native" && engine != "duckdb" {
+		return SQLResult{}, fmt.Errorf("engine must be auto, native, or duckdb")
+	}
+	if engine == "duckdb" || (engine == "auto" && s.shouldUseDuckDB(ids, text)) {
+		result, err := s.duckDBSQL(ctx, ids, text)
+		if err == nil {
+			result.Engine = "DuckDB"
+		}
+		return result, err
+	}
+	result, err := s.SQL(ctx, ids, text)
+	result.Engine = "SQLite"
+	return result, err
+}
+
+func (s *Service) shouldUseDuckDB(ids []string, query string) bool {
+	parts := strings.Fields(strings.ToUpper(query))
+	workload := " " + strings.Join(parts, " ") + " "
+	analytical := false
+	for _, operation := range []string{" JOIN ", " GROUP BY ", " ORDER BY ", " WHERE ", " HAVING ", " SUM(", " SUM (", " COUNT(", " COUNT (", " AVG(", " AVG (", " MIN(", " MIN (", " MAX(", " MAX ("} {
+		if strings.Contains(workload, operation) {
+			analytical = true
+			break
+		}
+	}
+	if !analytical {
+		return false
+	}
+	var totalRows int64
+	for _, id := range ids {
+		c, err := s.Get(id)
+		if err != nil || c.Status != "ready" {
+			return false
+		}
+		totalRows += c.Rows
+	}
+	// DuckDB's first cache build is disk-backed and measured at about 1.2s
+	// for 250k records on the Windows dev machine; repeated queries are much
+	// faster. Large analytical SQL workloads amortize that one-time cost.
+	return totalRows >= 250_000
 }
 
 // ValidateSQL scans SQL tokens, ignoring quoted literals, identifiers and
@@ -131,15 +182,15 @@ func quoteSQL(text string) string        { return "'" + strings.ReplaceAll(text,
 // The SQL connection contains only disposable record indexes chosen by the
 // caller. The metadata database is never attached or exposed to user SQL.
 func (s *Service) SQL(ctx context.Context, ids []string, text string) (SQLResult, error) {
-	return s.sqlRun(ctx, ids, text, 1000, 10*time.Second, nil)
+	return s.sqlRun(ctx, ids, text, 1000, 10*time.Second, nil, nil)
 }
 
 func (s *Service) SQLStream(ctx context.Context, ids []string, text string, emit func([]string, []any) error) error {
-	_, err := s.sqlRun(ctx, ids, text, 0, 30*time.Minute, emit)
+	_, err := s.sqlRun(ctx, ids, text, 0, 30*time.Minute, emit, nil)
 	return err
 }
 
-func (s *Service) sqlRun(ctx context.Context, ids []string, text string, rowLimit int, timeout time.Duration, emit func([]string, []any) error) (out SQLResult, err error) {
+func (s *Service) sqlRun(ctx context.Context, ids []string, text string, rowLimit int, timeout time.Duration, emit func([]string, []any) error, expected map[string]string) (out SQLResult, err error) {
 	releases := []func(){}
 	defer func() {
 		for _, release := range releases {
@@ -233,6 +284,10 @@ func (s *Service) sqlRun(ctx context.Context, ids []string, text string, rowLimi
 		if c.Status != "ready" || c.Generation == "" || filepath.Base(c.Generation) != c.Generation {
 			unlock()
 			return out, ErrPending
+		}
+		if expected != nil && expected[c.ID] != c.Generation {
+			unlock()
+			return out, ErrConflict
 		}
 		s.retainGeneration(c.Generation)
 		collectionID, generation := c.ID, c.Generation

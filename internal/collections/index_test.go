@@ -336,8 +336,18 @@ func TestPagesDuringLongGenerationReader(t *testing.T) {
 	if e = <-finished; e != nil {
 		t.Fatal(e)
 	}
-	if _, e = os.Stat(filepath.Join(s.IndexDir, c.Generation)); !os.IsNotExist(e) {
-		t.Fatal("released generation retained", e)
+	// Publishing marks the replacement ready before the indexing worker's
+	// deferred prior-generation reader is released. Wait for both readers.
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		_, e = os.Stat(filepath.Join(s.IndexDir, c.Generation))
+		if os.IsNotExist(e) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("released generation retained", e)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

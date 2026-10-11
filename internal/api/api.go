@@ -40,6 +40,17 @@ func (a *API) Register(app *fiber.App) {
 		}
 		return c.JSON(job)
 	})
+	g.Get("/jobs/:id/download", a.downloadJob)
+	g.Get("/pipelines", a.pipelines)
+	g.Post("/pipelines", a.savePipeline)
+	g.Get("/pipelines/:pipeline", a.getPipeline)
+	g.Get("/pipelines/:pipeline/revisions", a.pipelineRevisions)
+	g.Get("/pipelines/:pipeline/runs", a.pipelineRuns)
+	g.Post("/pipelines/:pipeline/restore", a.restorePipeline)
+	g.Get("/pipelines/:pipeline/schedule", a.getSchedule)
+	g.Put("/pipelines/:pipeline/schedule", a.saveSchedule)
+	g.Post("/pipelines/:pipeline/run", a.runPipeline)
+	g.Post("/pipelines/:pipeline/preview", a.runPipeline)
 	g.Post("/jobs/:id/cancel", func(c fiber.Ctx) error {
 		if err := a.Service.Jobs.Cancel(c.Params("id")); err != nil {
 			return err
@@ -72,6 +83,10 @@ func (a *API) Register(app *fiber.App) {
 	g.Post("/sql", a.sql)
 	g.Get("/queries/:query", a.savedSQL)
 	g.Get("/collections/:id/schema", a.schema)
+	g.Get("/collections/:id/profile", a.profile)
+	g.Post("/collections/:id/validate", a.validate)
+	g.Get("/collections/:id/validation-rules", a.validationRules)
+	g.Put("/collections/:id/validation-rules", a.saveValidationRules)
 	g.Post("/collections/:id/query", a.query)
 	g.Post("/collections/:id/bulk", a.bulk)
 	g.Get("/collections/:id/views", a.views)
@@ -339,7 +354,13 @@ func (a *API) mutate(c fiber.Ctx) error {
 }
 func (a *API) openapi(c fiber.Ctx) error {
 	paths := map[string]any{}
-	queryBody := fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"collections", "sql"}, "properties": fiber.Map{"collections": fiber.Map{"type": "array", "minItems": 1, "maxItems": 8, "items": fiber.Map{"type": "string"}}, "sql": fiber.Map{"type": "string", "maxLength": 16384}}}}}}
+	parameter := []any{fiber.Map{"name": "pipeline", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}
+	for _, action := range []string{"revisions", "runs", "schedule"} {
+		paths["/api/pipelines/{pipeline}/"+action] = fiber.Map{"get": fiber.Map{"summary": "Read pipeline " + action, "parameters": parameter, "responses": fiber.Map{"200": fiber.Map{"description": "Pipeline " + action}, "404": fiber.Map{"description": "Recipe not found"}}}}
+	}
+	paths["/api/pipelines/{pipeline}/restore"] = fiber.Map{"post": fiber.Map{"summary": "Restore a retained recipe revision as a new revision", "parameters": parameter, "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"revision"}, "properties": fiber.Map{"revision": fiber.Map{"type": "integer", "minimum": 1}}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Restored recipe"}, "404": fiber.Map{"description": "Retained revision not found"}}}}
+	paths["/api/pipelines/{pipeline}/schedule"].(fiber.Map)["put"] = fiber.Map{"summary": "Configure interval-based automatic pipeline downloads", "parameters": parameter, "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"interval_seconds", "format", "enabled"}, "properties": fiber.Map{"interval_seconds": fiber.Map{"type": "integer", "minimum": 60, "maximum": 31536000}, "format": fiber.Map{"type": "string", "enum": collections.DatasetFormats()}, "enabled": fiber.Map{"type": "boolean"}}}}}}, "responses": fiber.Map{"204": fiber.Map{"description": "Schedule saved"}, "422": fiber.Map{"description": "Invalid interval or format"}}}
+	queryBody := fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"collections", "sql"}, "properties": fiber.Map{"collections": fiber.Map{"type": "array", "minItems": 1, "maxItems": 8, "items": fiber.Map{"type": "string"}}, "sql": fiber.Map{"type": "string", "maxLength": 16384}, "engine": fiber.Map{"type": "string", "enum": []string{"auto", "native", "duckdb"}, "default": "auto"}}}}}}
 	paths["/api/sql"] = fiber.Map{"post": fiber.Map{"summary": "Run an isolated read-only SQL query on selected collections", "requestBody": queryBody, "responses": fiber.Map{"200": fiber.Map{"description": "Columns, rows, duration and truncation status"}, "422": fiber.Map{"description": "Invalid, unsafe or resource-limited query"}, "504": fiber.Map{"description": "Query timed out"}}}}
 	paths["/api/queries/{query}"] = fiber.Map{"get": fiber.Map{"summary": "Execute a published saved query", "parameters": []any{fiber.Map{"name": "query", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Read-only SQL results"}, "404": fiber.Map{"description": "Published query not found"}}}}
 	paths["/api/jobs"] = fiber.Map{"get": fiber.Map{"summary": "List recent background jobs", "responses": fiber.Map{"200": fiber.Map{"description": "Job states and progress"}}}}
@@ -359,6 +380,9 @@ func (a *API) openapi(c fiber.Ctx) error {
 				continue
 			}
 			base := "/api/collections/" + col.ID
+			paths[base+"/profile"] = fiber.Map{"get": fiber.Map{"summary": "Profile indexed source records with bounded statistics", "parameters": []any{fiber.Map{"name": "limit", "in": "query", "schema": fiber.Map{"type": "integer", "default": 10000, "minimum": 1, "maximum": 100000}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Coverage, precise bounds, rounded means and capped distinct counts"}, "503": fiber.Map{"description": "Indexing pending"}}}}
+			paths[base+"/validate"] = fiber.Map{"post": fiber.Map{"summary": "Check source records; omitted rules use saved rules", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "properties": fiber.Map{"limit": fiber.Map{"type": "integer", "minimum": 1, "maximum": 100000}, "rules": fiber.Map{"type": "array", "maxItems": 64, "items": fiber.Map{"type": "object"}}}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Validation report with explicit scan coverage; no records modified"}, "422": fiber.Map{"description": "Invalid rules or resource bound exceeded"}}}}
+			paths[base+"/validation-rules"] = fiber.Map{"get": fiber.Map{"summary": "Read saved validation rules", "responses": fiber.Map{"200": fiber.Map{"description": "Rule array"}}}, "put": fiber.Map{"summary": "Save validation rules", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"rules"}, "properties": fiber.Map{"rules": fiber.Map{"type": "array", "maxItems": 64, "items": fiber.Map{"type": "object"}}}}}}}, "responses": fiber.Map{"204": fiber.Map{"description": "Rules saved"}}}}
 			paths[base+"/query"] = fiber.Map{"post": fiber.Map{"summary": "Filter and sort indexed source records with stable IDs", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "properties": fiber.Map{"search": fiber.Map{"type": "string", "maxLength": 256}, "filters": fiber.Map{"type": "array", "maxItems": 20, "items": fiber.Map{"type": "object"}}, "sort": fiber.Map{"type": "array", "maxItems": 8, "items": fiber.Map{"type": "object"}}, "page": fiber.Map{"type": "integer", "minimum": 1}, "limit": fiber.Map{"type": "integer", "minimum": 1, "maximum": 100}}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Records, total, page, limit and index generation"}, "503": fiber.Map{"description": "Indexing pending"}}}}
 			if col.CRUD && !col.ReadOnly {
 				paths[base+"/bulk"] = fiber.Map{"post": fiber.Map{"summary": "Atomically edit up to 1000 stable record IDs; requires generation", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"generation", "changes"}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Batch committed"}, "409": fiber.Map{"description": "Source changed; reload before editing"}, "422": fiber.Map{"description": "Batch rejected without changing the source"}}}}

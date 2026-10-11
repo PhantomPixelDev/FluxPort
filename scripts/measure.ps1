@@ -5,7 +5,7 @@ $reportPath = [IO.Path]::GetFullPath($Report)
 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($reportPath)) | Out-Null
 $measurementDir = Join-Path ([IO.Path]::GetTempPath()) ('fluxport-measure-' + [Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($measurementDir) | Out-Null
-$keys = @('FLUXPORT_ADDRESS','FLUXPORT_DATA_DIR','FLUXPORT_STATE_DIR','FLUXPORT_ADMIN_PASSWORD','FLUXPORT_API_KEY','FLUXPORT_CONFIG','FLUXPORT_MAX_FILE_BYTES')
+$keys = @('FLUXPORT_ADDRESS','FLUXPORT_DATA_DIR','FLUXPORT_STATE_DIR','FLUXPORT_ADMIN_PASSWORD','FLUXPORT_API_KEY','FLUXPORT_CONFIG','FLUXPORT_MAX_FILE_BYTES','FLUXPORT_PUBLIC_DEMO')
 $saved = @{}
 foreach ($key in $keys) { $saved[$key] = [Environment]::GetEnvironmentVariable($key, 'Process') }
 $runs = @()
@@ -20,6 +20,7 @@ try {
     $env:FLUXPORT_DATA_DIR = Join-Path $measurementDir "data-$iteration"
     $env:FLUXPORT_STATE_DIR = Join-Path $measurementDir "state-$iteration"
     $env:FLUXPORT_ADMIN_PASSWORD = ''; $env:FLUXPORT_API_KEY = ''; $env:FLUXPORT_CONFIG = ''; $env:FLUXPORT_MAX_FILE_BYTES = '16777216'
+    $env:FLUXPORT_PUBLIC_DEMO = 'false'
     $timer = [Diagnostics.Stopwatch]::StartNew()
     $startInfo = [Diagnostics.ProcessStartInfo]::new($binaryPath,'serve')
     $startInfo.UseShellExecute = $false
@@ -53,7 +54,7 @@ try {
       $process.Refresh()
       $runs += [ordered]@{startup_ms = [math]::Round($startup,2); idle_working_set_bytes = $process.WorkingSet64; idle_private_bytes = $process.PrivateMemorySize64}
       if ($iteration -eq 5) {
-        foreach ($path in @('/','/static/css/app.css','/static/js/htmx.min.js','/static/js/app.js','/static/icons/icons.svg','/static/icons/logo.svg')) {
+        foreach ($path in @('/','/static/css/app.css','/static/css/usability.css','/static/css/workbench.css','/static/css/pipelines.css','/static/css/quality.css','/static/js/htmx.min.js','/static/js/app.js','/static/js/workspace.js','/static/js/workbench.js','/static/js/pipelines.js','/static/icons/icons.svg','/static/icons/logo.svg')) {
           $request = [Net.Http.HttpRequestMessage]::new([Net.Http.HttpMethod]::Get,"http://127.0.0.1:$port$path")
           $request.Headers.TryAddWithoutValidation('Accept-Encoding','gzip') | Out-Null
           $response = $http.SendAsync($request).GetAwaiter().GetResult()

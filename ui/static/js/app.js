@@ -65,7 +65,7 @@
   window.addEventListener('pagehide',()=>source.close());
  }
  const input=document.getElementById('import-file'), zone=input?.closest('.drop-zone');
- const names=()=>{const list=document.getElementById('upload-files');if(list){list.replaceChildren(...[...input.files].map(f=>{const e=document.createElement('p');const supported=/\.(json|csv|ya?ml|xml|ndjson|jsonl|toml)$/i.test(f.name);e.textContent=f.name+(supported?' · selected':' · rejected: unsupported file type');return e}));}};
+ const names=()=>{const list=document.getElementById('upload-files');if(list){list.replaceChildren(...[...input.files].map(f=>{const e=document.createElement('p');const supported=/\.(json|csv|ya?ml|xml|ndjson|jsonl|toml|xlsx|parquet)$/i.test(f.name);e.textContent=f.name+(supported?' · selected':' · rejected: unsupported file type');return e}));}};
  input?.addEventListener('change',names);
  zone?.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-active')});
  zone?.addEventListener('dragleave',()=>zone.classList.remove('drag-active'));

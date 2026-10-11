@@ -1,0 +1,10 @@
+.quality-layout .panel{padding:22px}
+.quality-layout form{display:grid;gap:12px}
+.quality-layout label{font-weight:600}
+.quality-layout .table-wrap,.table-wrap{overflow-x:auto;max-width:100%;border:1px solid var(--border);border-radius:8px}
+.quality-layout th{white-space:nowrap}
+.quality-layout td{max-width:300px;overflow-wrap:anywhere}
+.quality-layout code{overflow-wrap:anywhere;white-space:pre-wrap}
+.quality-layout .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.quality-layout .badge{display:inline-block;padding:2px 7px;border-radius:4px;background:var(--panel-raised);color:var(--teal)}
+@media(max-width:600px){.quality-layout .panel{padding:16px}.quality-layout .toolbar .button{flex:1}.table-wrap table{min-width:620px}}

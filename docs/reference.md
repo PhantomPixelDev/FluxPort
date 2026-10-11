@@ -50,6 +50,10 @@ Optional JSON configuration: set `FLUXPORT_CONFIG=examples/config.json`. Environ
 | `FLUXPORT_MAX_RECORD_BYTES` | `max_record_bytes` | `1048576` (1 MiB; configurable 1 KiB–16 MiB) |
 | `FLUXPORT_MAX_STREAM_BYTES` | `max_stream_bytes` | `0` (no whole-source ceiling) |
 | `FLUXPORT_MIN_FREE_DISK_BYTES` | `min_free_disk_bytes` | `268435456` (256 MiB reserve) |
+| `FLUXPORT_DUCKDB_MEMORY_BYTES` | `duckdb_memory_bytes` | `536870912` (512 MiB) |
+| `FLUXPORT_DUCKDB_TEMP_BYTES` | `duckdb_temp_bytes` | `4294967296` (4 GiB spill cap) |
+| `FLUXPORT_DUCKDB_TIMEOUT_SECONDS` | `duckdb_timeout_seconds` | `30` |
+| `FLUXPORT_DUCKDB_TEMP_DIR` | `duckdb_temp_dir` | State directory `duckdb-tmp` |
 
 Non-loopback binding requires a dashboard password unless FLUXPORT_PUBLIC_DEMO=true is explicitly configured for a public demo. Public demo mode disables API bearer authentication even if a key is configured; normal installations can set a separate API key. Use a TLS reverse proxy for remote access. Dashboard sessions are HMAC-signed, HttpOnly, SameSite=Strict cookies, expire after 12 hours, and invalidate on restart. HTTPS connections receive Secure cookies. All dashboard mutations, including login/logout, check a session-bound CSRF token. Login is rate-limited. API requests use bearer authentication independently of dashboard sessions and are not cookie-authenticated. A restrictive content security policy excludes inline scripts and third-party assets.
 
@@ -131,7 +135,7 @@ export FLUXPORT_API_KEY='choose-an-api-key'
 docker compose up --build -d
 ```
 
-In PowerShell use `$env:FLUXPORT_ADMIN_PASSWORD = '…'` and `$env:FLUXPORT_API_KEY = '…'`. Compose requires both secrets, binds the published port to localhost, and persists `/data` and `/state` in named volumes. The image runs the same CGO-free executable as a non-root user. Standalone images must receive `FLUXPORT_ADMIN_PASSWORD` at runtime because they listen on all interfaces.
+In PowerShell use `$env:FLUXPORT_ADMIN_PASSWORD = '…'` and `$env:FLUXPORT_API_KEY = '…'`. Compose requires both secrets, binds the published port to localhost, and persists `/data` and `/state` in named volumes. The standard image includes DuckDB; standalone images must receive `FLUXPORT_ADMIN_PASSWORD` at runtime because they listen on all interfaces. See [DuckDB processing](duckdb.md) for build prerequisites and resource settings.
 
 ## Verification
 
@@ -141,12 +145,12 @@ go vet ./...
 go test -race ./...
 ```
 
-Tests exercise conversion round trips and failures, numeric precision, transformations, source bounds, filesystem events, metadata updates, atomic CRUD, dashboard rendering/escaping, fragments, cache validation, password sessions, CSRF, multipart imports, bearer authentication, pagination, negotiation, and OpenAPI generation. Race tests need a C compiler on the build machine; release builds do not.
+Tests exercise conversion round trips and failures, numeric precision, transformations, source bounds, filesystem events, metadata updates, atomic CRUD, dashboard rendering/escaping, fragments, cache validation, password sessions, CSRF, multipart imports, bearer authentication, pagination, negotiation, and OpenAPI generation. DuckDB is part of the standard executable; building and running race tests requires a compatible C/C++ toolchain. Downloaded executables do not require a compiler.
 
 See [conversion fidelity and CSV options](conversion-fidelity.md), [architecture](architecture.md), [verification and browser checks](verification.md), and [release measurements](performance.md). Measurements report the actual test environment and are not guarantees.
 
 ## Source layout
 
-`cmd/fluxport` owns the small standard-library CLI. `internal/api` and `internal/web` keep REST and HTML handlers separate. `internal/auth`, `config`, `database`, `collections`, `conversion`, `filesystem`, and `transformations` isolate backend responsibilities. `ui` embeds templates and static assets. SQLite migrations through version 3 are applied by `internal/database`. `internal/jobs`, `fixtures` and `resources` own background work, deterministic fixtures and resource checks.
+`cmd/fluxport` owns the CLI. `internal/api` and `internal/web` keep REST and HTML handlers separate. `internal/auth`, `config`, `database`, `collections`, `conversion`, `filesystem`, `quality`, and `transformations` isolate backend responsibilities. `ui` embeds templates and static assets. SQLite migrations through version 9 are applied by `internal/database`. `internal/jobs`, `fixtures` and `resources` own background work, deterministic fixtures and resource checks. See [the processing workspace guide](platform.md) for Excel/Parquet mappings, quality checks, ordered cleanup steps, pipeline revisions, schedules, new CLI commands and remaining platform work.
 
 Startup validates cached generations by SHA-256 before serving them; unchanged sources reuse their indexes without reparsing. Building an index hashes the bytes being parsed and verifies the source again before publication. Detected write events mark the source pending immediately, including same-size writes that preserve timestamps. External filesystems that miss events require explicit reconciliation/restart; reads cannot transactionally lock unrelated external writers.

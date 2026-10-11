@@ -185,3 +185,23 @@ func TestTypedFiltersAndNestedFieldEdits(t *testing.T) {
 		t.Fatal("edited ID lost on source append", latest, err)
 	}
 }
+
+func TestSavedViewPreservesExactNumericFilter(t *testing.T) {
+	s := testService(t)
+	c, err := s.Import("rows.json", strings.NewReader(`[{"id":9007199254740993},{"id":9007199254740992}]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.SaveView(View{CollectionID: c.ID, Name: "Exact identifier", Query: Query{Filters: []Filter{{Field: "id", Op: "eq", Value: json.Number("9007199254740993")}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	views, err := s.Views(c.ID)
+	if err != nil || views[0].Query.Filters[0].Value != json.Number("9007199254740993") {
+		t.Fatal("saved filter lost precision", views, err)
+	}
+	result, err := s.Query(context.Background(), c, views[0].Query)
+	if err != nil || result.Total != 1 || result.Records[0].Ordinal != 0 {
+		t.Fatal(result, err)
+	}
+}

@@ -71,7 +71,7 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 	if stamp(info) != payload.Stamp {
 		return "", fmt.Errorf("source changed before indexing; refresh to retry")
 	}
-	if s.StreamBytes > 0 && conversion.Streaming(c.Format) && info.Size() > s.StreamBytes {
+	if s.StreamBytes > 0 && (conversion.Streaming(c.Format) || c.Format == "parquet") && info.Size() > s.StreamBytes {
 		return "", fmt.Errorf("source exceeds streaming byte limit")
 	}
 	policy := s.indexPolicy(c.Format)
@@ -152,7 +152,18 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 	schema := map[string]map[string]bool{}
 	hash := sha256.New()
 	reader := &countedReader{r: io.TeeReader(source, hash)}
-	err = conversion.Iterate(ctx, reader, c.Format, s.RecordBytes, s.MaxBytes, func(row any) error {
+	iterate := func(emit func(any) error) error {
+		return conversion.Iterate(ctx, reader, c.Format, s.RecordBytes, s.MaxBytes, emit)
+	}
+	if binaryFormat(c.Format) {
+		// Hash the original bytes, independently of the normalized binary rows.
+		// The second checksum before publication detects edits during decoding.
+		if _, err = io.Copy(io.Discard, checkedReader{ctx: ctx, r: reader}); err != nil {
+			return "", err
+		}
+		iterate = func(emit func(any) error) error { return s.iterateBinary(ctx, payload.Path, c.Format, emit) }
+	}
+	err = iterate(func(row any) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
