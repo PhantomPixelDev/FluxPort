@@ -39,7 +39,7 @@
  });
  document.body.addEventListener('htmx:afterSwap',e=>{
   availability();
-  if(e.detail.target===status){chooser.open=true;if(e.detail.elt===form||e.detail.elt?.getAttribute('method')==='post')refresh();}
+  if(e.detail.target===status){chooser.open=true;if(e.detail.requestConfig?.verb?.toLowerCase()==='post')refresh();}
   const tab=document.querySelector('#detail-content [data-active-tab]')?.dataset.activeTab;
   if(tab==='preview'||tab==='raw')document.querySelectorAll('.collection-preview .tabs>span').forEach(el=>el.remove());
  });

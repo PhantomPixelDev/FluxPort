@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"fluxport/internal/collections"
 	"fluxport/internal/config"
@@ -51,7 +52,7 @@ func call(t *testing.T, app *fiber.App, method, path, body string, headers map[s
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second, FailOnTimeout: true})
 	if err != nil {
 		t.Fatal(err)
 	}

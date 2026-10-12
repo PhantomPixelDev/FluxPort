@@ -53,6 +53,11 @@ async (page, artifactDir='output/playwright') => {
   for (const kind of ['empty','null','missing','json']) if (!await page.locator('td[data-display-kind='+kind+']').count()) throw Error('Missing cell state '+kind);
   await page.locator('#download>summary').click();
   if (await page.locator('#collection-download-format').inputValue() !== 'original') throw Error('Original download must be the default');
+  // Delay the queued response until processing finishes, and suppress custom
+  // progress notifications. A single post-swap catch-up must still reveal ready.
+  await page.evaluate(()=>{window.__blockExportProgress=e=>e.stopImmediatePropagation();window.addEventListener('fluxport:progress',window.__blockExportProgress,true);});
+  const exportRoute=`**/collections/${collectionID}/export`;
+  await page.route(exportRoute,async route=>{const response=await route.fetch();await page.waitForTimeout(500);await route.fulfill({response});});
   for (const format of ['xlsx', 'parquet']) {
     const previous = page.locator('#collection-download-status [data-download-job]');
     const previousJob = await previous.count() ? await previous.getAttribute('data-download-job') : null;
@@ -69,6 +74,7 @@ async (page, artifactDir='output/playwright') => {
     await ready.click();
     if (await (await downloading).failure()) throw Error('Converted download failed');
     if (await page.locator('#collection-download-status [data-download-job]').count() !== 1) throw Error('Chooser should show one export');
+    if(format==='xlsx'){await page.unroute(exportRoute);await page.evaluate(()=>window.removeEventListener('fluxport:progress',window.__blockExportProgress,true));}
   }
   await page.keyboard.press('Escape');
   if (await page.locator('#download').getAttribute('open') !== null) throw Error('Escape must close the chooser');
