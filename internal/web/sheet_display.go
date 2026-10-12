@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -14,6 +15,45 @@ type SheetCell struct{ Kind, Text, Raw string }
 type SheetColumn struct {
 	Name, Type, SortURL, Direction string
 	Rank                           int
+}
+
+type SheetPage struct {
+	Number       int
+	URL          string
+	Current, Gap bool
+}
+
+// Keep navigation bounded even for datasets with millions of pages.
+func sheetPages(current, total int, id string, q collections.Query) []SheetPage {
+	if total < 1 {
+		total = 1
+	}
+	current = max(1, min(current, total))
+	q.Page = 1
+	b, _ := json.Marshal(q)
+	base := "/collections/" + id + "?query=" + url.QueryEscape(string(b)) + "&page="
+	pages := []SheetPage{}
+	previous := 0
+	for n := 1; n <= total; {
+		if previous > 0 && n > previous+1 {
+			pages = append(pages, SheetPage{Gap: true})
+		}
+		pages = append(pages, SheetPage{Number: n, URL: base + strconv.Itoa(n), Current: n == current})
+		previous = n
+		switch {
+		case n == total:
+			return pages
+		case total <= 7:
+			n++
+		case n < current-2:
+			n = max(2, current-2)
+		case n >= current+2:
+			n = total
+		default:
+			n++
+		}
+	}
+	return pages
 }
 
 func sheetCell(value any, exists bool) SheetCell {

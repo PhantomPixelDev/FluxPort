@@ -19,7 +19,10 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('#collection-table tr').filter({hasText: csvname}).filter({hasText: 'ready'}).waitFor();
   await page.locator('#job-activity .job-row').filter({hasText: badname}).filter({hasText: 'failed'}).first().waitFor();
   await page.getByRole('link', {name: filename, exact: true}).click();
-  await page.getByRole('link', {name: 'Next →', exact: true}).click();
+  await page.getByRole('link', {name: 'Page 5', exact: true}).click();
+  await page.locator('.detail-body[data-page="5"]').waitFor();
+  if (await page.locator('.sheet-pagination [aria-current="page"]').textContent() !== '5') throw Error('Numbered pagination current page');
+  await page.getByRole('link', {name: 'Page 2', exact: true}).click();
   await page.locator('.detail-body[data-page="2"]').waitFor();
   if (await page.locator('#detail-content tbody tr').count() !== 20) throw Error('Pagination row count');
   await page.locator('.collection-more>summary').click();

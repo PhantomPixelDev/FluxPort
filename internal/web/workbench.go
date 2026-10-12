@@ -30,6 +30,7 @@ type Workbench struct {
 	Views                              []collections.View
 	Rows                               []SheetRow
 	Columns                            []SheetColumn
+	Pages                              []SheetPage
 	Scalar                             bool
 }
 
@@ -174,6 +175,7 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		return err
 	}
 	w.QueryJSON = string(qbytes)
+	w.Pages = sheetPages(p.Page, p.Pages, col.ID, w.Query)
 	for _, filter := range w.Query.Filters {
 		value, _ := json.Marshal(filter.Value)
 		label := map[string]string{"eq": "equals", "neq": "does not equal", "contains": "contains", "starts": "starts with", "gt": "greater than", "gte": "at least", "lt": "less than", "lte": "at most", "null": "missing / null", "notnull": "has a value"}[filter.Op]

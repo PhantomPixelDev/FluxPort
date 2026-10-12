@@ -32,6 +32,42 @@ func TestSheetPresentationKeepsCompleteValues(t *testing.T) {
 	}
 }
 
+func TestSheetPaginationIsBoundedAndPreservesQuery(t *testing.T) {
+	for _, current := range []int{1, 2, 50, 999999, 1000000} {
+		q := collections.Query{Page: current, Limit: 20, Search: "山", Sort: []collections.Sort{{Field: "/a.b~1x", Desc: true}}}
+		pages := sheetPages(current, 1000000, "dataset", q)
+		if len(pages) > 9 || pages[0].Number != 1 || pages[len(pages)-1].Number != 1000000 {
+			t.Fatalf("invalid window: %#v", pages)
+		}
+		selected := 0
+		for _, page := range pages {
+			if page.Gap {
+				continue
+			}
+			if page.Current {
+				selected++
+			}
+			u, err := url.Parse(page.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := decodeQuery(u.Query().Get("query"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Search != q.Search || got.Limit != 20 || len(got.Sort) != 1 || got.Sort[0] != q.Sort[0] {
+				t.Fatalf("lost query: %#v", got)
+			}
+		}
+		if selected != 1 {
+			t.Fatal("current page missing")
+		}
+	}
+	if len(sheetPages(1, 1, "dataset", collections.Query{})) != 1 {
+		t.Fatal("single page")
+	}
+}
+
 func TestSheetHeaderSortPreservesFiltersAndLiteralNames(t *testing.T) {
 	app, s, _ := setup(t, "", "")
 	col, err := s.Import("sort.json", strings.NewReader(`[{"id":1,"a.b/x~y":2,"active":true},{"id":2,"a.b/x~y":1,"active":true},{"id":3,"a.b/x~y":0,"active":false}]`))
