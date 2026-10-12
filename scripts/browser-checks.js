@@ -64,7 +64,7 @@ async (page, artifactDir='output/playwright') => {
       return job && job.dataset.downloadJob !== previous;
     }, previousJob);
     const ready = page.locator('#collection-download-status').getByRole('link', {name:'Download file',exact:true});
-    await ready.waitFor();
+    try { await ready.waitFor(); } catch (error) { throw Error('Export '+format+' did not become visible: '+await page.locator('#collection-download-status').textContent()+'; chooser open='+await page.locator('#download').getAttribute('open')); }
     const downloading = page.waitForEvent('download');
     await ready.click();
     if (await (await downloading).failure()) throw Error('Converted download failed');

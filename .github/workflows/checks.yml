@@ -57,4 +57,4 @@ jobs:
             if /tmp/fluxport healthcheck --url http://127.0.0.1:58903/healthz; then break; fi
             sleep 1
           done
-          node scripts/browser-checks.cjs http://127.0.0.1:58903/collections
+          node scripts/browser-checks.cjs http://127.0.0.1:58903/collections || { tail -n 30 /tmp/fluxport-browser.log; exit 1; }
