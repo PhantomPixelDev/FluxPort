@@ -2,6 +2,14 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to package and verify
+        required: true
+        type: string
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 permissions:
   contents: read
 jobs:
@@ -13,14 +21,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version-file: go.mod
       - name: Validate version
         shell: bash
         run: |
-          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
       - if: runner.os == 'Windows'
         uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
         with:
@@ -41,7 +51,7 @@ jobs:
       - if: runner.os == 'Linux'
         run: |
           mkdir -p release
-          docker run --rm -v "$PWD:/src" -w /src golang:1.26-bookworm sh -c "CGO_ENABLED=1 go build -trimpath -ldflags='-s -w -X main.version=$VERSION' -o release/fluxport-linux-amd64 ./cmd/fluxport"
+          docker run --rm -v "$PWD:/src" -w /src golang:1.26-bookworm sh -c "git config --global --add safe.directory /src && CGO_ENABLED=1 go build -trimpath -ldflags='-s -w -X main.version=$VERSION' -o release/fluxport-linux-amd64 ./cmd/fluxport"
           ldd release/fluxport-linux-amd64
           go run scripts/smoke_release.go --binary release/fluxport-linux-amd64 --version "$VERSION"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -67,4 +77,4 @@ jobs:
         run: |
           cd release
           sha256sum fluxport-linux-amd64 fluxport-windows-amd64.exe > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" fluxport-linux-amd64 fluxport-windows-amd64.exe SHA256SUMS --verify-tag --generate-notes --title "FluxPort ${GITHUB_REF_NAME#v}" --latest
+          gh release create "$RELEASE_TAG" fluxport-linux-amd64 fluxport-windows-amd64.exe SHA256SUMS --verify-tag --generate-notes --title "FluxPort ${RELEASE_TAG#v}" --latest
