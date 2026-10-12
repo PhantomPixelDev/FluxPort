@@ -146,6 +146,10 @@ async (page, artifactDir='output/playwright') => {
   await page.getByText('Manage the data folder',{exact:true}).click();
   await page.getByRole('link', {name: 'Excluded files', exact: true}).click();
   await page.locator('.job-row').filter({hasText: display}).getByRole('button', {name: 'Restore', exact: true}).click();
+  await page.waitForFunction(async (id) => {
+    const response = await fetch(`/api/collections/${id}?limit=1`);
+    return response.ok;
+  }, collectionID);
   await page.goto(`${base}/collections`);
   await page.getByRole('link', {name: display, exact: true}).click();
   await page.locator('#detail-content tbody tr').first().waitFor();
