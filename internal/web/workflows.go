@@ -344,6 +344,9 @@ func (s *Server) refreshOne(c fiber.Ctx) error {
 	return s.jobs(c)
 }
 func (s *Server) exportJob(c fiber.Ctx) error {
+	if c.FormValue("action") == "review" {
+		return s.reviewDownload(c)
+	}
 	col, err := s.Service.Get(c.Params("id"))
 	if err != nil {
 		return err

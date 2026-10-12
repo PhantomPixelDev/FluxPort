@@ -15,9 +15,15 @@ import (
 )
 
 func downloadJobFormat(job jobs.Job) string {
-	var payload struct{ To string }
+	var payload struct {
+		To      string
+		Options conversion.Options
+	}
 	if json.Unmarshal([]byte(job.Payload), &payload) != nil {
 		return ""
+	}
+	if payload.To == "parquet" && payload.Options.ParquetTyped {
+		return "parquet-typed"
 	}
 	for _, format := range collections.DatasetFormats() {
 		if format == payload.To {
@@ -37,10 +43,14 @@ func downloadJobSteps(job jobs.Job) string {
 
 func downloadFormatName(f string) string {
 	switch f {
+	case "original":
+		return "Original file"
 	case "xlsx":
 		return "Excel (.xlsx)"
 	case "parquet":
-		return "Parquet (.parquet)"
+		return "Parquet · lossless records (.parquet)"
+	case "parquet-typed":
+		return "Parquet · typed columns (.parquet)"
 	default:
 		return strings.ToUpper(f) + " (." + f + ")"
 	}
@@ -49,9 +59,11 @@ func downloadFormatName(f string) string {
 func downloadFormatNote(f string) string {
 	switch f {
 	case "xlsx":
-		return "Values are saved as text."
+		return "Text cells. Null, missing and empty text become blank."
 	case "parquet":
 		return "Records are stored in one JSON column."
+	case "parquet-typed":
+		return "Typed columns. Nested/mixed values become text; missing and null merge."
 	case "csv":
 		return "Nested values are saved as JSON text."
 	case "toml":

@@ -38,4 +38,10 @@
  });
  // Validation must be updated before the browser validates a non-add submit.
  form.querySelectorAll('button[name=action]').forEach(button=>button.addEventListener('click',()=>{field.required=button.value==='add'&&action.value!=='deduplicate';}));
+ const joinDataset=form.querySelector('[data-join-dataset]'),joinColumn=form.querySelector('[data-join-column]');
+ if(joinDataset&&joinColumn){
+  const choices=[...joinColumn.options].map(o=>({dataset:o.dataset.dataset,value:o.value,label:o.textContent}));
+  const update=()=>{const previous=joinColumn.value;joinColumn.replaceChildren();for(const choice of choices.filter(c=>c.dataset===joinDataset.value)){const option=new Option(choice.value,choice.value);joinColumn.add(option)}if([...joinColumn.options].some(o=>o.value===previous))joinColumn.value=previous;};
+  joinDataset.addEventListener('change',update);update();
+ }
 })();

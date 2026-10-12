@@ -27,11 +27,41 @@ func defaultCleanupName(name string) string {
 	return result
 }
 
+func uniqueCleanupName(base string, saved []collections.Pipeline) string {
+	names := map[string]bool{}
+	for _, recipe := range saved {
+		names[recipe.Name] = true
+	}
+	if !names[base] {
+		return base
+	}
+	for len(base) > 80 {
+		chars := []rune(base)
+		base = string(chars[:len(chars)-1])
+	}
+	for n := 1; ; n++ {
+		candidate := base + " (copy)"
+		if n > 1 {
+			candidate = fmt.Sprintf("%s (copy %d)", base, n)
+		}
+		if !names[candidate] {
+			return candidate
+		}
+	}
+}
+
 // These controls produce the same steps used by the advanced editor and CLI.
 func cleanupStep(c fiber.Ctx) (collections.PipelineStep, error) {
 	kind, field := c.FormValue("cleanup"), strings.TrimSpace(c.FormValue("field"))
 	step := collections.PipelineStep{}
 	switch kind {
+	case "join":
+		right, other, target := c.FormValue("join_right"), c.FormValue("join_collection"), strings.TrimSpace(c.FormValue("join_as"))
+		if field == "" || right == "" || other == "" || target == "" {
+			return step, fmt.Errorf("Choose two matching columns, a dataset and an output column")
+		}
+		step.Op = "join"
+		step.Join = &collections.PipelineJoin{Collection: other, Left: literalColumnPath(field), Right: literalColumnPath(right), As: literalColumnPath(target), Kind: c.FormValue("join_kind", "left")}
 	case "deduplicate":
 		step.Op = "deduplicate"
 		if field != "" {
@@ -99,11 +129,25 @@ func cleanupStepName(step collections.PipelineStep) string {
 				return label + step.Transform.Field
 			}
 		}
+	case "join":
+		if step.Join != nil {
+			return "Combine matching rows into " + pointerKey(step.Join.As)
+		}
 	}
 	return "Advanced step: " + step.Op
 }
 
 func adjustCleanup(c fiber.Ctx, steps []collections.PipelineStep) ([]collections.PipelineStep, error) {
+	if c.FormValue("action") == "add_join" {
+		if len(steps) >= 20 {
+			return steps, fmt.Errorf("A set of changes supports up to 20 steps")
+		}
+		field, other, right, target := c.FormValue("join_left"), c.FormValue("join_collection"), c.FormValue("join_right"), strings.TrimSpace(c.FormValue("join_as"))
+		if field == "" || other == "" || right == "" || target == "" || len(target) > 256 {
+			return steps, fmt.Errorf("Choose matching columns and an output column")
+		}
+		return append(steps, collections.PipelineStep{Op: "join", Join: &collections.PipelineJoin{Collection: other, Left: literalColumnPath(field), Right: literalColumnPath(right), As: literalColumnPath(target), Kind: c.FormValue("join_kind", "left")}}), nil
+	}
 	switch action := c.FormValue("action"); {
 	case action == "add":
 		if len(steps) >= 20 {

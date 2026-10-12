@@ -1,5 +1,15 @@
 # Open a file, make changes, download the result
 
+Click a column's type label to see its summary, or open **Column summaries & cleanup suggestions**. The default scan checks up to 10,000 source rows; missing, null and empty text stay distinct. Common values track at most 64 values per column and display the five most frequent tracked values. Distinct counting retains at most 1,024 values, and duplicate tracking retains at most 10,000 row identities. Capped counts and sampled coverage are labeled. Wide datasets can be summarized one column at a time.
+
+Suggestions offer previews of removing identical rows or trimming whitespace in complete text columns. They start a new set of changes and never alter the source. Nothing is applied automatically.
+
+In Changes, expand **Combine with another dataset**, select matching columns, choose whether to keep all left rows or only matches, and name a new output column. The matched row becomes a nested object; multiple matches expand output rows. Preview reports matched, unmatched and multiple-match counts for up to 20 input rows, not full-dataset totals. Search dataset names when the picker exceeds 100 matching datasets.
+
+**Reuse steps from another dataset** copies a recipe onto the current source with a separate name. Preview before saving; incompatible columns or types must be corrected. The original recipe and source remain unchanged.
+
+Excel datasets show the selected worksheet in Data. **Open sheet** rebuilds the index for that worksheet; it does not rewrite the workbook. Original downloads include all sheets. Formulas remain rejected throughout the workbook.
+
 Start on **Your datasets**. Choose **Add files** to open JSON, CSV, YAML, XML, NDJSON, TOML, Excel or Parquet. Choose **Try an example** to load the small examples once. The home page opens this dataset list directly.
 
 ## Data
@@ -20,7 +30,7 @@ Before and after shows up to 20 rows per side. It is a sample, not a full datase
 
 **Download result** runs the entire sequence over the complete dataset, saves the steps and opens Downloads with that export's status. Saving changes alone does not modify the source or prepare a download.
 
-Downloads can export the original dataset or a selected set of saved changes. Original file streams the exact current bytes, even while indexing. Converted outputs show progress, cancellation, retry and the ready file. Excel uses text cells; Parquet stores complete records in one JSON column. Format details describes these mappings.
+Downloads can export the original dataset or a selected set of saved changes. Original file streams the exact current bytes, even while indexing. Converted outputs show progress, cancellation, retry and the ready file. Excel uses text cells. Parquet offers lossless JSON records or typed analytical columns. Check format changes reviews actual rows before preparation; reports explicitly identify sampled coverage. Format details describes mappings.
 
 Cleanup and download forms work without JavaScript. JavaScript adds contextual controls, browser draft restoration and SSE progress. Without it, use Refresh download status for asynchronous exports. Source files retain their original contents unless you explicitly enable and use source editing or confirm source deletion.
 

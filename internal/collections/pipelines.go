@@ -166,7 +166,7 @@ func (s *Service) PipelineJob(p Pipeline, format string) (jobs.Job, error) {
 	if err != nil {
 		return jobs.Job{}, err
 	}
-	format = conversion.Format(format)
+	format, options := exportFormat(format, conversion.Options{SpreadsheetSafe: true})
 	if !datasetSupported(format) {
 		return jobs.Job{}, fmt.Errorf("unsupported output format")
 	}
@@ -186,7 +186,7 @@ func (s *Service) PipelineJob(p Pipeline, format string) (jobs.Job, error) {
 			source = c
 		}
 	}
-	data, err := json.Marshal(convertPayload{CollectionID: p.Source, To: format, Pipeline: &p, Generations: generations, Options: conversion.Options{SpreadsheetSafe: true}})
+	data, err := json.Marshal(convertPayload{CollectionID: p.Source, To: format, Pipeline: &p, Generations: generations, Options: options})
 	if err != nil {
 		return jobs.Job{}, err
 	}

@@ -19,6 +19,9 @@ type PipelineCard struct {
 	Parameters         PipelineParameters
 }
 type PipelinePage struct {
+	Reusable       []collections.Pipeline
+	JoinColumns    []JoinColumnChoice
+	JoinSummary    *JoinPreviewSummary
 	Cleanup        PipelineParameters
 	BeforeHeaders  []string
 	BeforeCells    [][]string
@@ -78,6 +81,23 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if workspace {
+		for _, recipe := range pp.Saved {
+			if recipe.Source != p.Collection.ID {
+				pp.Reusable = append(pp.Reusable, recipe)
+			}
+		}
+		if id := c.Query("reuse"); id != "" {
+			recipe, e := s.Service.GetPipeline(id)
+			if e != nil {
+				return fiber.NewError(404, "Saved steps not found")
+			}
+			recipe.ID, recipe.Source, recipe.Name, recipe.Revision = "", p.Collection.ID, defaultCleanupName(p.Collection.Name), 0
+			recipe.Name = uniqueCleanupName(recipe.Name, pp.Saved)
+			pp.Definition = recipe
+			p.Message = "Steps copied for this dataset. Preview the result before saving."
+		}
+	}
 	if id := c.Query("saved"); id != "" {
 		pp.Definition, err = s.Service.GetPipeline(id)
 		if err != nil {
@@ -106,6 +126,11 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		pp.SourceQuery = c.FormValue("q")
 		posted := c.Request().PostArgs().PeekMulti("steps")
 		pp.Definition.Steps, err = decodePipelineSteps(posted)
+		if err == nil && workspace {
+			if c.FormValue("action") == "add_join" {
+				err = s.validateJoinChoice(p.Collection, pp.Definition.Steps, c)
+			}
+		}
 		if err == nil && workspace {
 			pp.Definition.Steps, err = adjustCleanup(c, pp.Definition.Steps)
 		}
@@ -237,6 +262,12 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		pp.Saved = filtered
 		p.Fields, _ = s.Service.Fields(p.Collection)
 		if pp.HasPreview {
+			if len(pp.Definition.Steps) > 0 && pp.Definition.Steps[len(pp.Definition.Steps)-1].Join != nil {
+				pp.JoinSummary, err = s.joinPreviewSummary(c, pp.Definition)
+				if err != nil {
+					p.Message = err.Error()
+				}
+			}
 			rows, _, e := s.Service.Page(c.Context(), p.Collection, 1, 20, false, "")
 			if e == nil {
 				pp.BeforeHeaders, pp.BeforeCells = tableRows(rows, collections.Schema(rows))
@@ -246,6 +277,17 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 	p.Collections, pp.AvailableCount, err = s.Service.List(pp.SourceQuery, 1, 100)
 	if err != nil {
 		return err
+	}
+	if workspace {
+		for _, col := range p.Collections {
+			if col.Status != "ready" {
+				continue
+			}
+			fields, _ := s.Service.Fields(col)
+			for _, field := range fields {
+				pp.JoinColumns = append(pp.JoinColumns, JoinColumnChoice{Dataset: col.ID, Name: field.Name, Label: col.Name + ": " + field.Name})
+			}
+		}
 	}
 	if pp.Definition.Source != "" {
 		found := false

@@ -37,6 +37,8 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	DownloadReview                                                                         *DownloadReview
+	Insights                                                                               *DatasetInsights
 	DatasetFormats                                                                         []string
 	Quality                                                                                *QualityPage
 	Pipeline                                                                               *PipelinePage
@@ -177,8 +179,12 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/collections/:id/workbench", server.workbench)
 	app.Get("/collections/:id/changes", server.datasetChanges)
 	app.Post("/collections/:id/changes", server.datasetChanges)
+	app.Post("/collections/:id/export-check", server.reviewDownload)
+	app.Get("/collections/:id/export-check", server.reviewDownload)
 	app.Post("/collections/:id/workbench/enable", server.enableDatasetEditing)
+	app.Post("/collections/:id/sheet", server.selectWorkbookSheet)
 	app.Get("/collections/:id/quality", server.qualityPage)
+	app.Get("/collections/:id/insights", server.datasetInsights)
 	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
 	app.Post("/collections/:id/workbench/edit", server.editRecords)
@@ -212,7 +218,7 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	return app, nil
 }
 func (s *Server) base(c fiber.Ctx, title, active string) Page {
-	return Page{AssetVersion: frontendVersion, Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, DatasetFormats: collections.DatasetFormats(), CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
+	return Page{AssetVersion: frontendVersion, Title: title, Active: active, CSRF: auth.CSRF(c), Formats: conversion.Formats, DatasetFormats: collections.ExportFormats(), CSVDelimiters: []string{"comma", "semicolon", "tab", "pipe"}, Root: s.Service.Root, MaxBytes: s.Config.MaxFileBytes, Address: s.Config.Address, Authenticated: s.Config.AdminPassword != "", APIProtected: s.Config.APIKey != ""}
 }
 
 // Content-based URLs let an existing browser pick up UI updates immediately

@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const cp = require('node:child_process');
 const {chromium} = require('playwright');
 
 (async () => {
@@ -16,6 +17,9 @@ const {chromium} = require('playwright');
     const artifactDir=path.resolve(__dirname,'../output/playwright');
     fs.mkdirSync(artifactDir,{recursive:true});
     await callback(page,artifactDir);
+    cp.execFileSync('go',['run','scripts/browser-fixtures.go',artifactDir],{cwd:path.resolve(__dirname,'..'),timeout:60000});
+    const improvements=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'workspace-improvements.js'),'utf8')+')',{Buffer,URL,Date,Error});
+    await improvements(page,artifactDir,fs.readFileSync(path.join(artifactDir,'multi-sheet.xlsx')));
     console.log('Browser workflow checks passed: imports, partial failures, pagination, quality, pipelines, undo/redo, export, exclusions, restore, themes and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.stack); process.exitCode=1; });

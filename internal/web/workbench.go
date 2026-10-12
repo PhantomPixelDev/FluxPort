@@ -32,6 +32,7 @@ type Workbench struct {
 	Columns                            []SheetColumn
 	Pages                              []SheetPage
 	Scalar                             bool
+	Workbook                           *collections.WorkbookInfo
 }
 
 func decodeQuery(text string) (collections.Query, error) {
@@ -60,6 +61,11 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 	var err error
 	w := &Workbench{ColumnsJSON: "null"}
 	p.Workbench = w
+	if col.Format == "xlsx" {
+		if info, e := s.Service.Workbook(col); e == nil {
+			w.Workbook = &info
+		}
+	}
 	w.Views, err = s.Service.Views(col.ID)
 	if err != nil {
 		return err

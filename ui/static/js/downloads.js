@@ -33,7 +33,7 @@
  document.addEventListener('click',e=>{document.querySelectorAll('.collection-actions>details[open]').forEach(d=>{if(!d.contains(e.target))d.open=false;});});
  document.querySelectorAll('.collection-actions>details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)document.querySelectorAll('.collection-actions>details').forEach(other=>{if(other!==d)other.open=false;});}));
  document.body.addEventListener('htmx:beforeRequest',e=>{
-  if(e.detail.elt===form && form.elements.format.value==='original'){
+  if(e.detail.elt===form && form.elements.format.value==='original' && e.detail.requestConfig?.parameters?.action!=='review'){
    e.preventDefault();window.location.assign(form.action+'?original=1');
   }
  });

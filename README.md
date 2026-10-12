@@ -4,13 +4,15 @@
 
 FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, NDJSON and TOML. Open a file, inspect its rows, remove duplicates or fix values, and download the result. Developers can reuse saved steps, query datasets with DuckDB, automate work from the CLI and publish REST endpoints.
 
-[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.4](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.4) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
+[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.5](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.5) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
 
 [![Checks](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml) · [MIT license](LICENSE)
 
 ![FluxPort Data workspace in light mode: compact spreadsheet table, real column types, search, filters and sorting](docs/images/workspace.png)
 
 ## Work with files
+
+Click a column type for missing values, common values and numeric ranges. Preview cleanup suggestions, combine datasets with the visual join controls, or reuse saved steps on next month's file. Multi-sheet Excel workbooks have a worksheet selector; Parquet downloads offer lossless records or typed analytical columns.
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
@@ -27,19 +29,19 @@ The online demo is a shared public workspace. Install your own instance for priv
 
 ## Get started
 
-Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.4/SHA256SUMS):
+Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.5/SHA256SUMS):
 
 | Platform | Download | Start |
 | --- | --- | --- |
-| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.4/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
-| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.4/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
+| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.5/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
+| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.5/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
 For Docker, clone this repository and run:
 
 ```sh
-docker compose build --build-arg VERSION=0.3.4
+docker compose build --build-arg VERSION=0.3.5
 docker compose up -d
 ```
 
@@ -53,14 +55,14 @@ Dataset import/export and the standalone format converter have different capabil
 | --- | --- | --- | --- |
 | JSON | Yes / Yes | Yes | Numeric text stays precise; top-level arrays can stream. |
 | CSV | Yes / Yes | Yes | Cells are text by default; optional converter inference. Nested values export as JSON text. |
-| Excel `.xlsx` | Yes / Yes | No | Import requires one sheet and unique headers; formulas are rejected. Exports use text cells and blank cells for empty values. |
-| Parquet | Yes / Yes | No | Export preserves records in one JSON column, rather than typed table columns. |
+| Excel `.xlsx` | Yes / Yes | No | Choose a worksheet; unique headers required and formulas rejected. Exports use text cells; null/missing/empty text become blank. Original download includes all sheets. |
+| Parquet | Yes / Yes | No | Choose lossless JSON-record storage or typed analytical columns. Typed mode keeps CSV strings as text, uses exact decimals up to 38 digits, and stores nested/mixed/out-of-range values as text. |
 | YAML | Yes / Yes | Yes | One document; unsupported tags and non-JSON values fail explicitly. |
 | XML | Yes / Yes | Yes | General XML imports use a documented mapping; exports use a typed JSON envelope. |
 | NDJSON | Yes / Yes | Yes | One JSON value per line; streaming import/export. |
 | TOML | Yes / Yes | Yes | Dataset exports use a `records` wrapper. Nulls are unsupported; small conversions require an object root. |
 
-Original downloads preserve the exact source bytes. Target formats can have limitations; the UI shows short format notes and full details before download. [Format fidelity guide](docs/conversion-fidelity.md) · [Excel and Parquet mappings](docs/platform.md)
+Original downloads preserve the exact source bytes. Use Check format changes for a bounded review of actual source or saved-step rows before downloading. Format limitations and sample coverage are explicit. [Format fidelity guide](docs/conversion-fidelity.md) · [Excel and Parquet mappings](docs/platform.md)
 
 ## Build data workflows
 

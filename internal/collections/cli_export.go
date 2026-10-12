@@ -13,7 +13,7 @@ import (
 // ExportFile executes the same bounded export handler used by background jobs.
 // It returns a managed download path; callers own its cleanup after copying.
 func (s *Service) ExportFile(ctx context.Context, id, format string, pipeline *Pipeline) (string, error) {
-	format = conversion.Format(format)
+	format, options := exportFormat(format, conversion.Options{})
 	if !datasetSupported(format) {
 		return "", fmt.Errorf("unsupported export format")
 	}
@@ -24,7 +24,7 @@ func (s *Service) ExportFile(ctx context.Context, id, format string, pipeline *P
 	if _, err = s.ready(c); err != nil {
 		return "", err
 	}
-	p := convertPayload{CollectionID: id, To: format, Pipeline: pipeline}
+	p := convertPayload{CollectionID: id, To: format, Pipeline: pipeline, Options: options}
 	if pipeline != nil {
 		_, ids, e := CompilePipeline(*pipeline)
 		if e != nil {

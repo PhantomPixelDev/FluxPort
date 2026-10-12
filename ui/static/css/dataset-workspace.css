@@ -21,6 +21,17 @@
 .dataset-workspace .page-current{background:var(--accent,#2563eb);color:white;border-color:var(--accent,#2563eb);font-weight:700}
 .dataset-workspace .page-buttons .disabled{opacity:.4;cursor:default}
 .dataset-workspace .page-gap{padding:0 3px;color:var(--muted)}
+.dataset-workspace .workspace-shortcuts{margin:10px 0;font-size:.875rem}
+.dataset-workspace .column-summary{padding:14px 0;border-bottom:1px solid var(--border)}
+.dataset-workspace .column-summary summary{font-weight:600;cursor:pointer}
+.dataset-workspace .column-statistics{display:flex;flex-wrap:wrap;gap:12px;padding:14px 0;font-variant-numeric:tabular-nums}
+.dataset-workspace .column-summary code{overflow-wrap:anywhere}
+.dataset-workspace .insight-suggestion{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
+.dataset-workspace .join-builder>summary,.dataset-workspace .reuse-steps>summary{cursor:pointer;font-weight:600}
+.dataset-workspace .join-builder .cleanup-controls{padding-top:14px}
+.dataset-workspace .format-review li{overflow-wrap:anywhere;margin:8px 0}
+.dataset-workspace .column-type:hover,.dataset-workspace .column-type:focus-visible{text-decoration:underline}
+.dataset-workspace .join-search{margin-top:14px}
 @media(max-width:700px){.dataset-workspace .page-buttons .button{min-width:40px;min-height:44px}.dataset-workspace .sheet-pagination{justify-content:center}.dataset-workspace .page-summary{width:100%;text-align:center}}
 .dataset-workspace .sheet-data>form>p,.dataset-workspace .source-editing{margin:14px 18px}
 .dataset-workspace .sheet-edit-disclosure{margin:14px 18px}

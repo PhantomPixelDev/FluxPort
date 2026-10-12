@@ -113,7 +113,7 @@ func TestExcelTextCellsFormulaAndSheetLimits(t *testing.T) {
 	data.Reset()
 	book.Write(&data)
 	if _, err = s.Import("multisheet.xlsx", bytes.NewReader(data.Bytes())); err == nil {
-		t.Fatal("extra sheets silently discarded")
+		t.Fatal("formula-bearing workbook accepted after adding another sheet")
 	}
 }
 func TestBinaryMalformedCancellationAndDiskFailure(t *testing.T) {

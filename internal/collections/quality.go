@@ -12,19 +12,22 @@ import (
 )
 
 type QualityRequest struct {
-	Limit int            `json:"limit,omitempty"`
-	Rules []quality.Rule `json:"rules,omitempty"`
+	Column string         `json:"column,omitempty"`
+	Limit  int            `json:"limit,omitempty"`
+	Rules  []quality.Rule `json:"rules,omitempty"`
 }
 type QualityReport struct {
-	Collection  string             `json:"collection"`
-	Generation  string             `json:"generation"`
-	Total       int64              `json:"total_records"`
-	Checked     int64              `json:"records_checked"`
-	Partial     bool               `json:"partial"`
-	DurationMS  int64              `json:"duration_ms"`
-	SourceBytes int64              `json:"source_bytes"`
-	Columns     []quality.Column   `json:"columns"`
-	Validation  quality.Validation `json:"validation"`
+	DuplicateRows    int64              `json:"duplicate_rows"`
+	DuplicatesCapped bool               `json:"duplicates_capped"`
+	Collection       string             `json:"collection"`
+	Generation       string             `json:"generation"`
+	Total            int64              `json:"total_records"`
+	Checked          int64              `json:"records_checked"`
+	Partial          bool               `json:"partial"`
+	DurationMS       int64              `json:"duration_ms"`
+	SourceBytes      int64              `json:"source_bytes"`
+	Columns          []quality.Column   `json:"columns"`
+	Validation       quality.Validation `json:"validation"`
 }
 
 // Quality reads one immutable index generation, retaining at most bounded column
@@ -48,12 +51,17 @@ func (s *Service) Quality(ctx context.Context, c Collection, request QualityRequ
 	}
 	out = QualityReport{Collection: c.ID, Generation: c.Generation, Total: c.Rows, SourceBytes: c.Size}
 	profiler := quality.NewProfiler()
+	if request.Column != "" {
+		if err = profiler.EnsureColumn(request.Column); err != nil {
+			return out, err
+		}
+	}
 	stop := errors.New("scan complete")
 	err = s.EachQuery(ctx, c, Query{}, c.Generation, func(row any) error {
 		if out.Checked >= int64(request.Limit) {
 			return stop
 		}
-		if e := profiler.Add(row); e != nil {
+		if e := profiler.AddColumn(row, request.Column); e != nil {
 			return e
 		}
 		if e := validator.Check(row); e != nil {
@@ -67,6 +75,7 @@ func (s *Service) Quality(ctx context.Context, c Collection, request QualityRequ
 	}
 	out.Partial = out.Checked < out.Total
 	out.Columns = profiler.Columns()
+	out.DuplicateRows, out.DuplicatesCapped = profiler.DuplicateRows, profiler.RowsCapped
 	out.Validation = validator.Report
 	out.DurationMS = time.Since(start).Milliseconds()
 	return out, nil

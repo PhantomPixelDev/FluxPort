@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -61,10 +62,20 @@ func (s *Service) iterateBinary(ctx context.Context, path, format string, emit f
 		}
 		defer book.Close()
 		sheets := book.GetSheetList()
-		if len(sheets) != 1 {
-			return fmt.Errorf("Excel datasets require exactly one sheet; export the desired sheet separately")
+		if len(sheets) == 0 {
+			return fmt.Errorf("Excel has no sheets")
 		}
-		rows, err := book.Rows(sheets[0])
+		selected := s.Setting("workbook_sheet:"+path, sheets[0])
+		found := false
+		for _, sheet := range sheets {
+			if sheet == selected {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("Selected sheet %q is no longer in the workbook; choose another sheet", selected)
+		}
+		rows, err := book.Rows(selected)
 		if err != nil {
 			return err
 		}
@@ -285,6 +296,9 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 		if p.Query != nil {
 			return s.EachQuery(ctx, c, *p.Query, p.Generation, emit)
 		}
+		if p.Options.ParquetTyped {
+			return s.EachQuery(ctx, c, Query{}, c.Generation, emit)
+		}
 		return s.Each(ctx, c, emit)
 	}
 	var count int64
@@ -404,6 +418,39 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 			return "", closeErr
 		}
 	} else {
+		var typedColumns map[string]*parquetColumn
+		if p.Options.ParquetTyped {
+			typedColumns, err = inferParquetColumns(each)
+			if err != nil {
+				return "", err
+			}
+			if len(typedColumns) == 0 {
+				if p.Pipeline != nil {
+					return "", fmt.Errorf("Cannot infer typed columns from an empty pipeline result; choose JSON or lossless Parquet")
+				}
+				fields, e := s.Fields(c)
+				if e != nil {
+					return "", e
+				}
+				for _, field := range fields {
+					typedColumns[field.Name] = &parquetColumn{Kind: "text"}
+				}
+				if c.Format == "csv" && len(typedColumns) == 0 {
+					source, e := os.Open(c.Path)
+					if e != nil {
+						return "", e
+					}
+					headers, e := conversion.CSVFields(source, conversion.Options{}, s.RecordBytes)
+					source.Close()
+					if e != nil {
+						return "", e
+					}
+					for _, name := range headers {
+						typedColumns[name] = &parquetColumn{Kind: "text"}
+					}
+				}
+			}
+		}
 		input, err := os.CreateTemp(s.DownloadDir, ".parquet-input-*.ndjson")
 		if err != nil {
 			return "", err
@@ -419,7 +466,31 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 			if e != nil {
 				return e
 			}
-			wrapped, e := json.Marshal(map[string]string{"__fluxport_record_json_v1": string(b)})
+			var wrapped []byte
+			if p.Options.ParquetTyped {
+				obj, ok := v.(map[string]any)
+				if !ok {
+					return fmt.Errorf("Typed Parquet requires object records")
+				}
+				values := map[string]any{}
+				for name := range typedColumns {
+					value := obj[name]
+					if value == nil {
+						values[name] = nil
+					} else if text, ok := value.(string); ok {
+						values[name] = text
+					} else {
+						raw, err := conversion.MarshalJSON(value)
+						if err != nil {
+							return err
+						}
+						values[name] = string(raw)
+					}
+				}
+				wrapped, e = json.Marshal(values)
+			} else {
+				wrapped, e = json.Marshal(map[string]string{"__fluxport_record_json_v1": string(b)})
+			}
 			if e != nil {
 				return e
 			}
@@ -439,6 +510,25 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 			query := `SELECT CAST(NULL AS VARCHAR) AS __fluxport_record_json_v1 WHERE false`
 			if count > 0 {
 				query = `SELECT * FROM read_ndjson(` + quoteSQL(input.Name()) + `,columns={'__fluxport_record_json_v1':'VARCHAR'},maximum_object_size=` + fmt.Sprint(s.RecordBytes*2+1024) + `)`
+			}
+			if p.Options.ParquetTyped {
+				if count > 0 {
+					var e error
+					query, e = typedParquetSQL(input.Name(), typedColumns, s.RecordBytes)
+					if e != nil {
+						return e
+					}
+				} else {
+					parts := []string{}
+					for name, column := range typedColumns {
+						parts = append(parts, "CAST(NULL AS "+parquetColumnType(column)+") AS "+quoteIdentifier(name))
+					}
+					if len(parts) == 0 {
+						return fmt.Errorf("Typed Parquet requires named columns")
+					}
+					sort.Strings(parts)
+					query = "SELECT " + strings.Join(parts, ",") + " WHERE false"
+				}
 			}
 			_, e := db.ExecContext(ctx, `COPY (`+query+`) TO `+quoteSQL(tmp)+` (FORMAT PARQUET, COMPRESSION ZSTD)`)
 			return e
@@ -463,10 +553,13 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 
 func BinaryNotes(format string) string {
 	if format == "xlsx" {
-		return "Excel: one sheet, text cells, raw date serials; formulas rejected. Export stores numbers and nested values as text; null and missing cells become blank."
+		return "Excel: choose a sheet to explore; text cells, raw date serials, formulas rejected. Export stores numbers and nested values as text; null, missing and empty text become blank cells. Original download preserves the complete workbook."
 	}
 	if format == "parquet" {
 		return "Parquet: ordinary typed files import through DuckDB; dates become text. FluxPort exports use a lossless JSON-record column (__fluxport_record_json_v1) rather than an inferred analytical schema."
+	}
+	if format == "parquet-typed" {
+		return "Typed Parquet: numbers and booleans become typed columns; CSV text stays text. Exact decimals use up to 38 digits. Larger or mixed values and nested objects become text. Missing and null merge into Parquet nulls. Use lossless Parquet to retain original record types and structure."
 	}
 	return ""
 }

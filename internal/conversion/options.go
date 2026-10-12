@@ -60,6 +60,7 @@ func EncodeConversion(v any, input []byte, from, to string, o Options) ([]byte, 
 
 // Options are explicit: CSV has no intrinsic scalar types or lossless nesting.
 type Options struct {
+	ParquetTyped    bool              `json:"parquet_typed,omitempty"`
 	CSVInferTypes   bool              `json:"csv_infer_types,omitempty"`
 	CSVDelimiter    string            `json:"csv_delimiter,omitempty"`
 	SpreadsheetSafe bool              `json:"spreadsheet_safe,omitempty"`

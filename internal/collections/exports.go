@@ -38,11 +38,11 @@ func (s *Service) ExportQueryJob(id, generation, format string, q Query) (jobs.J
 	if generation == "" || generation != c.Generation {
 		return jobs.Job{}, ErrConflict
 	}
-	format = conversion.Format(format)
+	format, options := exportFormat(format, conversion.Options{})
 	if !datasetSupported(format) {
 		return jobs.Job{}, fmt.Errorf("unsupported export format")
 	}
-	b, err := json.Marshal(convertPayload{CollectionID: id, To: format, Query: &q, Generation: generation})
+	b, err := json.Marshal(convertPayload{CollectionID: id, To: format, Query: &q, Generation: generation, Options: options})
 	if err != nil {
 		return jobs.Job{}, err
 	}
@@ -53,7 +53,7 @@ func (s *Service) ExportJob(id, format string) (jobs.Job, error) {
 	return s.ExportJobWithOptions(id, format, conversion.Options{})
 }
 func (s *Service) ExportJobWithOptions(id, format string, options conversion.Options) (jobs.Job, error) {
-	format = conversion.Format(format)
+	format, options = exportFormat(format, options)
 	c, err := s.Get(id)
 	if err != nil {
 		return jobs.Job{}, err

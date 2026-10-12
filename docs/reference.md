@@ -1,5 +1,7 @@
 # FluxPort
 
+Dashboard additions: `GET /collections/:id/insights?field=<literal-column-name>` provides bounded column summaries; `POST /collections/:id/sheet` selects an Excel worksheet using `sheet` and CSRF. `GET` or `POST /collections/:id/export-check` accepts `format` and optional `pipeline` to review sampled format changes. POST requires CSRF; preparation still uses the existing export endpoint. Format checks scan at most 100 source rows / 8 MiB, or the existing 20-row pipeline preview, and cannot guarantee compatibility beyond that sample. Original-source reviews perform no scan. The quality request accepts an optional literal `column` to profile a wide dataset one column at a time.
+
 An embedded, server-rendered developer dashboard that turns local files into REST APIs. Go + Fiber v3, Go HTML templates, HTMX, vanilla CSS/JS, SQLite, and fsnotify. No frontend build process, CDN, Node.js runtime, or JavaScript application framework.
 
 ## Run
@@ -112,7 +114,7 @@ Native SSE pushes progress/completion/cancellation into HTMX fragments; no perio
 
 Large conversions/exports stream to temporary downloadable files. Downloads and private conversion inputs have 24-hour retention, with cleanup on startup/new conversions. Regenerate expired exports or re-upload expired inputs. Streamed TOML wraps object records in `records`; synchronous small conversions retain object-root behavior. CLI file/stdin streaming uses bounded records and staged output; CSV output needs a schema pass before writing.
 
-`GET /collections/:id/export?original=1` streams the exact current source bytes, including whitespace and line endings, even while indexing. Existing export requests retain their behavior. Dashboard callers can opt into a single-export HTML fragment with `POST /collections/:id/export`, `download_view=compact`, a supported `format` and the usual CSRF token. HTMX requests receive the fragment; ordinary form submissions redirect to the collection's export status. Updates reuse server-sent events rather than polling. The same compact mode supports job cancellation and retry; it does not expose the full job history. Excel stores values as text and Parquet preserves records in one JSON column.
+`GET /collections/:id/export?original=1` streams the exact current source bytes, including whitespace and line endings, even while indexing. Existing export requests retain their behavior. Dashboard callers can opt into a single-export HTML fragment with `POST /collections/:id/export`, `download_view=compact`, a supported `format` and the usual CSRF token. HTMX requests receive the fragment; ordinary form submissions redirect to the collection's export status. Updates reuse server-sent events rather than polling. The same compact mode supports job cancellation and retry; it does not expose the full job history. Excel stores values as text. Parquet defaults to lossless JSON records; `format=parquet-typed` is an additional export choice for typed analytical columns.
 
 Static assets carry content-derived ETags and one-hour caching; dynamic responses use `no-store`. HTTP responses can be compressed. There are no unbounded caches or per-file watcher goroutines.
 
