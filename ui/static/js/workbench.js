@@ -33,7 +33,9 @@
   queryForm.addEventListener('click',event=>{if(event.target.closest('[data-add-filter]'))addRule('filter');if(event.target.closest('[data-add-sort]'))addRule('sort');const remove=event.target.closest('[data-remove-rule]');if(remove)remove.parentElement.remove();});
   // Keep explicit quoted strings and integers outside JS's exact range intact.
   function valueJSON(text) { const trimmed=text.trim(); if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)||['true','false','null'].includes(trimmed)) return trimmed; if(trimmed.startsWith('"')){try{if(typeof JSON.parse(trimmed)==='string')return trimmed;}catch{}}return JSON.stringify(text); }
-  queryForm.addEventListener('submit',()=>{
+  queryForm.addEventListener('submit',event=>{
+    if(event.submitter?.hasAttribute('data-raw-query')){queryForm.querySelector('[data-query-search]').removeAttribute('name');queryForm.querySelector('[data-query-limit]').removeAttribute('name');return;}
+
     const filterJSON=Array.from(filters.children).map(row=>'{"field":'+JSON.stringify(row.querySelector('[data-filter-field]').value)+',"op":'+JSON.stringify(row.querySelector('[data-filter-op]').value)+',"value":'+valueJSON(row.querySelector('[data-filter-value]').value)+'}');
     const sort=Array.from(sorts.children).map(row=>({field:row.querySelector('[data-sort-field]').value,desc:row.querySelector('[data-sort-direction]').value==='desc'}));
     queryForm.querySelector('[name=query]').value='{"search":'+JSON.stringify(queryForm.querySelector('[data-query-search]').value)+',"limit":'+Number(queryForm.querySelector('[data-query-limit]').value)+',"filters":['+filterJSON.join(',')+'],"sort":'+JSON.stringify(sort)+'}';
@@ -49,23 +51,34 @@
   edit.addEventListener('change',event=>{if(event.target.matches('[data-select-page]'))boxes().forEach(b=>b.checked=event.target.checked);count();});
   edit.addEventListener('submit',event=>{const n=boxes().filter(b=>b.checked).length;if(!n){event.preventDefault();return;}if(edit.elements.method.value==='DELETE'&&!window.confirm('Permanently delete '+n+' selected records from the source?'))event.preventDefault();});
   const dialog=document.getElementById('record-dialog');let activeID='';
-  edit.addEventListener('click',event=>{const button=event.target.closest('[data-edit-record]');if(!button)return;activeID=button.dataset.editRecord;const source=Array.from(edit.querySelectorAll('[data-record-json]')).find(e=>e.dataset.recordJson===activeID);document.getElementById('record-values').value=source.value;dialog.showModal();});
+  const inspector=document.getElementById('record-values'),useRecord=dialog.querySelector('[data-use-record]');
+  function inspect(value,title,record){inspector.value=value;inspector.readOnly=!record||sheet.dataset.editable!=='true';useRecord.hidden=!record||sheet.dataset.editable!=='true';dialog.querySelector('[data-inspector-title]').textContent=title;dialog.querySelector('[data-copy-feedback]').textContent='';dialog.showModal();}
+  async function copy(value){try{await navigator.clipboard.writeText(value);const notice=document.getElementById('feedback');if(notice)notice.textContent='Value copied.';dialog.querySelector('[data-copy-feedback]').textContent='Copied';}catch{inspect(value,'Copy complete value',false);inspector.select();dialog.querySelector('[data-copy-feedback]').textContent='Press Ctrl+C or Command+C to copy.';}}
+  edit.addEventListener('click',event=>{
+   const cell=event.target.closest('td[data-sheet-cell]');
+   if(event.target.closest('[data-copy-cell]')){copy(cell.querySelector('[data-cell-raw]').value);return;}
+   if(event.target.closest('[data-inspect-cell]')){inspect(cell.querySelector('[data-cell-raw]').value,'JSON value',false);return;}
+   const button=event.target.closest('[data-edit-record]');if(!button)return;activeID=button.dataset.editRecord;const source=Array.from(edit.querySelectorAll('[data-record-json]')).find(e=>e.dataset.recordJson===activeID);inspect(source.value,'Record values',true);
+  });
+  dialog.querySelector('[data-copy-inspector]').addEventListener('click',()=>copy(inspector.value));
   dialog.querySelector('[data-use-record]').addEventListener('click',()=>{const box=boxes().find(b=>b.value===activeID);if(!box)return;boxes().forEach(b=>b.checked=b===box);edit.elements.method.value='PUT';edit.elements.value.value=document.getElementById('record-values').value;dialog.close();count();edit.elements.value.focus();});
-  const key='fluxport-sheet-'+sheet.dataset.collection;let prefs={};try{prefs=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
-  const columns=Array.from(sheet.querySelectorAll('[data-sheet-column]'));
+  const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='comfortable'?'comfortable':'compact';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
+  const key='fluxport-sheet-'+sheet.dataset.collection;let prefs=Object.create(null);try{Object.assign(prefs,JSON.parse(localStorage.getItem(key)||'{}')||{});}catch{}
+  const columns=Array.from(queryForm.querySelectorAll('[data-sheet-column]'));
 	function inlineEdit(cell){
 		if(sheet.dataset.editable!=='true'||cell.querySelector('input'))return;
 		const row=cell.closest('tr'),id=row.querySelector('[name=record_id]').value;
-		if(cell.textContent.length>=512){row.querySelector('[data-edit-record]').click();return;}
-		const original=cell.textContent,input=document.createElement('input');input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
-		input.addEventListener('keydown',event=>{if(event.key==='Escape'){cell.textContent=original;cell.focus();}if(event.key==='Enter'){event.preventDefault();const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;try{JSON.parse(raw);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();}});
+		const original=cell.querySelector('[data-cell-raw]')?.value||'',originalHTML=cell.innerHTML;
+		if(original.length>=512||cell.dataset.displayKind==='json'||sheet.dataset.scalar==='true'){row.querySelector('[data-edit-record]').click();return;}
+		const input=document.createElement('input');input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
+		input.addEventListener('keydown',event=>{if(event.key==='Escape'){cell.innerHTML=originalHTML;cell.focus();}if(event.key==='Enter'){event.preventDefault();const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;try{JSON.parse(raw);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();}});
 	}
 	sheet.addEventListener('dblclick',event=>{const cell=event.target.closest('td[data-sheet-cell]');if(cell)inlineEdit(cell);});
 	sheet.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('td[data-sheet-cell]')){event.preventDefault();inlineEdit(event.target);}});
   function store(){try{localStorage.setItem(key,JSON.stringify(prefs));}catch{}}
   function setColumn(box){const index=box.dataset.sheetColumn;sheet.querySelectorAll('[data-sheet-cell="'+index+'"]').forEach(e=>e.hidden=!box.checked);}
   let savedColumns=null;try{savedColumns=JSON.parse(sheet.dataset.savedColumns);}catch{}
-  columns.forEach(box=>{if(Array.isArray(savedColumns)&&savedColumns.length)box.checked=savedColumns.includes(box.value);else if(prefs[box.value]?.visible===false)box.checked=false;setColumn(box);box.addEventListener('change',()=>{prefs[box.value]={...prefs[box.value],visible:box.checked};setColumn(box);store();});});
+  columns.forEach(box=>{if(Array.isArray(savedColumns)&&savedColumns.length){box.checked=savedColumns.includes(box.value);prefs[box.value]={...prefs[box.value],visible:box.checked};store();}else if(prefs[box.value]?.visible===false)box.checked=false;setColumn(box);box.addEventListener('change',()=>{prefs[box.value]={...prefs[box.value],visible:box.checked};setColumn(box);store();});});
   sheet.querySelectorAll('.column-resizer').forEach(handle=>{const heading=handle.parentElement,index=heading.dataset.sheetCell,name=columns.find(b=>b.dataset.sheetColumn===index)?.value;
     function resize(width){width=Math.max(70,Math.min(600,width));sheet.querySelectorAll('[data-sheet-cell="'+index+'"]').forEach(e=>e.style.width=width+'px');prefs[name]={...prefs[name],width};store();}
     if(prefs[name]?.width)resize(prefs[name].width);

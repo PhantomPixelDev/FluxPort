@@ -20,6 +20,7 @@ type SheetRow struct {
 	Cells   []string
 	JSON    string
 	Kinds   []string
+	Display []SheetCell
 }
 type SheetFilter struct{ Field, Op, Value, Label string }
 type Workbench struct {
@@ -28,6 +29,8 @@ type Workbench struct {
 	Filters                            []SheetFilter
 	Views                              []collections.View
 	Rows                               []SheetRow
+	Columns                            []SheetColumn
+	Scalar                             bool
 }
 
 func decodeQuery(text string) (collections.Query, error) {
@@ -127,26 +130,42 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		for i, row := range result.Records {
 			values[i] = row.Value
 		}
-		p.Headers, p.Cells = tableRows(values, p.Fields)
-		for i, row := range result.Records {
+		p.Headers = sheetHeaders(p.Fields)
+		w.Scalar = len(p.Headers) == 0
+		if len(p.Headers) == 0 && len(values) > 0 {
+			p.Headers = []string{"Value"}
+		}
+		types := map[string]string{}
+		for _, field := range p.Fields {
+			types[field.Name] = field.Types
+		}
+		for _, name := range p.Headers {
+			column := sheetColumn(name, types[name], col.ID, w.Query)
+			if w.Scalar {
+				column.SortURL = ""
+			}
+			w.Columns = append(w.Columns, column)
+		}
+		for _, row := range result.Records {
 			b, _ := conversion.Encode(row.Value, "json")
 			cells := []string{}
-			if i < len(p.Cells) {
-				cells = p.Cells[i]
-			}
+			display := []SheetCell{}
 			kinds := []string{}
 			for _, header := range p.Headers {
-				var v any
+				v, exists := row.Value, true
 				if object, ok := row.Value.(map[string]any); ok {
-					v = object[header]
+					v, exists = object[header]
 				}
 				kind := "json"
 				if _, ok := v.(string); ok {
 					kind = "string"
 				}
 				kinds = append(kinds, kind)
+				cell := sheetCell(v, exists)
+				display = append(display, cell)
+				cells = append(cells, cell.Raw)
 			}
-			w.Rows = append(w.Rows, SheetRow{ID: row.ID, Ordinal: row.Ordinal, Cells: cells, JSON: string(b), Kinds: kinds})
+			w.Rows = append(w.Rows, SheetRow{ID: row.ID, Ordinal: row.Ordinal, Cells: cells, JSON: string(b), Kinds: kinds, Display: display})
 		}
 	}
 	qbytes, _ := json.Marshal(w.Query)

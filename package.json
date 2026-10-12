@@ -1,0 +1,7 @@
+{
+  "name": "fluxport-development-checks",
+  "private": true,
+  "description": "Optional browser testing tools; FluxPort needs no Node.js runtime.",
+  "devDependencies": { "playwright": "1.62.1" },
+  "scripts": { "check:browser": "node scripts/browser-checks.cjs http://127.0.0.1:58903/collections" }
+}

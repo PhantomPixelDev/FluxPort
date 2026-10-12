@@ -13,3 +13,5 @@ id_*
 *.exe
 compose.vps.yaml
 .hosting/
+node_modules/
+release/

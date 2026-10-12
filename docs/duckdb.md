@@ -24,7 +24,7 @@ The SQL Playground and `POST /api/sql` accept `engine: "auto"`, `"native"`, or `
 
 DuckDB is initialized only for a query that selects it. The first use of each immutable collection generation copies its normalized SQLite index to a disk-backed DuckDB cache; later queries reuse that cache. A changed source gets a new collection generation and therefore a new cache. Source files and SQLite indexes remain the source of truth. Cache creation requires additional disk space proportional to the selected dataset.
 
-The initial integration connects DuckDB to the SQL Playground and SQL API; collection details include a shortcut that opens the selected dataset in the playground. Existing Data Explorer pagination and batch/pipeline transformations remain on their established SQLite/Go paths to preserve their filtering and conversion semantics. CSV collections can be queried after their normal import/index step. Direct Parquet import or user-provided Parquet scans are not enabled yet.
+The initial integration connects DuckDB to the SQL Playground and SQL API; collection details include a shortcut that opens the selected dataset in the playground. Existing Data Explorer pagination and batch/pipeline transformations remain on their established SQLite/Go paths to preserve their filtering and conversion semantics. CSV collections can be queried after their normal import/index step. Parquet dataset import/export is supported by the binary-format service. User-provided arbitrary filesystem scans remain restricted; SQL queries address managed collections.
 
 ## Limits and configuration
 

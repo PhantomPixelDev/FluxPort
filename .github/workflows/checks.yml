@@ -1,0 +1,60 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  go:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: go.mod
+          cache: true
+      - if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: '"C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+      - run: go test ./...
+      - run: go vet ./...
+  browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: go build -o /tmp/fluxport ./cmd/fluxport
+      - name: Browser workflow
+        env:
+          FLUXPORT_ADDRESS: 127.0.0.1:58903
+          FLUXPORT_DATA_DIR: /tmp/fluxport-check-data
+          FLUXPORT_STATE_DIR: /tmp/fluxport-check-state
+          FLUXPORT_PUBLIC_DEMO: 'true'
+        run: |
+          /tmp/fluxport serve > /tmp/fluxport-browser.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if /tmp/fluxport healthcheck --url http://127.0.0.1:58903/healthz; then break; fi
+            sleep 1
+          done
+          node scripts/browser-checks.cjs http://127.0.0.1:58903/collections

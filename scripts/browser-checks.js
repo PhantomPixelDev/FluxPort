@@ -1,16 +1,16 @@
 // Pass this callback to Playwright CLI run-code against an isolated FluxPort instance.
 // It creates synthetic files, preserves/restores one, then deletes its own sources.
-async (page) => {
+async (page, artifactDir='output/playwright') => {
   const base = new URL(page.url()).origin;
   const prefix = `browser-check-${Date.now()}`;
   const filename = `${prefix}.json`;
   const csvname = `${prefix}.csv`;
   const badname = `${prefix}-malformed.json`;
-  const rows = Array.from({length: 100}, (_, i) => ({id: i + 1, name: `User ${i + 1}`, note: 'Unicode 山田 · synthetic data'}));
+  const rows = Array.from({length: 100}, (_, i) => ({id: i + 1, name: `User ${i + 1}`, note: 'Unicode 山田 · synthetic data',big:'9007199254740993',nested:{precise:'9007199254740993'},empty:'',nullable:null,...(i%2?{}:{sometimes:true})}));
   await page.goto(`${base}/collections`);
   await page.locator('#import > summary').click();
   await page.locator('#import-file').setInputFiles([
-    {name: filename, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(rows))},
+    {name: filename, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(rows).replaceAll('"9007199254740993"','9007199254740993'))},
     {name: csvname, mimeType: 'text/csv', buffer: Buffer.from('id,name\n1, Example \n1, Example \n2,"Multiline\nvalue"\n')},
     {name: badname, mimeType: 'application/json', buffer: Buffer.from('[{"unfinished":')}
   ]);
@@ -32,6 +32,25 @@ async (page) => {
   await page.getByRole('button', {name: 'Rename', exact: true}).click();
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
   const collectionID = new URL(page.url()).pathname.split('/')[2];
+  const compact=await page.locator('.sheet-table tbody tr').first().boundingBox();
+  await page.getByLabel('Row density',{exact:true}).selectOption('comfortable');
+  const comfortable=await page.locator('.sheet-table tbody tr').first().boundingBox();
+  if (comfortable.height<=compact.height) throw Error('Density did not change row height');
+  await page.reload();
+  if (await page.getByLabel('Row density',{exact:true}).inputValue()!=='comfortable') throw Error('Density was not remembered');
+  await page.getByLabel('Row density',{exact:true}).selectOption('compact');
+  await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  if (!await page.locator('th[aria-sort=descending]').count()) throw Error('Header sort cycle failed');
+  await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  if (await page.locator('th[aria-sort]').count()) throw Error('Header sort clear failed');
+  await page.locator('[data-inspect-cell]').first().click();
+  if (!(await page.locator('#record-values').inputValue()).includes('9007199254740993')) throw Error('Inspector rounded nested numbers');
+  await page.getByRole('button',{name:'Close record',exact:true}).click();
+  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+  await page.getByRole('button',{name:'Copy big value',exact:true}).first().click();
+  if (await page.evaluate(()=>navigator.clipboard.readText())!=='9007199254740993') throw Error('Clipboard rounded numbers');
+  for (const kind of ['empty','null','missing','json']) if (!await page.locator('td[data-display-kind='+kind+']').count()) throw Error('Missing cell state '+kind);
   await page.locator('#download>summary').click();
   if (await page.locator('#collection-download-format').inputValue() !== 'original') throw Error('Original download must be the default');
   for (const format of ['xlsx', 'parquet']) {
@@ -128,7 +147,7 @@ async (page) => {
       await page.locator('#collection-download-format').selectOption('xlsx');
       const panel = await page.locator('.download-chooser').boundingBox();
       if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
-      await page.screenshot({path:`C:/Users/tpwin/Documents/github/FluxPort/output/playwright/download-${width}-${theme}.png`});
+      await page.screenshot({path:`${artifactDir}/download-${width}-${theme}.png`});
       await page.keyboard.press('Escape');
       await page.getByRole('button',{name:'Switch color theme',exact:true}).click();
       await page.waitForTimeout(300);
@@ -157,7 +176,7 @@ async (page) => {
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     if (await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)) throw Error('Changes page overflow');
-    await page.screenshot({path:`C:/Users/tpwin/Documents/github/FluxPort/output/playwright/workspace-changes-${width}.png`,fullPage:true});
+    await page.screenshot({path:`${artifactDir}/workspace-changes-${width}.png`,fullPage:true});
   }
   await page.setViewportSize({width:1440,height:1000});
   await page.getByRole('button',{name:'Undo last change',exact:true}).click();

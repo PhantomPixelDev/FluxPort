@@ -4,7 +4,7 @@ Start on **Your datasets**. Choose **Add files** to open JSON, CSV, YAML, XML, N
 
 ## Data
 
-Open a dataset to search its rows. Expand **Filter and sort** for more precise matching. **Columns** controls the visible fields; widths can be resized. **Save or download this view** remembers a query or exports all matching rows, rather than only the current page.
+Open a dataset to search its rows. Choose Compact or Comfortable row density; desktop defaults to Compact, and touch layouts keep larger controls. Column headers show actual schema types and cycle sorting while preserving the rest of the query. Missing, null and empty text have different markers. JSON cells open the inspector, and Copy uses the complete value without rounding large numbers. Expand **Filter and sort** for more precise matching. **Columns** controls the visible fields; widths can be resized. **Save or download this view** remembers a query or exports all matching rows, rather than only the current page.
 
 Inspect a row to see its complete JSON, including nested values. Optional **Edit the source file** enables the existing size-bounded editing path. Inline edits write to the original file; Changes creates a separate result. Large datasets remain read-only in the source editor.
 

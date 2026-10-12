@@ -1,0 +1,28 @@
+name: Bug report
+description: Report incorrect data, a conversion failure or a broken workflow.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: FluxPort version and operating system
+      placeholder: 0.3.4, Windows 11 / Linux
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and a small synthetic input
+      description: Include the source/output formats or the operation. Remove private data and credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Error message or screenshot
+      description: Avoid secrets, tokens and private datasets.

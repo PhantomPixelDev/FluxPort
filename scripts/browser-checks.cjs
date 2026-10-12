@@ -13,7 +13,9 @@ const {chromium} = require('playwright');
     const page = await browser.newPage({viewport:{width:1440,height:1000}});
     await page.goto(url.href);
     const callback = vm.runInNewContext('(' + fs.readFileSync(path.join(__dirname,'browser-checks.js'),'utf8') + ')', {Buffer, URL, Date, Error});
-    await callback(page);
+    const artifactDir=path.resolve(__dirname,'../output/playwright');
+    fs.mkdirSync(artifactDir,{recursive:true});
+    await callback(page,artifactDir);
     console.log('Browser workflow checks passed: imports, partial failures, pagination, quality, pipelines, undo/redo, export, exclusions, restore, themes and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.stack); process.exitCode=1; });

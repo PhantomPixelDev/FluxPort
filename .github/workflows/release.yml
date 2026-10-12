@@ -1,0 +1,70 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: go.mod
+      - name: Validate version
+        shell: bash
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: '"C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
+      - run: go test ./...
+      - run: go vet ./...
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          go build -trimpath -ldflags="-s -w -X main.version=$env:VERSION" -o release/fluxport-windows-amd64.exe ./cmd/fluxport
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go run scripts/smoke_release.go --binary release/fluxport-windows-amd64.exe --version $env:VERSION
+      - if: runner.os == 'Linux'
+        run: |
+          mkdir -p release
+          docker run --rm -v "$PWD:/src" -w /src golang:1.26-bookworm sh -c "CGO_ENABLED=1 go build -trimpath -ldflags='-s -w -X main.version=$VERSION' -o release/fluxport-linux-amd64 ./cmd/fluxport"
+          ldd release/fluxport-linux-amd64
+          go run scripts/smoke_release.go --binary release/fluxport-linux-amd64 --version "$VERSION"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-${{ runner.os }}
+          path: release/*
+          if-no-files-found: error
+  publish:
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release
+      - name: Publish verified binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd release
+          sha256sum fluxport-linux-amd64 fluxport-windows-amd64.exe > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" fluxport-linux-amd64 fluxport-windows-amd64.exe SHA256SUMS --verify-tag --generate-notes --title "FluxPort ${GITHUB_REF_NAME#v}" --latest

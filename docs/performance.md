@@ -1,5 +1,7 @@
 # Release measurements
 
+Measurements below are historical and version-specific. DuckDB is now bundled in the standard build, so the pre-DuckDB binary sizes and idle memory below must not be used as current release figures. See the dated Windows/Linux reports for later measurements.
+
 ## Conversion fidelity follow-up: 0.2.1
 
 Measured on 2026-10-11 using the same opt-in streaming test and approximately 1 KiB records. Counts and final source-order pagination passed in every case. Peak sampled Go heap stayed below 5 MiB on both platforms; this measures Go heap, not total process memory. Linux tests actually ran under WSL2 using the Windows-mounted workspace.

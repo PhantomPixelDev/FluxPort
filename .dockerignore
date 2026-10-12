@@ -7,3 +7,7 @@ output
 .playwright-cli
 .env
 *.exe
+node_modules
+release
+.hosting
+.github
