@@ -9,6 +9,7 @@ const path=require('node:path');
  const dir=path.resolve(__dirname,'../docs/images');
  try{
   const page=await browser.newPage({viewport:{width:1440,height:950}});
+  const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
   await page.goto(base+'/collections');
   if(await page.locator('html').getAttribute('data-theme')!=='light')await page.getByRole('button',{name:'Switch color theme',exact:true}).click();
   await page.locator('#import>summary').click();
@@ -36,7 +37,7 @@ const path=require('node:path');
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(dir,'downloads.png')});
   await page.goto('file:///'+path.join(dir,'social-preview.html').replaceAll('\\','/'));
   await page.setViewportSize({width:1280,height:640});await page.screenshot({path:path.join(dir,'social-preview.png')});
-  await page.goto(base+'/collections/'+id);await page.locator('.workspace-more>summary').click();await page.locator('[data-workspace-target=settings]').click();await page.locator('input[name=confirm]').check();await page.getByRole('button',{name:'Delete source file',exact:true}).click();
+  await page.goto(base+'/collections/'+id);await openMore();await page.locator('[data-workspace-target=settings]').click();await page.locator('input[name=confirm]').check();await page.getByRole('button',{name:'Delete source file',exact:true}).click();
   console.log('Real light-mode Data, Changes, Downloads and social preview screenshots generated.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e.stack);process.exitCode=1});

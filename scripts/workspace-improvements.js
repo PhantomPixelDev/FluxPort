@@ -1,4 +1,5 @@
 async (page,artifactDir,workbook) => {
+ const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
  const base=new URL(page.url()).origin,prefix='workspace-'+Date.now();
  const sources=[{name:prefix+'-left.json',rows:[{'key.x':1,name:' Ada ',nested:{n:'9007199254740993'}},{'key.x':1,name:' Ada ',nested:{n:'9007199254740993'}},{'key.x':2,name:'Grace'}]},{name:prefix+'-right.json',rows:[{'key/y':1,value:'a'},{'key/y':1,value:'b'}]},{name:prefix+'-next.json',rows:[{name:' Alan '}]}];
  const imported=[],recipes=[];

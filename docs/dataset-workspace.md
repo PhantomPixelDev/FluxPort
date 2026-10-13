@@ -1,10 +1,10 @@
 # Open a file, make changes, download the result
 
-Opening a file keeps you in one workspace. The table, **Clean** and **Download** share the same collection page. SQL and other tools are in **⋯ More**. On desktop, tools open beside the main table; on smaller screens they open below it. Switching tools retains your cleanup and SQL drafts for the lifetime of the page. **×** or Escape returns to the full-width table. Save steps or queries to keep them beyond this browser page.
+Opening a file keeps you in one workspace. The table, **Clean** and **Convert / Download** share the same collection page. Desktop displays SQL and all other tools in the toolbar; mobile keeps them under **⋯ More**. Icons and accessible names identify each tool. On desktop, tools open beside the main table; on smaller screens they open below it. Switching tools retains your cleanup and SQL drafts for the lifetime of the page. **×** or Escape returns to the full-width table. Save steps or queries to keep them beyond this browser page.
 
-The SQL panel starts with this file selected, and its saved queries and history belong to this file. Summaries, validation, raw JSON, schema and API settings are under **⋯ More**. File settings, processing history and saved views are there too. **Files** returns to the file list. Native links and forms remain available when JavaScript is disabled.
+The SQL panel starts with this file selected, and its saved queries and history belong to this file. Summaries, validation, raw JSON, schema and API settings are in the desktop toolbar or **⋯ More** on mobile. File settings, processing history and saved views are there too. **Files** returns to the file list. Native links and forms remain available when JavaScript is disabled.
 
-Open **⋯ More → Column summaries** for column statistics and cleanup suggestions. To show type labels in the table, enable **⚙ Table options → Show column types**. The default scan checks up to 10,000 source rows; missing, null and empty text stay distinct. Common values track at most 64 values per column and display the five most frequent tracked values. Distinct counting retains at most 1,024 values, and duplicate tracking retains at most 10,000 row identities. Capped counts and sampled coverage are labeled. Wide datasets can be summarized one column at a time.
+Open **Column summaries** (under **⋯ More** on mobile) for column statistics and cleanup suggestions. To show type labels in the table, enable **⚙ Table options → Show column types**. The default scan checks up to 10,000 source rows; missing, null and empty text stay distinct. Common values track at most 64 values per column and display the five most frequent tracked values. Distinct counting retains at most 1,024 values, and duplicate tracking retains at most 10,000 row identities. Capped counts and sampled coverage are labeled. Wide datasets can be summarized one column at a time.
 
 Suggestions offer previews of removing identical rows or trimming whitespace in complete text columns. They start a new set of changes and never alter the source. Nothing is applied automatically.
 
@@ -18,9 +18,9 @@ Start on **Your datasets**. Choose **Add files** to open JSON, CSV, YAML, XML, N
 
 ## Data
 
-Open a dataset to search its rows. Open **⚙ Table options** to choose Compact or Comfortable row density; desktop defaults to Compact, and touch layouts keep larger controls. Column headers cycle sorting while preserving the rest of the query. Missing, null and empty text have different markers. JSON cells open the inspector, and Copy uses the complete value without rounding large numbers. Expand **Filter** for more precise matching. **⚙ Table options** controls the visible fields; widths can be resized. **⋯ More → Saved views & filtered download** remembers a query or exports all matching rows, rather than only the current page.
+Open a dataset to search its rows. Open **⚙ Table options** to choose Compact or Comfortable row density; desktop defaults to Compact, and touch layouts keep larger controls. Column headers cycle sorting while preserving the rest of the query. Missing, null and empty text have different markers. JSON cells open the inspector, and Copy uses the complete value without rounding large numbers. Expand **Filter** for more precise matching. **⚙ Table options** controls the visible fields; widths can be resized. **Saved views & filtered download** (under **⋯ More** on mobile) remembers a query or exports all matching rows, rather than only the current page.
 
-Inspect a row to see its complete JSON, including nested values. **⋯ More → File settings → Edit the source file** enables the existing size-bounded editing path. Inline edits write to the original file; Changes creates a separate result. Large datasets remain read-only in the source editor.
+Inspect a row to see its complete JSON, including nested values. **File settings → Edit the source file** (under **⋯ More** on mobile) enables the existing size-bounded editing path. Inline edits write to the original file; Changes creates a separate result. Large datasets remain read-only in the source editor.
 
 ## Clean
 
@@ -30,9 +30,9 @@ Each added change updates the main table. **Original** shows the source with nor
 
 **Advanced → Save these steps** stores the sequence using the existing pipeline service. Saved names are shared across the instance; a name belonging to another dataset is rejected rather than replaced. Saved steps can be reopened from the dataset or the sidebar. The full editor remains available for joins, calculations, validation, revisions and schedules.
 
-## Download
+## Convert / Download
 
-Open **Download**, pick a **Format**, and click **Download**. It defaults to the original or cleaned data currently shown in the table. When multiple choices exist, **Change** lets you choose the original data, current cleaned data or saved cleanup. Current cleanup does not need to be saved before downloading. Saving a recipe is an independent option.
+Open **Convert / Download** and pick a **Format**. Click **Download** for the original file, or **Convert & download** for another format. It defaults to the original or cleaned data currently shown in the table. When multiple choices exist, **Change** lets you choose the original data, current cleaned data or saved cleanup. Current cleanup does not need to be saved before downloading. Saving a recipe is an independent option.
 
 Click **Download** once. Original file streams the exact source bytes, even while indexing. Converted files show **Creating your file**, then start downloading automatically when ready. **Download again** remains available if the browser blocks automatic downloads or you want another copy. **Another format** returns to the chooser. Progress uses SSE; cancellation and retry remain available.
 

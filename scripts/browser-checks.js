@@ -2,6 +2,7 @@
 // It creates synthetic files, preserves/restores one, then deletes its own sources.
 async (page, artifactDir='output/playwright') => {
   const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true],#detail-content[aria-busy=true]'));
+  const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
   const base = new URL(page.url()).origin;
   const prefix = `browser-check-${Date.now()}`;
   const filename = `${prefix}.json`;
@@ -26,12 +27,12 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('link', {name: 'Page 2', exact: true}).click();
   await page.locator('.detail-body[data-page="2"]').waitFor();
   if (await page.locator('#detail-content tbody tr').count() !== 20) throw Error('Pagination row count');
-  await page.locator('.workspace-more>summary').click();
+  await openMore();
   await page.getByRole('link', {name: 'Inspect JSON', exact: true}).click();
   await page.locator('#workspace-tool-content pre').waitFor();
   await page.locator('[data-close-workspace-tool]').click();
   const display = `${prefix} renamed`;
-  await page.locator('.workspace-more>summary').click();await page.locator('[data-workspace-target=settings]').click();
+  await openMore();await page.locator('[data-workspace-target=settings]').click();
   await page.locator('#display-name').fill(display);
   await page.getByRole('button', {name: 'Rename', exact: true}).click();
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
@@ -89,7 +90,7 @@ async (page, artifactDir='output/playwright') => {
   try {
     const nativePage = await nativeContext.newPage();
     await nativePage.goto(`${base}/collections/${collectionID}`);
-    await nativePage.getByRole('link',{name:'Download',exact:true}).click();
+    await nativePage.getByRole('link',{name:'Convert / Download',exact:true}).click();
     const downloading = nativePage.waitForEvent('download');
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
     if (await (await downloading).failure()) throw Error('No-JavaScript original download failed');
@@ -110,7 +111,7 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.getByRole('button',{name:'Undo',exact:true}).click();
     if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
   } finally { await nativeContext.close(); }
-  await page.locator('.workspace-more>summary').click();
+  await openMore();
   await page.getByRole('link', {name:'Validate data',exact:true}).click();
   await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Records to check').fill('10');
@@ -140,7 +141,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
   if(await page.locator('#file-workspace-tool').isVisible())await page.locator('[data-close-workspace-tool]').click();
-  await page.locator('.workspace-more>summary').click();await page.locator('[data-workspace-target=views]').click();
+  await openMore();await page.locator('[data-workspace-target=views]').click();
   await page.locator('form[action$="/workbench/export"] select[name="format"]').selectOption('csv');
   await page.getByRole('button', {name: 'Download this view', exact: true}).click();
   await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
@@ -166,17 +167,17 @@ async (page, artifactDir='output/playwright') => {
       if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
       await page.screenshot({path:`${artifactDir}/download-${width}-${theme}.png`});
       await page.keyboard.press('Escape');
-      await page.locator('.workspace-more>summary').click();await page.getByRole('button',{name:'Switch color theme',exact:true}).click();await page.keyboard.press('Escape');
+      await openMore();await page.getByRole('button',{name:'Switch color theme',exact:true}).click();if(await page.locator('.workspace-more>summary').isVisible())await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
     }
   }
-  await page.locator('.workspace-more>summary').click();await page.locator('[data-workspace-target=settings]').click();
+  await openMore();await page.locator('[data-workspace-target=settings]').click();
   for (const width of [1440, 390]) {
     await page.setViewportSize({width, height: width === 390 ? 844 : 1000});
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw Error('Page overflow');
     const box = await page.locator('.delete-source .checkbox-setting span').boundingBox();
     if (!box || box.x + box.width > width) throw Error('Confirmation text overflow');
-    await page.locator('.workspace-more>summary').click();await page.getByRole('button', {name: 'Switch color theme', exact: true}).click();await page.keyboard.press('Escape');
+    await openMore();await page.getByRole('button', {name: 'Switch color theme', exact: true}).click();if(await page.locator('.workspace-more>summary').isVisible())await page.keyboard.press('Escape');
   }
   await page.setViewportSize({width: 1440, height: 1000});
   await page.goto(`${base}/collections`);
@@ -216,7 +217,7 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-workspace-target=export]').click();
   await page.locator('#collection-download-format').selectOption('xlsx');
   const cleanedDownload=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Download',exact:true}).click();
+  await page.locator('[data-download-submit]').click();
   await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
   if (await page.locator('#collection-download-format').inputValue()!=='xlsx') throw Error('Downloads must show the prepared format');
   if (await (await cleanedDownload).failure()) throw Error('Cleaned Excel download failed');
@@ -226,7 +227,7 @@ async (page, artifactDir='output/playwright') => {
   for (const name of [display, csvname, badname]) {
     await page.goto(`${base}/collections`);
     await page.getByRole('link', {name, exact: true}).click();
-    await page.locator('.workspace-more>summary').click();await page.locator('[data-workspace-target=settings]').click();
+    await openMore();await page.locator('[data-workspace-target=settings]').click();
     await page.locator('input[name=confirm]').check();
     await page.getByRole('button', {name: 'Delete source file', exact: true}).click();
     await page.getByRole('heading', {name: 'Your datasets', exact: true}).waitFor();

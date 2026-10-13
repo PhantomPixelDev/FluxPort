@@ -10,4 +10,12 @@
 <symbol id="refresh" viewBox="0 0 24 24"><path d="M20 10a8 8 0 0 0-14-4L3 9m0-6v6h6M4 14a8 8 0 0 0 14 4l3-3m0 6v-6h-6"/></symbol>
 <symbol id="search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol>
 <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+<symbol id="clean" viewBox="0 0 24 24"><path d="m14 3 7 7-8 8-7-7zM6 11l-3 6 4 4 6-3M3 21h8"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 3v17h17M8 15v-4m5 4V7m5 8V4"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/><circle cx="12" cy="12" r="9"/></symbol>
+<symbol id="braces" viewBox="0 0 24 24"><path d="M9 3H7v6l-3 3 3 3v6h2M15 3h2v6l3 3-3 3v6h-2"/></symbol>
+<symbol id="schema" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="5" rx="1"/><rect x="2" y="16" width="8" height="5" rx="1"/><rect x="14" y="16" width="8" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></symbol>
+<symbol id="api" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18"/></symbol>
+<symbol id="bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+<symbol id="history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </defs></svg>

@@ -5,7 +5,7 @@
  const id=workspace.dataset.fileWorkspace,base='/collections/'+id;
  const pane=document.getElementById('file-workspace-tool'),host=document.getElementById('workspace-tool-content');
  const heading=document.getElementById('workspace-tool-title'),notice=document.getElementById('workspace-tool-notice');
- const labels={clean:'Clean',sql:'SQL query',export:'Download',insights:'Column summaries',quality:'Validate data',raw:'Inspect JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes',settings:'File settings',views:'Saved views',history:'Processing history'};
+ const labels={clean:'Clean',sql:'SQL query',export:'Convert / Download',insights:'Column summaries',quality:'Validate data',raw:'Inspect JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes',settings:'File settings',views:'Saved views',history:'Processing history'};
  const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id,settings:base+'#file-settings',views:base+'#saved-views',history:base+'#activity'};
  const cache=new Map();let active='',lastTrigger=null;
  const result=document.getElementById('workspace-result'),caption=document.getElementById('workspace-data-caption');
@@ -44,8 +44,12 @@
  }
  const more=workspace.querySelector('.workspace-more'),moreSummary=more.querySelector('summary');
  workspace.classList.add('workspace-ready');
- const theme=document.getElementById('theme-toggle');if(theme){theme.classList.add('workspace-theme');theme.innerHTML='Switch theme';more.querySelector('[data-workspace-theme]').append(theme);}
+ const theme=document.getElementById('theme-toggle');if(theme){theme.classList.add('workspace-theme');theme.title='Switch color theme';theme.innerHTML='<svg class="workspace-action-icon" aria-hidden="true"><use href="/static/icons/icons.svg#sun"/></svg><span class="workspace-tool-label">Switch theme</span>';more.querySelector('[data-workspace-theme]').append(theme);}
  const signout=document.querySelector('.topbar-actions form');if(signout)more.querySelector('[data-workspace-theme]').append(signout);
+ const mobileTools=matchMedia('(max-width:767px)'),extraTools=more.querySelector('.workspace-extra-tools'),desktopTools=workspace.querySelector('.workspace-desktop-tools');
+ function arrangeTools(){more.open=false;(mobileTools.matches?more:desktopTools).append(extraTools);}
+ mobileTools.addEventListener('change',arrangeTools);arrangeTools();
+ new ResizeObserver(entries=>workspace.style.setProperty('--workspace-header-height',(entries[0].target.offsetHeight+12)+'px')).observe(workspace.querySelector('.workspace-header'));
  function staticTool(key){
   const node=document.createElement('div');node.className='workspace-tool-body';
   const selectors={settings:'.collection-tools',views:'#detail-content .sheet-tools',history:'.activity-panel'};
@@ -60,7 +64,7 @@
  }
  function markTool(key){
   workspace.querySelectorAll('.workspace-toolbar a').forEach(link=>{const selected=key?link.dataset.workspaceTarget===key:link.hasAttribute('data-workspace-data');link.classList.toggle('selected',selected);if(selected)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
-  moreSummary.toggleAttribute('data-active',!!more.querySelector('a[aria-current]'));
+  moreSummary.toggleAttribute('data-active',!!extraTools.querySelector('a[aria-current]'));
  }
  let dataRequest;
  async function loadData(url,remember=true){
@@ -110,7 +114,7 @@
  function close(){
   saveCurrent();active='';pane.hidden=true;workspace.classList.remove('tool-open');
   markTool('');
-  history.replaceState(history.state,'',location.pathname+location.search);message('');if(lastTrigger?.isConnected)(more.contains(lastTrigger)?moreSummary:lastTrigger).focus();
+  history.replaceState(history.state,'',location.pathname+location.search);message('');if(lastTrigger?.isConnected)(mobileTools.matches&&extraTools.contains(lastTrigger)?moreSummary:lastTrigger).focus();
  }
  function extract(html,sourceURL=location.href){
   const doc=new DOMParser().parseFromString(html,'text/html');
@@ -233,7 +237,7 @@
  });
  function updateFormats(){host.querySelectorAll('[data-export-format],#collection-download-format').forEach(select=>{
   const form=select.closest('form'),source=form?.querySelector('[data-download-source]');
-  if(source){const original=select.querySelector('[value=original]');original.disabled=source.value!=='original';if(original.disabled&&select.value==='original')select.value='json';const button=form.querySelector('[data-download-submit]');if(button){button.textContent='Download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=source.value==='original'?'Downloads all rows.':'Downloads all cleaned rows. Original file stays unchanged.';const context=form.querySelector('[data-download-context]');if(context)context.textContent=(source.value==='original'?'Original data':source.value==='current'?'Cleaned data':source.selectedOptions[0].textContent)+' · Change';}
+  if(source){const original=select.querySelector('[value=original]');original.disabled=source.value!=='original';if(original.disabled&&select.value==='original')select.value='json';const button=form.querySelector('[data-download-submit]');if(button){button.textContent=select.value==='original'?'Download':'Convert & download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=source.value==='original'?'Downloads all rows.':'Downloads all cleaned rows. Original file stays unchanged.';const context=form.querySelector('[data-download-context]');if(context)context.textContent=(source.value==='original'?'Original data':source.value==='current'?'Cleaned data':source.selectedOptions[0].textContent)+' · Change';}
   const target=select.closest('form')?.querySelector('[data-download-note]');if(target){target.textContent=select.selectedOptions[0]?.dataset.formatNote||'';target.hidden=!target.textContent;}
  });}
  pane.addEventListener('change',event=>{
