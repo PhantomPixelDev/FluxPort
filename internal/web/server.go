@@ -226,13 +226,36 @@ func (s *Server) base(c fiber.Ctx, title, active string) Page {
 // Content-based URLs let an existing browser pick up UI updates immediately
 // while retaining normal asset caching between releases.
 var frontendVersion = func() string {
-	h := sha256.New()
-	for _, name := range []string{"static/css/app.css", "static/css/usability.css", "static/css/workbench.css", "static/css/pipelines.css", "static/css/collection.css", "static/css/dataset-workspace.css", "static/js/app.js", "static/js/workspace.js", "static/js/workbench.js", "static/js/pipelines.js", "static/js/downloads.js", "static/js/dataset-workspace.js"} {
-		b, _ := ui.Files.ReadFile(name)
-		h.Write(b)
+	version, err := frontendAssetVersion(ui.Files)
+	if err != nil {
+		panic(err)
 	}
-	return hex.EncodeToString(h.Sum(nil))[:12]
+	return version
 }()
+
+func frontendAssetVersion(files fs.FS) (string, error) {
+	h := sha256.New()
+	err := fs.WalkDir(files, "static", func(name string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		b, err := fs.ReadFile(files, name)
+		if err != nil {
+			return err
+		}
+		h.Write([]byte(name))
+		h.Write([]byte{0})
+		h.Write(b)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil))[:12], nil
+}
 
 func (s *Server) render(c fiber.Ctx, name, title string, fill func(*Page)) error {
 	p := s.base(c, title, name)
