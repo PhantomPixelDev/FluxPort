@@ -1,4 +1,5 @@
 (() => {
+ document.addEventListener('change',event=>{if(event.target.matches('[data-show-types]'))document.querySelector('[data-file-workspace]')?.classList.toggle('show-column-types',event.target.checked);});
   'use strict';
 	let dataListeners;
 	function initialize(){

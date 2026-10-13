@@ -6,7 +6,7 @@
  const action=form.elements.cleanup,field=form.elements.field;
  function controls(){
   form.querySelectorAll('[data-cleanup-for]').forEach(el=>el.hidden=el.dataset.cleanupFor!==action.value);
-  field.placeholder=action.value==='deduplicate'?'All columns for duplicates':'Choose or enter a column';
+  if(field.tagName==='SELECT')field.options[0].textContent=action.value==='deduplicate'?'All columns':'Choose a column';
   field.required=action.value!=='deduplicate';
   form.querySelector('[data-cleanup-help]').textContent=action.value==='deduplicate'?'Leave Column empty to remove identical rows. Your source file stays unchanged.':'Your source file stays unchanged. Preview the result before downloading.';
  }

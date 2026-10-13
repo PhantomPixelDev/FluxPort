@@ -5,8 +5,8 @@
  const id=workspace.dataset.fileWorkspace,base='/collections/'+id;
  const pane=document.getElementById('file-workspace-tool'),host=document.getElementById('workspace-tool-content');
  const heading=document.getElementById('workspace-tool-title'),notice=document.getElementById('workspace-tool-notice');
- const labels={clean:'Clean data',sql:'SQL query',export:'Download',insights:'Column summaries',quality:'Validate data',raw:'Raw JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes'};
- const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id};
+ const labels={clean:'Clean',sql:'SQL query',export:'Download',insights:'Column summaries',quality:'Validate data',raw:'Inspect JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes',settings:'File settings',views:'Saved views',history:'Processing history'};
+ const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id,settings:base+'#file-settings',views:base+'#saved-views',history:base+'#activity'};
  const cache=new Map();let active='',lastTrigger=null;
  const result=document.getElementById('workspace-result'),caption=document.getElementById('workspace-data-caption');
  let exportChoice,downloadIntent=null;const downloaded=new Set();
@@ -14,7 +14,7 @@
   if(view==='result'&&!result.firstElementChild)view='original';workspace.dataset.dataView=view;
   document.getElementById('detail-content').hidden=view==='result';result.hidden=view!=='result';
   workspace.querySelectorAll('[data-workspace-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.workspaceView===view)));
-  caption.textContent=view==='result'?'Sample · original file unchanged':'All rows · original file';
+  caption.textContent=view==='result'?'Preview · '+(result.querySelector('[data-preview-count]')?.dataset.previewCount||0)+' rows':'';
  }
  function cleanDraft(){
   const form=cache.get('clean')?.node?.querySelector('[data-cleanup-form]');if(!form)return '';
@@ -23,18 +23,41 @@
  }
  function syncClean(node){
   const preview=node.workspacePreview,hasSteps=!!node.querySelector('[name=steps]');
-  result.replaceChildren(...(preview?[preview]:[]));workspace.querySelector('[data-workspace-view=result]').hidden=!preview||!hasSteps;
+  preview?.querySelectorAll('[data-preview-kind=json]').forEach(cell=>{
+   if(cell.querySelector('button'))return;const value=cell.textContent,button=document.createElement('button');button.type='button';button.className='cell-json';button.textContent='JSON';button.setAttribute('aria-label','Inspect cleaned JSON value');button.addEventListener('click',()=>inspectCleanedValue(value));cell.replaceChildren(button);cell.removeAttribute('tabindex');
+  });
+  result.replaceChildren(...(preview?[preview]:[]));workspace.querySelector('.workspace-data-heading').hidden=!preview||!hasSteps;workspace.querySelector('[data-workspace-view=result]').hidden=!preview||!hasSteps;
   showData(preview&&hasSteps?'result':'original');
+ }
+ function inspectCleanedValue(value){
+  let dialog=workspace.querySelector('.workspace-value-dialog');
+  if(!dialog){dialog=document.createElement('dialog');dialog.className='workspace-value-dialog';dialog.setAttribute('aria-label','Cleaned JSON value');dialog.innerHTML='<form method="dialog"><button class="button small" aria-label="Close cleaned value">Close</button></form><h2>JSON value</h2><textarea class="mono" rows="12" readonly aria-label="Complete cleaned JSON value"></textarea><button class="button" type="button" data-copy-cleaned>Copy value</button><span role="status"></span>';workspace.append(dialog);dialog.querySelector('[data-copy-cleaned]').addEventListener('click',async()=>{const input=dialog.querySelector('textarea');try{await navigator.clipboard.writeText(input.value);dialog.querySelector('[role=status]').textContent='Copied';}catch{input.focus();input.select();dialog.querySelector('[role=status]').textContent='Press Ctrl+C or Command+C to copy.';}});}
+  dialog.querySelector('textarea').value=value;dialog.querySelector('[role=status]').textContent='';dialog.showModal();
  }
  function syncExport(){
   const form=host.querySelector('[data-collection-download]');if(!form)return;
   const source=form.querySelector('[data-download-source]'),draft=cleanDraft();
   if(draft){if(!source.querySelector('[value=current]')){const option=new Option('Current cleaned data','current');source.options.add(option,1);}form.elements.draft.value=draft;}
   if(exportChoice){source.value=exportChoice==='current'&&source.querySelector('[value=current]')?'current':'original';exportChoice=undefined;}
-  source.closest('label').hidden=source.options.length===1;
+  source.closest('.download-source-options').hidden=source.options.length===1;
   updateFormats();
  }
  const more=workspace.querySelector('.workspace-more'),moreSummary=more.querySelector('summary');
+ workspace.classList.add('workspace-ready');
+ const theme=document.getElementById('theme-toggle');if(theme){theme.classList.add('workspace-theme');theme.innerHTML='Switch theme';more.querySelector('[data-workspace-theme]').append(theme);}
+ const signout=document.querySelector('.topbar-actions form');if(signout)more.querySelector('[data-workspace-theme]').append(signout);
+ function staticTool(key){
+  const node=document.createElement('div');node.className='workspace-tool-body';
+  const selectors={settings:'.collection-tools',views:'#detail-content .sheet-tools',history:'.activity-panel'};
+  const source=workspace.querySelector(selectors[key]);if(!source)return cache.get(key)?.node;
+  source.querySelector(':scope>summary')?.remove();node.append(...source.childNodes);source.remove();
+  if(key==='settings'){
+   const editing=workspace.querySelector('#detail-content .source-editing');if(editing)node.prepend(editing);
+   node.querySelectorAll('[hx-post]').forEach(form=>{for(const attr of [...form.attributes])if(attr.name.startsWith('hx-'))form.removeAttribute(attr.name);});
+   const refresh=node.querySelector('form[action$="/refresh"]');if(refresh){const input=document.createElement('input');input.type='hidden';input.name='return_collection';input.value='1';refresh.append(input);}
+  }
+  return node;
+ }
  function markTool(key){
   workspace.querySelectorAll('.workspace-toolbar a').forEach(link=>{const selected=key?link.dataset.workspaceTarget===key:link.hasAttribute('data-workspace-data');link.classList.toggle('selected',selected);if(selected)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
   moreSummary.toggleAttribute('data-active',!!more.querySelector('a[aria-current]'));
@@ -49,6 +72,9 @@
    if(!response.ok||!body)throw Error(doc.querySelector('[role=alert]')?.textContent||'Unable to update the table. Try again.');
    const scroll=detail.querySelector('.record-scroll')?.scrollLeft||0;
    detail.replaceChildren(...body.childNodes);
+   const types=detail.querySelector('[data-show-types]');if(types)types.checked=workspace.classList.contains('show-column-types');
+   cache.delete('views');
+   if(active==='views'){const node=staticTool('views');if(node){cache.set('views',{node});mount({node});}}
    const metadata=doc.querySelector('#collection-metadata');if(metadata)document.getElementById('collection-metadata').replaceWith(metadata);
    window.htmx?.process(detail);document.dispatchEvent(new CustomEvent('fluxport:data-mounted'));
    const table=detail.querySelector('.record-scroll');if(table)table.scrollLeft=scroll;
@@ -89,7 +115,7 @@
  function extract(html,sourceURL=location.href){
   const doc=new DOMParser().parseFromString(html,'text/html');
   const root=doc.querySelector('main')||doc.body;
-  root.querySelectorAll('script,.page-heading,.dataset-tabs,#collection-metadata,.activity-panel,.collection-tools,#feedback:empty').forEach(el=>el.remove());
+  root.querySelectorAll('script,.workspace-header,.page-heading,.dataset-tabs,#collection-metadata,.activity-panel,.collection-tools,#feedback:empty').forEach(el=>el.remove());
   const node=document.createElement('div');node.className='workspace-tool-body';
   const content=root.querySelector('.dataset-workspace,.quality-layout')||root;
   node.append(...content.childNodes);
@@ -104,12 +130,18 @@
   const detail=node.querySelector('#detail-content');if(detail)detail.id='tool-detail-content';
   const cleanup=node.querySelector('[data-cleanup-form]');
   if(cleanup){
+   const reuse=node.querySelector('.reuse-steps');reuse?.remove();
    node.querySelector('.workspace-shortcuts')?.remove();
    const preview=cleanup.querySelector('[data-cleanup-preview]');if(preview){preview.querySelector('.cleanup-original-sample')?.remove();node.workspacePreview=preview;preview.remove();}
-   const save=cleanup.querySelector('.cleanup-save'),toolbar=cleanup.querySelector('.cleanup-steps .panel-toolbar');
-   if(save){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Save steps for later';details.className='workspace-save-steps';details.append(summary);save.before(details);details.append(save);save.querySelector('[value=preview]')?.remove();}
-   const join=cleanup.querySelector('.join-builder');if(join)cleanup.append(join);
-   const download=cleanup.querySelector('.cleanup-download');if(download){const button=document.createElement('button');button.type='button';button.className='button primary workspace-download-clean';button.dataset.workspaceDownloadClean='';button.textContent='Download cleaned data';button.disabled=!node.workspacePreview;download.hidden=!cleanup.querySelector('[name=steps]');download.replaceChildren(button);}
+   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.className='workspace-clean-advanced';advanced.append(summary);cleanup.append(advanced);
+   if(reuse)advanced.append(reuse);
+   const save=cleanup.querySelector('.cleanup-save');if(save){advanced.append(save);const previewButton=save.querySelector('[value=preview]');if(previewButton)previewButton.hidden=true;}
+   const reset=cleanup.querySelector('[value=reset]');if(reset)advanced.append(reset);
+   for(const selector of ['.saved-changes','.join-builder','.dataset-advanced']){const item=node.querySelector(selector);if(item)advanced.append(item);}
+   const steps=cleanup.querySelector('.cleanup-steps');if(!steps.querySelector('[name=steps]'))steps.hidden=true;
+   cleanup.querySelector('.cleanup-download')?.remove();
+   if(node.workspacePreview){const complete=node.workspacePreview.querySelector('.cleanup-complete-sample');if(complete)advanced.append(complete);}
+   cleanup.querySelector('[data-cleanup-help]').hidden=true;
   }
   return node;
  }
@@ -140,6 +172,12 @@
   if(key==='sql'||key==='quality'||key==='insights')showData('original');
   if(url&&key==='sql'){const scoped=new URL(url,location.href);scoped.pathname=base+'/sql';url=scoped.href;}
   lastTrigger=trigger||lastTrigger;select(key);
+  if(['settings','views','history'].includes(key)){const node=staticTool(key);if(node)cache.set(key,{node});}
+  if(key==='raw'){
+   const sample=cache.get('clean')?.node?.querySelector('.cleanup-complete-sample pre');
+   if(workspace.dataset.dataView==='result'&&sample){const node=document.createElement('div'),label=document.createElement('p');label.className='muted small-text';label.textContent='Cleaned preview · '+(result.querySelector('[data-preview-count]')?.dataset.previewCount||0)+' rows';node.className='workspace-tool-body';node.append(label,sample.cloneNode(true));cache.set('raw',{node});force=false;}
+   else force=true;
+  }
   const entry=cache.get(key);
   if(entry?.node&&!force){mount(entry);}else{host.replaceChildren();load(key,url||routes[key]);}
   heading.focus({preventScroll:true});
@@ -147,6 +185,7 @@
  }
  document.addEventListener('click',event=>{
   if(more.open&&!more.contains(event.target))more.open=false;
+  workspace.querySelectorAll('.toolbar-disclosure[open]').forEach(disclosure=>{if(!disclosure.contains(event.target))disclosure.open=false;});
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   const link=event.target.closest('a');
   if(event.target.closest('[data-workspace-edit-clean]')){open('clean',routes.clean,event.target);return;}
@@ -158,11 +197,16 @@
   const url=new URL(link.href,location.href),key=link.dataset.workspaceTarget||toolFor(url);
   if(key&&(link.closest('[data-file-workspace]')||pane.contains(link))){event.preventDefault();event.stopImmediatePropagation();open(key,url.href,link,pane.contains(link)||(!link.dataset.workspaceTarget));}
   else if(pane.contains(link)&&url.origin===location.origin&&url.pathname===base&&!url.search){event.preventDefault();close();}
-  else if(link.closest('#detail-content')&&url.origin===location.origin&&[base,base+'/workbench'].includes(url.pathname)){event.preventDefault();event.stopImmediatePropagation();loadData(url.href);}
+  else if((link.closest('#detail-content')||(active==='views'&&pane.contains(link)))&&url.origin===location.origin&&[base,base+'/workbench'].includes(url.pathname)){event.preventDefault();event.stopImmediatePropagation();loadData(url.href);}
+ },true);
+ workspace.addEventListener('toggle',event=>{
+  const disclosure=event.target;if(!disclosure.matches('.workspace-more,.toolbar-disclosure')||!disclosure.open)return;
+  [more,...workspace.querySelectorAll('.toolbar-disclosure')].forEach(other=>{if(other!==disclosure)other.open=false;});
  },true);
  pane.addEventListener('submit',event=>{
   const form=event.target,button=event.submitter;
   if(event.defaultPrevented||!(form instanceof HTMLFormElement))return;
+  if(active==='settings')return;
   event.preventDefault();
   const data=new FormData(form,button),url=new URL(button?.getAttribute('formaction')||form.getAttribute('action')||location.href,location.href);
   const method=(button?.getAttribute('formmethod')||form.getAttribute('method')||'GET').toUpperCase();
@@ -170,7 +214,7 @@
    downloadIntent=null;location.assign(base+'/export?original=1');return;
   }
   if(url.pathname.endsWith('/cancel'))downloadIntent=null;
-  else if(data.get('action')!=='review'&&(url.pathname===base+'/export'||url.pathname.endsWith('/retry'))){downloadIntent={job:null};host.querySelector('#collection-download-status')?.replaceChildren();host.querySelector('.download-chooser')?.removeAttribute('data-editing');}
+  else if(data.get('action')!=='review'&&(url.pathname===base+'/export'||url.pathname===base+'/workbench/export'||url.pathname.endsWith('/retry'))){downloadIntent={job:null};host.querySelector('#collection-download-status')?.replaceChildren();host.querySelector('.download-chooser')?.removeAttribute('data-editing');}
   const params=new URLSearchParams();for(const [key,value] of data){if(typeof value==='string')params.append(key,value);}
   if(method==='GET'){url.search=params.toString();load(active,url.href);}
   else{
@@ -189,7 +233,7 @@
  });
  function updateFormats(){host.querySelectorAll('[data-export-format],#collection-download-format').forEach(select=>{
   const form=select.closest('form'),source=form?.querySelector('[data-download-source]');
-  if(source){const original=select.querySelector('[value=original]');original.disabled=source.value!=='original';if(original.disabled&&select.value==='original')select.value='json';const button=form.querySelector('[data-download-submit]');if(button){button.textContent=select.value==='original'?'Download original file':'Download '+(select.selectedOptions[0]?.textContent||'file').split(' (')[0];button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=source.value==='original'?'Complete original dataset.':'Complete cleaned result · original file unchanged.';}
+  if(source){const original=select.querySelector('[value=original]');original.disabled=source.value!=='original';if(original.disabled&&select.value==='original')select.value='json';const button=form.querySelector('[data-download-submit]');if(button){button.textContent='Download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=source.value==='original'?'Downloads all rows.':'Downloads all cleaned rows. Original file stays unchanged.';const context=form.querySelector('[data-download-context]');if(context)context.textContent=(source.value==='original'?'Original data':source.value==='current'?'Cleaned data':source.selectedOptions[0].textContent)+' · Change';}
   const target=select.closest('form')?.querySelector('[data-download-note]');if(target){target.textContent=select.selectedOptions[0]?.dataset.formatNote||'';target.hidden=!target.textContent;}
  });}
  pane.addEventListener('change',event=>{
@@ -208,11 +252,10 @@
   const form=chooser.querySelector('[data-collection-download]');if(!form||chooser.hasAttribute('data-editing'))return;
   if(downloaded.has(job.dataset.downloadJob)){
    job.querySelector('strong').textContent='Download started';const link=job.querySelector('a[href]');if(link)link.textContent='Download again';
-   if(!job.querySelector('[data-download-started]')){const text=document.createElement('p');text.dataset.downloadStarted='';text.className='muted small-text';text.textContent='Check your browser downloads. Save another copy below if needed.';job.querySelector('strong').after(text);}
   }
   form.hidden=true;status.hidden=false;
   let change=chooser.querySelector('[data-download-options]');
-  if(!change){change=document.createElement('button');change.type='button';change.className='button small ghost';change.dataset.downloadOptions='';change.textContent='Download another format';change.addEventListener('click',()=>{chooser.dataset.editing='';form.hidden=false;status.hidden=true;change.hidden=true;});chooser.append(change);}
+  if(!change){change=document.createElement('button');change.type='button';change.className='button small ghost';change.dataset.downloadOptions='';change.textContent='Another format';change.addEventListener('click',()=>{chooser.dataset.editing='';form.hidden=false;status.hidden=true;change.hidden=true;});chooser.append(change);}
   change.hidden=['queued','running','staged'].includes(job.dataset.downloadState);
  }
  let refreshing=false,refreshAgain=false;

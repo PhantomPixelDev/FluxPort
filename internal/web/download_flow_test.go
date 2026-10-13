@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/url"
 	"strings"
 	"testing"
@@ -42,6 +43,10 @@ func TestCurrentCleanupDownloadUsesAllRowsWithoutSaving(t *testing.T) {
 		t.Fatal(job.Error)
 	}
 	response, body = call(t, app, "GET", "/jobs/"+job.ID+"/download", "", nil, page.Cookies())
+	_, disposition, err := mime.ParseMediaType(response.Header.Get("Content-Disposition"))
+	if err != nil || disposition["filename"] != "current-cleaned.json" {
+		t.Fatalf("unexpected download name: %q (%v)", response.Header.Get("Content-Disposition"), err)
+	}
 	var output []map[string]any
 	d := json.NewDecoder(strings.NewReader(body))
 	d.UseNumber()
@@ -79,6 +84,23 @@ func TestCurrentCleanupDownloadUsesAllRowsWithoutSaving(t *testing.T) {
 	response, _ = call(t, app, "POST", "/collections/"+col.ID+"/export", form.Encode(), headers, nil)
 	if response.StatusCode != 403 {
 		t.Fatal("draft export lacks CSRF")
+	}
+}
+
+func TestDownloadFilename(t *testing.T) {
+	for _, tc := range []struct{ name, format, suffix, want string }{
+		{"orders.csv", "xlsx", "", "orders.xlsx"},
+		{"orders.csv", "json", "-cleaned", "orders-cleaned.json"},
+		{"sales.JSON", "csv", "-filtered", "sales-filtered.csv"},
+		{"山田 sales.xlsx", "parquet", "", "山田 sales.parquet"},
+		{`C:\private\sales.csv`, "csv", "", "sales.csv"},
+		{"../../sales.csv", "json", "", "sales.json"},
+		{"bad\r\nname.csv", "xlsx", "", "badname.xlsx"},
+		{"..", "json", "", "collection.json"},
+	} {
+		if got := downloadFilename(tc.name, tc.format, tc.suffix); got != tc.want {
+			t.Errorf("%q: got %q, want %q", tc.name, got, tc.want)
+		}
 	}
 }
 

@@ -104,6 +104,7 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	engine.AddFunc("inc", func(n int) int { return n + 1 })
 	engine.AddFunc("formatName", downloadFormatName)
 	engine.AddFunc("formatNote", downloadFormatNote)
+	engine.AddFunc("jobFilename", server.jobDownloadFilename)
 	engine.AddFunc("jobFormat", func(j jobs.Job) string {
 		f := downloadJobFormat(j)
 		if f == "" {

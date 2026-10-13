@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"mime"
@@ -106,7 +107,7 @@ func downloadFormatName(f string) string {
 func downloadFormatNote(f string) string {
 	switch f {
 	case "xlsx":
-		return "Text cells. Null, missing and empty text become blank."
+		return "Values are saved as text."
 	case "parquet":
 		return "Records are stored in one JSON column."
 	case "parquet-typed":
@@ -131,7 +132,15 @@ func (s *Server) originalDownload(c fiber.Ctx, col collections.Collection) error
 		r.Close()
 		return err
 	}
-	name := path.Base(strings.ReplaceAll(col.Name, `\`, "/"))
+	name := downloadFilename(col.Name, col.Format, "")
+	c.Set("Content-Type", conversion.MIME(col.Format))
+	c.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": name}))
+	return c.SendStream(r, int(info.Size()))
+}
+
+// Public download names describe the file, never disposable job paths or IDs.
+func downloadFilename(displayName, format, suffix string) string {
+	name := path.Base(strings.ReplaceAll(displayName, `\`, "/"))
 	name = strings.Map(func(r rune) rune {
 		if r < 32 || r == 127 {
 			return -1
@@ -141,12 +150,46 @@ func (s *Server) originalDownload(c fiber.Ctx, col collections.Collection) error
 	if name == "" || name == "." || name == "/" {
 		name = "collection"
 	}
-	if !strings.HasSuffix(strings.ToLower(name), "."+col.Format) {
-		name += "." + col.Format
+	for _, ext := range collections.DatasetFormats() {
+		if strings.HasSuffix(strings.ToLower(name), "."+ext) {
+			name = name[:len(name)-len(ext)-1]
+			break
+		}
 	}
-	c.Set("Content-Type", conversion.MIME(col.Format))
-	c.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": name}))
-	return c.SendStream(r, int(info.Size()))
+	name = strings.TrimSpace(strings.Trim(name, ". "))
+	if name == "" {
+		name = "collection"
+	}
+	return name + suffix + "." + format
+}
+
+func (s *Server) jobDownloadFilename(job jobs.Job) string {
+	var payload struct {
+		Path, CollectionID, To string
+		Pipeline               *collections.Pipeline
+		Query                  *collections.Query
+	}
+	if json.Unmarshal([]byte(job.Payload), &payload) != nil || payload.To == "" {
+		return "download"
+	}
+	display := path.Base(strings.ReplaceAll(payload.Path, `\`, "/"))
+	if len(display) > 25 && display[24] == '-' {
+		if _, err := hex.DecodeString(display[:24]); err == nil {
+			display = display[25:]
+		}
+	}
+	if col, err := s.Service.Get(payload.CollectionID); err == nil {
+		display = col.Name
+	} else if payload.Path == "" {
+		display = strings.Split(strings.Split(job.Name, " → ")[0], " · ")[0]
+	}
+	suffix := ""
+	if payload.Pipeline != nil {
+		suffix = "-cleaned"
+	} else if payload.Query != nil {
+		suffix = "-filtered"
+	}
+	return downloadFilename(display, payload.To, suffix)
 }
 
 func (s *Server) compactDownload(c fiber.Ctx, job jobs.Job) error {

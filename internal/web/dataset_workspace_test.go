@@ -36,7 +36,7 @@ func TestDatasetCleanupJourneyPreservesSource(t *testing.T) {
 	base.Set("steps", string(b))
 	base.Set("action", "undo")
 	resp, body = call(t, app, "POST", "/collections/"+col.ID+"/changes", base.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, cookies)
-	if resp.StatusCode != 200 || !strings.Contains(body, "No changes yet.") {
+	if resp.StatusCode != 200 || strings.Contains(body, "<textarea name=\"steps\"") {
 		t.Fatal("undo failed", resp.StatusCode)
 	}
 	trim := collections.PipelineStep{Op: "transform", Transform: &transformations.Operation{Kind: "trim", Field: "name"}}

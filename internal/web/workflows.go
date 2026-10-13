@@ -241,7 +241,12 @@ func (s *Server) download(c fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(404, err.Error())
 	}
-	c.Attachment(path)
+	job, jobErr := s.Service.Jobs.Get(c.Params("id"))
+	name := "download"
+	if jobErr == nil {
+		name = s.jobDownloadFilename(job)
+	}
+	c.Attachment(name)
 	// Disposable outputs must not keep cached file handles after a download.
 	return c.SendFile(path, fiber.SendFile{CacheDuration: -1})
 }
@@ -341,6 +346,9 @@ func (s *Server) refreshOne(c fiber.Ctx) error {
 		return err
 	}
 	c.Set("HX-Trigger", "collectionsChanged")
+	if c.FormValue("return_collection") == "1" {
+		return c.Redirect().Status(303).To("/collections/" + col.ID)
+	}
 	return s.jobs(c)
 }
 func (s *Server) exportJob(c fiber.Ctx) error {
