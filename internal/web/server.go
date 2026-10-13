@@ -61,6 +61,7 @@ type Page struct {
 	DownloadOpen                                                                           bool
 	DownloadError                                                                          string
 	DownloadFormat                                                                         string
+	DownloadDraft                                                                          string
 	Excluded                                                                               []collections.Excluded
 	Headers                                                                                []string
 	Cells                                                                                  [][]string
@@ -100,6 +101,7 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
 	})
 	engine.AddFunc("upper", strings.ToUpper)
+	engine.AddFunc("inc", func(n int) int { return n + 1 })
 	engine.AddFunc("formatName", downloadFormatName)
 	engine.AddFunc("formatNote", downloadFormatNote)
 	engine.AddFunc("jobFormat", func(j jobs.Job) string {
@@ -388,6 +390,10 @@ func (s *Server) detail(c fiber.Ctx) error {
 	if message, ok := c.Locals("download_error").(string); ok {
 		p.DownloadError = message
 		p.DownloadOpen = true
+		p.DownloadFormat = c.FormValue("format")
+		if c.FormValue("dataset") == "current" {
+			p.DownloadDraft = c.FormValue("draft")
+		}
 	}
 	if id := c.Query("download_job"); id != "" {
 		job, e := s.Service.Jobs.Get(id)
@@ -396,6 +402,7 @@ func (s *Server) detail(c fiber.Ctx) error {
 		}
 		p.Jobs = []jobs.Job{job}
 		p.DownloadFormat = downloadJobFormat(job)
+		p.DownloadDraft = downloadJobDraft(job)
 		p.DownloadOpen = true
 	}
 	p.Query = strings.TrimSpace(c.Query("q"))
@@ -438,13 +445,19 @@ func (s *Server) detail(c fiber.Ctx) error {
 			}
 		}
 		id := c.Query("steps")
+		if id == "" && p.DownloadError != "" {
+			id = c.FormValue("dataset", c.FormValue("pipeline"))
+			if id == "original" || id == "current" {
+				id = ""
+			}
+		}
 		if id == "" && len(p.Jobs) > 0 {
 			id = downloadJobSteps(p.Jobs[0])
 		}
 		if id != "" {
 			recipe, e := s.Service.GetPipeline(id)
 			if e != nil || recipe.Source != col.ID {
-				if len(p.Jobs) > 0 {
+				if len(p.Jobs) > 0 || p.DownloadError != "" {
 					return c.Render("pages/detail", p, "layouts/base")
 				}
 				return fiber.NewError(404, "Saved steps not found for this dataset")

@@ -66,19 +66,19 @@ async (page, artifactDir='output/playwright') => {
   const exportRoute=`**/collections/${collectionID}/export`;
   await page.route(exportRoute,async route=>{const response=await route.fetch();await page.waitForTimeout(500);await route.fulfill({response});});
   for (const format of ['xlsx', 'parquet']) {
+    if(format==='parquet')await page.getByRole('button',{name:'Download another format',exact:true}).click();
     const previous = page.locator('#collection-download-status [data-download-job]');
     const previousJob = await previous.count() ? await previous.getAttribute('data-download-job') : null;
     await page.locator('#collection-download-format').selectOption(format);
     await page.locator('[data-download-note]').filter({visible:true}).waitFor();
-    await page.locator('[data-collection-download]').getByRole('button', {name:'Download',exact:true}).click();
+    const downloading = page.waitForEvent('download');
+    await page.locator('[data-download-submit]').click();
     await page.waitForFunction(previous => {
       const job = document.querySelector('#collection-download-status [data-download-job]');
       return job && job.dataset.downloadJob !== previous;
     }, previousJob);
-    const ready = page.locator('#collection-download-status').getByRole('link', {name:'Download file',exact:true});
+    const ready = page.locator('#collection-download-status').locator('a[href*="/download"]');
     try { await ready.waitFor(); } catch (error) { throw Error('Export '+format+' did not become visible: '+await page.locator('#collection-download-status').textContent()+'; chooser open='+await page.locator('#download').getAttribute('open')); }
-    const downloading = page.waitForEvent('download');
-    await ready.click();
     if (await (await downloading).failure()) throw Error('Converted download failed');
     if (await page.locator('#collection-download-status [data-download-job]').count() !== 1) throw Error('Chooser should show one export');
     if(format==='xlsx'){await page.unroute(exportRoute);await page.evaluate(()=>window.removeEventListener('fluxport:progress',window.__blockExportProgress,true));}
@@ -89,7 +89,7 @@ async (page, artifactDir='output/playwright') => {
   try {
     const nativePage = await nativeContext.newPage();
     await nativePage.goto(`${base}/collections/${collectionID}`);
-    await nativePage.getByRole('link',{name:'Export',exact:true}).click();
+    await nativePage.getByRole('link',{name:'Download',exact:true}).click();
     const downloading = nativePage.waitForEvent('download');
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
     if (await (await downloading).failure()) throw Error('No-JavaScript original download failed');
@@ -97,16 +97,16 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
     if (!new URL(nativePage.url()).searchParams.get('download_job')) throw Error('Native export must navigate to its status');
     for (let attempt=0;attempt<20;attempt++) {
-      if (await nativePage.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).isVisible()) break;
+      if (await nativePage.locator('#collection-download-status').locator('a[href*="/download"]').isVisible()) break;
       await nativePage.waitForTimeout(250);
       await nativePage.getByRole('button',{name:'Refresh download status',exact:true}).click();
     }
-    await nativePage.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).waitFor();
+    await nativePage.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
     await nativePage.goto(`${base}/collections/${collectionID}/changes`);
     await nativePage.getByLabel('Action',{exact:true}).selectOption('deduplicate');
     await nativePage.getByLabel('Column',{exact:true}).fill('id');
     await nativePage.getByRole('button',{name:'Add change',exact:true}).click();
-    await nativePage.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
+    await nativePage.getByRole('heading',{name:'Cleaned data',exact:true}).waitFor();
     await nativePage.getByRole('button',{name:'Undo last change',exact:true}).click();
     if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
   } finally { await nativeContext.close(); }
@@ -143,7 +143,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByText('Save or download this view',{exact:true}).click();
   await page.locator('form[action$="/workbench/export"] select[name="format"]').selectOption('csv');
   await page.getByRole('button', {name: 'Download this view', exact: true}).click();
-  await page.locator('#collection-download-status').getByRole('link', {name:'Download file',exact:true}).waitFor();
+  await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
   await page.goto(`${base}/collections`);
   await page.getByRole('button', {name: `Remove ${display}`, exact: true}).click();
   await page.getByRole('link', {name: display, exact: true}).waitFor({state: 'detached'});
@@ -184,13 +184,13 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('[data-cleanup-form] input[name=field]').fill('id');
   await page.getByRole('button',{name:'Add change',exact:true}).click();
-  await page.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
-  if (await page.locator('.change-comparison>div').last().locator('tbody tr').count()!==2) throw Error('Duplicate rows remained');
+  await page.getByRole('heading',{name:'Cleaned data',exact:true}).waitFor();
+  if (await page.locator('.cleanup-result-table').last().locator('tbody tr').count()!==2) throw Error('Duplicate rows remained');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] input[name=field]').fill('name');
   await page.getByRole('button',{name:'Add change',exact:true}).click();
   await settled();
-  if ((await page.locator('.change-comparison>div').last().locator('tbody tr').first().locator('td').last().innerText())!=='Example') throw Error('Trim preview failed');
+  if ((await page.locator('.cleanup-result-table').last().locator('tbody tr').first().locator('td').last().innerText())!=='Example') throw Error('Trim preview failed');
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     if (await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)) throw Error('Changes page overflow');
@@ -208,17 +208,17 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-cleanup-form] input[name=name]').fill(prefix+' cleanup');
   await page.locator('.dataset-tabs').getByRole('link',{name:'Data',exact:true}).click();
   await page.locator('[data-workspace-target=clean]').click();
-  await page.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'Cleaned data',exact:true}).waitFor();
   await page.getByRole('button',{name:'Save these steps',exact:true}).click();
   await page.waitForFunction(()=>!!document.querySelector('[data-cleanup-form]')?.dataset.saved);
   const savedID=await page.locator('[data-cleanup-form]').getAttribute('data-saved');
   if (!savedID) throw Error('Cleanup steps were not saved');
-  await page.locator('.cleanup-download select').selectOption('xlsx');
-  await page.getByRole('button',{name:'Download result',exact:true}).click();
-  await page.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).waitFor();
-  if (await page.locator('#collection-download-format').inputValue()!=='xlsx') throw Error('Downloads must show the prepared format');
+  await page.getByRole('button',{name:'Download cleaned data',exact:true}).click();
+  await page.locator('#collection-download-format').selectOption('xlsx');
   const cleanedDownload=page.waitForEvent('download');
-  await page.locator('#collection-download-status').getByRole('link',{name:'Download file',exact:true}).click();
+  await page.getByRole('button',{name:'Download Excel',exact:true}).click();
+  await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
+  if (await page.locator('#collection-download-format').inputValue()!=='xlsx') throw Error('Downloads must show the prepared format');
   if (await (await cleanedDownload).failure()) throw Error('Cleaned Excel download failed');
   await page.goto(`${base}/pipelines?saved=${savedID}`);
   await page.getByText('Recipe settings and API',{exact:true}).click();

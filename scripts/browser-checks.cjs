@@ -19,7 +19,7 @@ const {chromium} = require('playwright');
     fs.mkdirSync(artifactDir,{recursive:true});
     try { await callback(page,artifactDir); } catch(error) { console.error('Workspace status: '+(await page.locator('#file-workspace-tool').textContent().catch(()=>'(no workspace)')).slice(-3000));await page.screenshot({path:path.join(artifactDir,'regression-failure.png')});throw error; }
     cp.execFileSync('go',['run','scripts/browser-fixtures.go',artifactDir],{cwd:path.resolve(__dirname,'..'),timeout:60000});
-    const improvements=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'workspace-improvements.js'),'utf8')+')',{Buffer,URL,Date,Error});
+    const improvements=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'workspace-improvements.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
     await improvements(page,artifactDir,fs.readFileSync(path.join(artifactDir,'multi-sheet.xlsx')));
     const workspace=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'file-workspace-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
     await workspace(page,artifactDir);

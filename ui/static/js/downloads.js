@@ -4,6 +4,11 @@
  const status=document.getElementById('collection-download-status');
  const form=document.querySelector('[data-collection-download]');
  let pending;
+ let requested=false;const delivered=new Set();
+ function deliver(){
+  const job=status?.querySelector('[data-download-job]'),link=job?.querySelector('a[href]');
+  if(requested&&job?.dataset.downloadState==='ready'&&link&&!delivered.has(job.dataset.downloadJob)){delivered.add(job.dataset.downloadJob);requested=false;link.click();}
+ }
  function refresh(){
   const job=status?.querySelector('[data-download-job]');
   if(job&&window.htmx)htmx.ajax('GET','/jobs?download_view=compact&id='+encodeURIComponent(job.dataset.downloadJob),{target:status,swap:'innerHTML'});
@@ -25,21 +30,24 @@
  function selectedSteps(){
   if(!steps)return;
   const select=form.elements.format,original=select.querySelector('[value=original]');
-  original.disabled=!!steps.value;
-  if(steps.value&&select.value==='original'){select.value='json';note(select);}
+  original.disabled=steps.value!=='original';
+  if(original.disabled&&select.value==='original'){select.value='json';note(select);}
+  const button=form.querySelector('[data-download-submit]');if(button)button.textContent=select.value==='original'?'Download original file':'Download '+select.selectedOptions[0].textContent.split(' (')[0];
  }
  steps?.addEventListener('change',selectedSteps);selectedSteps();
+ form?.elements.format.addEventListener('change',selectedSteps);
  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.collection-actions>details[open]').forEach(d=>{d.open=false;d.querySelector('summary')?.focus();});});
  document.addEventListener('click',e=>{document.querySelectorAll('.collection-actions>details[open]').forEach(d=>{if(!d.contains(e.target))d.open=false;});});
  document.querySelectorAll('.collection-actions>details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)document.querySelectorAll('.collection-actions>details').forEach(other=>{if(other!==d)other.open=false;});}));
  document.body.addEventListener('htmx:beforeRequest',e=>{
   if(e.detail.elt===form && form.elements.format.value==='original' && e.detail.requestConfig?.parameters?.action!=='review'){
-   e.preventDefault();window.location.assign(form.action+'?original=1');
+   e.preventDefault();window.location.assign(form.getAttribute('action')+'?original=1');
   }
+  else if(e.detail.elt===form&&e.detail.requestConfig?.parameters?.action!=='review'){requested=true;status.replaceChildren();}
  });
  document.body.addEventListener('htmx:afterSwap',e=>{
   availability();
-  if(e.detail.target===status){chooser.open=true;if(e.detail.requestConfig?.verb?.toLowerCase()==='post')refresh();}
+  if(e.detail.target===status){if(chooser)chooser.open=true;deliver();if(e.detail.requestConfig?.verb?.toLowerCase()==='post')refresh();}
   const tab=document.querySelector('#detail-content [data-active-tab]')?.dataset.activeTab;
   if(tab==='preview'||tab==='raw')document.querySelectorAll('.collection-preview .tabs>span').forEach(el=>el.remove());
  });

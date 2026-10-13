@@ -14,6 +14,7 @@ import (
 
 type DownloadReview struct {
 	Format, Pipeline string
+	Dataset, Draft   string
 	Notes            []string
 	Details          []string
 	Checked          int
@@ -39,24 +40,31 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 	p := s.base(c, "Check download format", "collections")
 	p.Collection = col
 	review := &DownloadReview{Format: format, Pipeline: c.FormValue("pipeline", c.Query("pipeline")), Total: col.Rows}
+	review.Dataset, review.Draft = c.FormValue("dataset", c.Query("dataset")), c.FormValue("draft")
+	recipe, err := s.downloadPipeline(c, col)
+	if err != nil {
+		return fiber.NewError(422, err.Error())
+	}
+	if recipe != nil {
+		review.Pipeline = recipe.ID
+	}
 	p.DownloadReview = review
-	if c.Get("HX-Request") == "true" {
+	if c.Get("HX-Request") == "true" && review.Dataset != "current" {
 		c.Set("HX-Redirect", "/collections/"+col.ID+"/export-check?format="+url.QueryEscape(format)+"&pipeline="+url.QueryEscape(review.Pipeline))
 		return c.SendStatus(200)
 	}
 	if format == "original" {
+		if recipe != nil {
+			return fiber.NewError(422, "Choose an output format for cleaned data")
+		}
 		review.Notes = []string{"Exact source bytes, with no conversion. Excel downloads include the entire original workbook."}
 		return c.Render("pages/download-review", p, "layouts/base")
 	}
 	ctx, cancel := context.WithTimeout(c.Context(), 25*time.Second)
 	defer cancel()
 	rows := []any{}
-	if review.Pipeline != "" {
-		recipe, e := s.Service.GetPipeline(review.Pipeline)
-		if e != nil || recipe.Source != col.ID {
-			return fiber.NewError(422, "Saved steps not found for this dataset")
-		}
-		rows, err = s.Service.PreviewPipeline(ctx, recipe, -1)
+	if recipe != nil {
+		rows, err = s.Service.PreviewPipeline(ctx, *recipe, -1)
 		review.Saved = true
 	} else {
 		stop := errors.New("sample complete")

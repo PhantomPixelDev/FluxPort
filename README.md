@@ -4,7 +4,7 @@
 
 FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, NDJSON and TOML. Open a file, inspect its rows, remove duplicates or fix values, and download the result. Developers can reuse saved steps, query datasets with DuckDB, automate work from the CLI and publish REST endpoints.
 
-[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.8](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.8) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
+[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.9](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.9) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
 
 [![Checks](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml) · [MIT license](LICENSE)
 
@@ -16,32 +16,32 @@ Click a column type for missing values, common values and numeric ranges. Previe
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
-3. **Clean:** open **Clean data** beside your table to remove duplicates, trim spaces, fill empty values, rename columns or sort. SQL, previews and Export stay in this file's workspace; switching tools preserves your unfinished work while the page is open.
-4. **Download:** choose Excel, CSV, JSON or another supported format. Progress, cancellation, retry and the ready file stay together.
+3. **Clean:** remove duplicates, trim spaces, fill empty values, rename columns or sort. The main table shows the result sample; switch **Original file / After changes** to see which data you are viewing.
+4. **Download:** choose original or cleaned data and a format, then click once. The complete result downloads automatically when ready, with progress, cancellation and retry in the same panel. Saving cleanup steps is optional.
 
 Cleanup prepares a separate result and preserves your source. Source editing is explicitly enabled separately. Choose **Save these steps** to reuse a cleanup sequence. See the [dataset workspace walkthrough](docs/dataset-workspace.md).
 
 | Make changes | Download the result |
 | --- | --- |
-| ![Changes: readable cleanup steps and before/after preview](docs/images/changes.png) | ![Downloads: selected output format and a ready export](docs/images/downloads.png) |
+| ![Clean data: one result table with an original/result switch and a compact step editor](docs/images/changes.png) | ![Download: one ready file after automatic preparation](docs/images/downloads.png) |
 
 The online demo is a shared public workspace. Install your own instance for private data. Normal installations load examples only when requested.
 
 ## Get started
 
-Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.8/SHA256SUMS):
+Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.9/SHA256SUMS):
 
 | Platform | Download | Start |
 | --- | --- | --- |
-| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.8/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
-| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.8/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
+| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.9/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
+| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.9/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
 For Docker, clone this repository and run:
 
 ```sh
-docker compose build --build-arg VERSION=0.3.8
+docker compose build --build-arg VERSION=0.3.9
 docker compose up -d
 ```
 

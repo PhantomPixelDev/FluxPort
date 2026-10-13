@@ -21,12 +21,12 @@ func TestInsightsSuggestionsAndFormatReview(t *testing.T) {
 	}
 	form := url.Values{"csrf": {csrf(t, body)}, "format": {"xlsx"}}
 	resp, body := call(t, app, "POST", "/collections/"+col.ID+"/export-check", form.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, page.Cookies())
-	if resp.StatusCode != 200 || !strings.Contains(body, "numeric values become exact text cells") || !strings.Contains(body, "nested values become JSON text") || !strings.Contains(body, "Prepare download") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "numeric values become exact text cells") || !strings.Contains(body, "nested values become JSON text") || !strings.Contains(body, "Download file") {
 		t.Fatal(resp.StatusCode, body)
 	}
 	form.Set("format", "toml")
 	resp, body = call(t, app, "POST", "/collections/"+col.ID+"/export-check", form.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, page.Cookies())
-	if resp.StatusCode != 200 || !strings.Contains(body, "cannot be converted") || strings.Contains(body, ">Prepare download<") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "cannot be converted") || strings.Contains(body, ">Download file<") {
 		t.Fatal("incompatible TOML not blocked", resp.StatusCode)
 	}
 	resp, _ = call(t, app, "POST", "/collections/"+col.ID+"/export-check", form.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, nil)

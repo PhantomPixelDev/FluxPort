@@ -27,7 +27,9 @@ Input filename comes before flags. Output defaults to stdout. Conversion works w
 
 ## Dashboard
 
-The collection workspace opens cleanup, SQL, export and inspection tools alongside its source table. `GET` and `POST /collections/:id/sql` provide SQL scoped to that file, including its saved queries and history. POST requires the existing CSRF token; the global `/sql` interface remains available. Panel navigation preserves in-page drafts and table state. Native forms remain usable without JavaScript.
+The collection workspace opens cleanup, SQL, downloads and inspection tools beside one main table. Cleanup switches that table to a bounded result sample; the original/source pagination remains available. `GET` and `POST /collections/:id/sql` provide SQL scoped to that file, including its saved queries and history. POST requires the existing CSRF token; the global `/sql` interface remains available. Panel navigation preserves in-page drafts and table state. Native forms remain usable without JavaScript.
+
+Compact export forms can additionally choose `dataset=original`, a saved recipe ID, or `dataset=current` plus a JSON `draft` pipeline definition. Drafts are capped at 64 KiB and 20 steps, pinned to the collection in the URL, and validated before a job is created. Downloading current cleanup does not create or overwrite saved recipes. Existing `pipeline` form fields and non-compact callers keep their previous behavior. The same draft/source fields work for POST format checks; these remain optional and sampled. Dashboard JavaScript starts the requested file download once its job is ready, with a manual fallback link and native no-JavaScript status forms.
 
 - **Overview:** collection, record, endpoint, and source-size totals.
 - **Collections:** expandable multi-file imports and drag-and-drop, editable names, per-file jobs, refresh/retry and endpoint controls. Remove preserves the source and persistently excludes it from discovery; Excluded files provides Restore. Delete source file is separate and explicitly confirmed.

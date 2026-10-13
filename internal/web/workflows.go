@@ -351,19 +351,22 @@ func (s *Server) exportJob(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	var recipe *collections.Pipeline
+	if c.FormValue("download_view") == "compact" {
+		recipe, err = s.downloadPipeline(c, col)
+		if err != nil {
+			return s.downloadError(c, err)
+		}
+	}
 	if c.FormValue("format") == "original" && c.FormValue("download_view") == "compact" {
-		if c.FormValue("pipeline") != "" {
+		if recipe != nil {
 			return s.downloadError(c, fmt.Errorf("Choose an output format to download saved changes"))
 		}
 		return s.originalDownload(c, col)
 	}
 	var job jobs.Job
-	if id := c.FormValue("pipeline"); id != "" && c.FormValue("download_view") == "compact" {
-		recipe, e := s.Service.GetPipeline(id)
-		if e != nil || recipe.Source != col.ID {
-			return s.downloadError(c, fmt.Errorf("Saved steps not found for this dataset"))
-		}
-		job, err = s.Service.PipelineJob(recipe, c.FormValue("format", "json"))
+	if recipe != nil {
+		job, err = s.Service.PipelineJob(*recipe, c.FormValue("format", "json"))
 	} else {
 		job, err = s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"})
 	}

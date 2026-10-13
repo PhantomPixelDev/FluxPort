@@ -1,6 +1,6 @@
 # Open a file, make changes, download the result
 
-Opening a file keeps you in one workspace. **Data**, **Clean data**, **SQL** and **Export** share the same collection page. On desktop, tools open beside your source table; on smaller screens they open below it. Switching tools retains the table position and the current tool's form, preview and query text for the lifetime of the page. **Close** or Escape returns to the full-width table. Save steps or queries to keep them beyond this browser page.
+Opening a file keeps you in one workspace. **Data**, **Clean data**, **SQL** and **Download** share the same collection page. On desktop, tools open beside the main table; on smaller screens they open below it. Switching tools retains your cleanup and SQL drafts for the lifetime of the page. **Close** or Escape returns to the full-width table. Save steps or queries to keep them beyond this browser page.
 
 The SQL panel starts with this file selected, and its saved queries and history belong to this file. Summaries, validation, raw JSON, schema and API settings are under **More**. **All files** returns to the file list. Native links and forms remain available when JavaScript is disabled.
 
@@ -26,15 +26,17 @@ Inspect a row to see its complete JSON, including nested values. Optional **Edit
 
 Choose an action and a column, then **Add change**. Leave Column empty for Remove duplicates to compare complete rows, or enter one column to keep the first row for each distinct value. Other actions trim spaces, change text case, fill empty values with text, rename/remove columns, or sort rows.
 
-Before and after shows up to 20 rows per side. It is a sample, not a full dataset count. **Undo last change**, Remove and Clear changes edit the sequence. They do not modify the source file. Unsaved steps and their name can be restored in the same browser after navigating away; clearing browser storage removes those drafts.
+Each added change updates the main table. **Original file** shows the source with normal pagination; **After changes** shows a sample of up to 20 output rows. The sample is not a full result count or a positional comparison after sorting/deduplication. Downloads run all steps on the complete dataset. On mobile, **Back to changes** returns from the sample to the controls. **Undo last change**, Remove and Clear changes edit the sequence without modifying the source.
 
 **Save these steps** stores the sequence using the existing pipeline service. Saved names are shared across the instance; a name belonging to another dataset is rejected rather than replaced. Saved steps can be reopened from the dataset or the sidebar. The full editor remains available for joins, calculations, validation, revisions and schedules.
 
-## Export
+## Download
 
-**Download result** runs the entire sequence over the complete dataset, saves the steps and opens Export in the same workspace with that export's status. Saving changes alone does not modify the source or prepare a download.
+Choose **Download cleaned data** from the cleanup controls, or open **Download** in the toolbar. Select **What to download** (original data, current cleaned data, or saved cleanup) and **Save as** (the original file or another format). Current cleanup does not need to be saved before downloading. Saving a recipe is an independent option.
 
-Downloads can export the original dataset or a selected set of saved changes. Original file streams the exact current bytes, even while indexing. Converted outputs show progress, cancellation, retry and the ready file. Excel uses text cells. Parquet offers lossless JSON records or typed analytical columns. Check format changes reviews actual rows before preparation; reports explicitly identify sampled coverage. Format details describes mappings.
+Click **Download** once. Original file streams the exact source bytes, even while indexing. Converted files show **Creating your file**, then start downloading automatically when ready. **Download again** remains available if the browser blocks automatic downloads or you want another copy. **Download another format** returns to the chooser. Progress uses SSE; cancellation and retry remain available.
+
+Excel uses text cells. Parquet offers lossless JSON records or typed analytical columns. **Format details** contains the full mapping and an optional **Check format changes** sample check. Incompatible exports show an error instead of publishing an incomplete file.
 
 Cleanup and download forms work without JavaScript. JavaScript adds contextual controls, browser draft restoration and SSE progress. Without it, use Refresh download status for asynchronous exports. Source files retain their original contents unless you explicitly enable and use source editing or confirm source deletion.
 

@@ -41,6 +41,53 @@ func downloadJobSteps(job jobs.Job) string {
 	return ""
 }
 
+func downloadJobDraft(job jobs.Job) string {
+	var payload struct{ Pipeline *collections.Pipeline }
+	if json.Unmarshal([]byte(job.Payload), &payload) == nil && payload.Pipeline != nil && payload.Pipeline.ID == "" {
+		data, _ := json.Marshal(payload.Pipeline)
+		return string(data)
+	}
+	return ""
+}
+
+// Current cleanup can be downloaded without creating or overwriting saved steps.
+func (s *Server) downloadPipeline(c fiber.Ctx, col collections.Collection) (*collections.Pipeline, error) {
+	dataset := c.FormValue("dataset", c.Query("dataset"))
+	if dataset == "current" {
+		p, err := collections.DecodePipeline([]byte(c.FormValue("draft")))
+		if err != nil {
+			return nil, fmt.Errorf("Unable to read current changes: %w", err)
+		}
+		p.ID, p.Source, p.Name, p.Version = "", col.ID, "Cleaned data", 1
+		p.Revision, p.Updated = 0, ""
+		if len(p.Steps) == 0 {
+			return nil, fmt.Errorf("Add a cleanup step before downloading cleaned data")
+		}
+		if len(p.Steps) > 20 {
+			return nil, fmt.Errorf("Current cleanup supports at most 20 steps")
+		}
+		if _, _, err := collections.CompilePipeline(p); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+	id := c.FormValue("pipeline", c.Query("pipeline"))
+	if dataset == "original" {
+		return nil, nil
+	}
+	if dataset != "" {
+		id = dataset
+	}
+	if id == "" {
+		return nil, nil
+	}
+	p, err := s.Service.GetPipeline(id)
+	if err != nil || p.Source != col.ID {
+		return nil, fmt.Errorf("Saved steps not found for this dataset")
+	}
+	return &p, nil
+}
+
 func downloadFormatName(f string) string {
 	switch f {
 	case "original":

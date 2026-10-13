@@ -28,7 +28,7 @@ func TestDatasetCleanupJourneyPreservesSource(t *testing.T) {
 	cookies, token := page.Cookies(), csrf(t, body)
 	base := url.Values{"csrf": {token}, "name": {"Cleaned customers"}, "source": {"untrusted-source"}, "action": {"add"}, "cleanup": {"deduplicate"}, "field": {"id"}}
 	resp, body := call(t, app, "POST", "/collections/"+col.ID+"/changes", base.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, cookies)
-	if resp.StatusCode != 200 || !strings.Contains(body, "Before and after") || !strings.Contains(body, "Remove duplicates by id") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "Cleaned data") || !strings.Contains(body, "Remove duplicates by id") {
 		t.Fatalf("cleanup preview: %d", resp.StatusCode)
 	}
 	dedup := collections.PipelineStep{Op: "deduplicate", Keys: []string{"id"}}
@@ -60,6 +60,7 @@ func TestDatasetCleanupJourneyPreservesSource(t *testing.T) {
 	}
 	waitDownloadCollection(t, s, col.ID)
 	base.Set("action", "run")
+	base.Set("download_view", "compact")
 	base.Set("revision", "1")
 	base.Set("format", "xlsx")
 	resp, _ = call(t, app, "POST", "/collections/"+col.ID+"/changes?saved="+saved[0].ID, base.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, cookies)
@@ -71,6 +72,10 @@ func TestDatasetCleanupJourneyPreservesSource(t *testing.T) {
 		t.Fatal(err)
 	}
 	job := waitDatasetExport(t, s, target.Query().Get("download_job"))
+	unchanged, err := s.GetPipeline(saved[0].ID)
+	if err != nil || unchanged.Revision != 1 {
+		t.Fatal("downloading rewrote saved cleanup", err)
+	}
 	if job.State != "ready" {
 		t.Fatal(job.Error)
 	}

@@ -19,6 +19,8 @@ type PipelineCard struct {
 	Parameters         PipelineParameters
 }
 type PipelinePage struct {
+	ViewCells      [][]CleanupCell
+	PreviewColumns int
 	Reusable       []collections.Pipeline
 	JoinColumns    []JoinColumnChoice
 	JoinSummary    *JoinPreviewSummary
@@ -191,7 +193,8 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 					return c.Send(b)
 				}
 			case "save", "run":
-				if workspace {
+				save := !workspace || c.FormValue("action") == "save" || c.FormValue("download_view") != "compact"
+				if workspace && save {
 					for _, recipe := range pp.Saved {
 						if recipe.Name == pp.Definition.Name && recipe.Source != p.Collection.ID {
 							err = fmt.Errorf("That name is used by another dataset. Choose a different name for these steps")
@@ -199,8 +202,11 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 						}
 					}
 				}
-				if err == nil {
+				if err == nil && save {
 					pp.Definition, err = s.Service.SavePipeline(pp.Definition)
+				}
+				if !save {
+					pp.Definition.ID, pp.Definition.Name = "", "Cleaned data"
 				}
 				if err == nil && c.FormValue("action") == "run" {
 					var job jobs.Job
@@ -239,6 +245,9 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 					}
 					pp.Preview = string(b)
 					p.Headers, p.Cells = tableRows(rows, collections.Schema(rows))
+					if workspace {
+						p.Headers, pp.ViewCells, pp.PreviewColumns = cleanupPreviewRows(rows)
+					}
 					p.Count = len(rows)
 				}
 			}
@@ -250,6 +259,19 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 	}
 	if workspace {
 		pp.Definition.Source = p.Collection.ID
+		if c.Method() == "GET" && len(pp.Definition.Steps) > 0 {
+			rows, e := s.Service.PreviewPipeline(c.Context(), pp.Definition, -1)
+			if e == nil {
+				pp.HasPreview = true
+				data, _ := conversion.Encode(rows, "json")
+				pp.Preview = string(data)
+				p.Headers, p.Cells = tableRows(rows, collections.Schema(rows))
+				p.Headers, pp.ViewCells, pp.PreviewColumns = cleanupPreviewRows(rows)
+				p.Count = len(rows)
+			} else {
+				p.Message = e.Error()
+			}
+		}
 		if pp.Definition.Name == "" {
 			pp.Definition.Name = defaultCleanupName(p.Collection.Name)
 		}

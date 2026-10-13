@@ -62,7 +62,7 @@ func TestCompactDownloadCancellationRetryAndNativeNavigation(t *testing.T) {
 		t.Fatal("cancel failed", body)
 	}
 	resp, body = call(t, app, "POST", "/jobs/"+id+"/retry", values.Encode(), headers, page.Cookies())
-	if resp.StatusCode != 200 || !strings.Contains(body, "Preparing your download") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "Creating your file") {
 		t.Fatal("retry failed", body)
 	}
 	delete(headers, "HX-Request")
