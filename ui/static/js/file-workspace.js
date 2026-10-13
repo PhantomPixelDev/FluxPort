@@ -8,6 +8,11 @@
  const labels={clean:'Clean data',sql:'SQL query',export:'Export',insights:'Column summaries',quality:'Validate data',raw:'Raw JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes'};
  const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id};
  const cache=new Map();let active='',lastTrigger=null;
+ const more=workspace.querySelector('.workspace-more'),moreSummary=more.querySelector('summary');
+ function markTool(key){
+  workspace.querySelectorAll('.workspace-toolbar a').forEach(link=>{const selected=key?link.dataset.workspaceTarget===key:link.hasAttribute('data-workspace-data');link.classList.toggle('selected',selected);if(selected)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
+  moreSummary.toggleAttribute('data-active',!!more.querySelector('a[aria-current]'));
+ }
  let dataRequest;
  async function loadData(url,remember=true){
   dataRequest?.abort();const request=new AbortController();dataRequest=request;
@@ -38,9 +43,9 @@
  function saveCurrent(){if(active&&host.firstElementChild){const entry=cache.get(active);if(entry)entry.node=host.firstElementChild;}}
  function select(key){
   if(active!==key)saveCurrent();active=key;pane.hidden=false;workspace.classList.add('tool-open');heading.textContent=labels[key];
-  workspace.querySelectorAll('.workspace-toolbar>a').forEach(link=>{const selected=link.dataset.workspaceTarget===key;link.classList.toggle('selected',selected);if(selected)link.setAttribute('aria-current','true');else link.removeAttribute('aria-current');});
+  markTool(key);
   history.replaceState(history.state,'',location.pathname+location.search+'#tool='+key);
-  workspace.querySelector('.workspace-more').open=false;
+  more.open=false;
  }
  function mount(entry){
   host.replaceChildren(entry.node);message('');
@@ -50,8 +55,8 @@
  }
  function close(){
   saveCurrent();active='';pane.hidden=true;workspace.classList.remove('tool-open');
-  workspace.querySelectorAll('.workspace-toolbar>a').forEach(link=>{const selected=link.hasAttribute('data-workspace-data');link.classList.toggle('selected',selected);if(selected)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
-  history.replaceState(history.state,'',location.pathname+location.search);message('');lastTrigger?.focus();
+  markTool('');
+  history.replaceState(history.state,'',location.pathname+location.search);message('');if(lastTrigger?.isConnected)(more.contains(lastTrigger)?moreSummary:lastTrigger).focus();
  }
  function extract(html,sourceURL=location.href){
   const doc=new DOMParser().parseFromString(html,'text/html');
@@ -107,6 +112,7 @@
   if(matchMedia('(max-width:1000px)').matches)pane.scrollIntoView({behavior:'smooth',block:'start'});
  }
  document.addEventListener('click',event=>{
+  if(more.open&&!more.contains(event.target))more.open=false;
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   const link=event.target.closest('a');
   if(event.target.closest('[data-close-workspace-tool]')){close();return;}
@@ -157,7 +163,12 @@
   catch{}finally{refreshing=false;if(refreshAgain){refreshAgain=false;queueMicrotask(refreshDownload);}}
  }
  window.addEventListener('fluxport:progress',event=>{const job=host.querySelector('[data-download-job]');if(job&&(event.detail.connected||event.detail.id===job.dataset.downloadJob))refreshDownload();});
- document.addEventListener('keydown',event=>{if(event.key==='Escape'&&active&&!event.target.closest('dialog[open]')){event.preventDefault();close();}});
+ document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||event.target.closest('dialog[open]'))return;
+  const disclosure=[more,...workspace.querySelectorAll('.toolbar-disclosure')].find(el=>el.open);
+  if(disclosure){event.preventDefault();disclosure.open=false;disclosure.querySelector('summary').focus();return;}
+  if(active){event.preventDefault();close();}
+ });
  window.addEventListener('popstate',()=>{loadData(location.href,false);const key=location.hash.match(/^#tool=(\w+)$/)?.[1];if(key&&routes[key])open(key,routes[key]);else close();});
  const initial=location.hash.match(/^#tool=(\w+)$/)?.[1];if(initial&&routes[initial])open(initial,routes[initial]);
 })();

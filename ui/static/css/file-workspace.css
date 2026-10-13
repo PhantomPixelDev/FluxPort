@@ -18,19 +18,25 @@ body:has([data-file-workspace]) .topbar .mobile-menu{display:none!important}
 body:has([data-file-workspace]) .footer{display:none}
 body:has([data-file-workspace]) #main{max-width:none;padding:20px 28px}
 body:has([data-file-workspace]) .topbar{height:44px}
+body:has([data-file-workspace]) .breadcrumbs{min-width:0;flex:1}
+body:has([data-file-workspace]) .breadcrumbs strong{min-width:0}
+body:has([data-file-workspace]) .breadcrumbs>span,body:has([data-file-workspace]) .topbar-actions{flex-shrink:0}
 [data-file-workspace] .collection-heading{margin-bottom:8px}
 [data-file-workspace] .collection-heading>div:first-child{display:flex;align-items:center;gap:20px;min-width:0}
 [data-file-workspace] .collection-heading .subtle-link{flex-shrink:0;font-size:13px}
 [data-file-workspace] .collection-title{margin:0;min-width:0}
 [data-file-workspace] .detail-title{font-size:24px}
-[data-file-workspace] .workspace-toolbar{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);margin:14px 0 0;padding:0 0 10px}
+[data-file-workspace] .workspace-toolbar{position:relative;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-bottom:1px solid var(--border);margin:14px 0 0;padding:0 0 10px;overflow:visible}
 [data-file-workspace] .workspace-toolbar>a{border:0;border-radius:8px;padding:9px 16px;font-weight:600}
 [data-file-workspace] .workspace-toolbar>a.selected{background:var(--accent);color:var(--button-text)}
-.workspace-more{position:relative;margin-left:auto}
-.workspace-more>summary{cursor:pointer;padding:9px 14px;border-radius:8px}
-.workspace-more[open]>div{position:absolute;right:0;top:100%;min-width:205px;z-index:30;display:grid;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--panel);box-shadow:0 12px 30px #0002}
+.workspace-more{position:relative;flex-shrink:0;margin-left:auto}
+.workspace-more>summary{cursor:pointer;padding:9px 14px;border-radius:8px;min-height:40px}
+.workspace-more>summary:hover,.workspace-more[open]>summary{background:var(--accent-bg);color:var(--text)}
+.workspace-more[open]>div{position:absolute;right:0;top:calc(100% + 6px);width:220px;max-width:calc(100vw - 24px);z-index:30;display:grid;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--panel);box-shadow:0 12px 30px #0002}
 .workspace-more a{padding:9px 12px;border-radius:6px;color:var(--text);text-decoration:none}
 .workspace-more a:hover,.workspace-more a:focus-visible{background:var(--bg)}
+.workspace-more a[aria-current]{background:var(--accent-bg);font-weight:650}
+.workspace-more>summary[data-active]{font-weight:650;color:var(--text)}
 .file-workspace-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:start}
 .file-workspace-grid:has(>.file-workspace-tool:not([hidden])){grid-template-columns:minmax(340px,1fr) minmax(420px,.9fr);gap:24px}
 .file-workspace-data,.file-workspace-tool{min-width:0;container-type:inline-size}
@@ -50,6 +56,8 @@ body:has([data-file-workspace]) .topbar{height:44px}
 [data-file-workspace] #detail-content .workspace-shortcuts{display:none}
 @container(max-width:680px){[data-file-workspace] .sheet-query-bar{grid-template-columns:minmax(120px,1fr) 100px auto}[data-file-workspace] .sheet-query-bar>.sheet-density{grid-column:1}[data-file-workspace] .sheet-query-bar>.toolbar-disclosure>summary{width:100%}}
 @container(max-width:440px){[data-file-workspace] .sheet-query-bar{grid-template-columns:repeat(6,minmax(0,1fr))}[data-file-workspace] .sheet-query-bar>.sheet-search{grid-column:span 4}[data-file-workspace] .sheet-query-bar>.sheet-limit{grid-column:span 3;grid-row:2}[data-file-workspace] .sheet-query-bar>.button{grid-column:span 2;grid-row:1}[data-file-workspace] .sheet-query-bar>.sheet-density{grid-column:span 3;grid-row:2}[data-file-workspace] .sheet-query-bar>.toolbar-disclosure{grid-column:span 3}[data-file-workspace] .sheet-query-bar input,[data-file-workspace] .sheet-query-bar select,[data-file-workspace] .sheet-query-bar .button{height:44px}}
+@container(max-width:440px){[data-file-workspace] .sheet-query-bar>label.sheet-search:first-child{grid-column:span 4;grid-row:1}}
+@container(max-width:680px){[data-file-workspace] .sheet-query-bar>.toolbar-disclosure[open]{position:static;grid-column:1/-1;order:10;width:100%}[data-file-workspace] .sheet-query-bar>.toolbar-disclosure[open]>.toolbar-popover{position:static;width:100%;margin-top:8px;max-height:none}}
 .workspace-source-label{display:flex;align-items:center;gap:12px;font-weight:650;padding:16px 0 10px}
 .workspace-source-label span{font-size:12px;color:var(--muted);font-weight:400}
 .file-workspace-tool{border-left:1px solid var(--border);padding-left:24px;margin-top:16px;position:sticky;top:12px;max-height:calc(100dvh - 32px);overflow:auto;scrollbar-gutter:stable}

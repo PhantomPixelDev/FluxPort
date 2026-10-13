@@ -9,6 +9,22 @@ async (page, artifactDir) => {
   const href=await page.getByRole('link',{name,exact:true}).getAttribute('href');id=href.split('/')[2];
   await page.goto(base+href);
   const source=page.locator('#detail-content'),pane=page.locator('#file-workspace-tool');
+  const more=page.locator('.workspace-more'),moreSummary=more.locator('summary');
+  const visibleTargets=async locator=>{const bad=await locator.evaluateAll(links=>links.filter(el=>{const r=el.getBoundingClientRect();return r.left<0||r.right>innerWidth||r.top<0||r.bottom>innerHeight||!el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(el=>el.textContent.trim()));if(bad.length)throw Error('Clipped or covered controls: '+bad.join(', '));};
+  for(const width of [1440,1100,768,390,320]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){
+   await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await moreSummary.focus();await page.keyboard.press('Enter');
+   await visibleTargets(more.locator('a'));if(await more.evaluate(el=>{const nav=el.closest('nav');return ['auto','scroll'].includes(getComputedStyle(nav).overflowY)&&nav.scrollHeight>nav.clientHeight+1;}))throw Error('More menu creates a toolbar scrollbar');
+   if([1440,320].includes(width))await page.screenshot({path:artifactDir+'/more-'+width+'-'+theme+'.png'});
+   await page.keyboard.press('Escape');if(await more.getAttribute('open')!==null)throw Error('Escape did not close More');if(!await moreSummary.evaluate(el=>el===document.activeElement))throw Error('More did not restore keyboard focus');
+   await moreSummary.click();await page.locator('.collection-title').click();if(await more.getAttribute('open')!==null)throw Error('More did not close on outside click');
+   for(const name of ['Filter and sort','Columns']){const summary=source.locator('.toolbar-disclosure>summary').filter({hasText:name});await summary.click();if(await source.locator('.sheet-search').evaluate(el=>el.getBoundingClientRect().width<100))throw Error('Search field squeezed at '+width);const controls=source.locator('.toolbar-disclosure[open] input:visible,.toolbar-disclosure[open] select:visible,.toolbar-disclosure[open] button:visible');for(const control of await controls.all()){await control.scrollIntoViewIfNeeded();await visibleTargets(control);}if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Toolbar overflow at '+width);await page.keyboard.press('Escape');}
+  }}
+  await page.setViewportSize({width:1440,height:1000});
+  for(const [key,label] of [['insights','Column summaries'],['quality','Validate data'],['raw','Raw JSON'],['schema','Schema'],['api','API settings']]){
+   await moreSummary.click();await more.locator('[data-workspace-target='+key+']').click();await pane.locator('#workspace-tool-title').filter({hasText:label}).waitFor();await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool').hasAttribute('aria-busy')&&document.querySelector('#workspace-tool-content').textContent.trim().length>0);
+   if(await more.getAttribute('open')!==null||!await moreSummary.evaluate(el=>el.hasAttribute('data-active')))throw Error('More tool selection state missing');
+   await moreSummary.click();if(!await more.locator('[data-workspace-target='+key+']').evaluate(el=>el.getAttribute('aria-current')==='page'))throw Error('More does not identify active tool');await page.keyboard.press('Escape');if(!await pane.isVisible())throw Error('Closing More also closed the active tool');await page.keyboard.press('Escape');if(!await moreSummary.evaluate(el=>el===document.activeElement))throw Error('Closing More tool focused an invisible link');
+  }
   await page.evaluate(()=>{document.querySelector('#detail-content').dataset.persistenceTest='kept';});
   await page.locator('[data-workspace-target=clean]').click();
   await pane.getByLabel('Action',{exact:true}).selectOption('trim');
@@ -49,7 +65,7 @@ async (page, artifactDir) => {
   await page.keyboard.press('Escape');if(await pane.isVisible())throw Error('Escape did not close the tool');
   await page.locator('[data-workspace-target=sql]').click();if(!(await sql.inputValue()).includes('invalid_column'))throw Error('Draft lost after closing');
   const native=await page.context().browser().newContext({javaScriptEnabled:false});
-  try{const p=await native.newPage();await p.goto(base+href);await p.getByRole('link',{name:'SQL',exact:true}).click();await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+href);await p.getByRole('link',{name:'Export',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
+  try{const p=await native.newPage();await p.goto(base+href);await p.locator('.workspace-more>summary').click();await p.getByRole('link',{name:'Schema',exact:true}).click();if(!new URL(p.url()).searchParams.get('tab'))throw Error('Native More link failed');await p.goto(base+href);await p.getByRole('link',{name:'SQL',exact:true}).click();await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+href);await p.getByRole('link',{name:'Export',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
   console.log('Single collection workspace passed: persistent source, cleanup/SQL drafts, inline errors, exports, themes/mobile, Escape and no-JavaScript forms.');
  } catch(error) {
   console.log('Workspace failure at '+page.url()+': '+(await page.locator('#file-workspace-tool').textContent()).slice(-2600));
