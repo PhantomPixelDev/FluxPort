@@ -1,6 +1,7 @@
 // Pass this callback to Playwright CLI run-code against an isolated FluxPort instance.
 // It creates synthetic files, preserves/restores one, then deletes its own sources.
 async (page, artifactDir='output/playwright') => {
+  const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true],#detail-content[aria-busy=true]'));
   const base = new URL(page.url()).origin;
   const prefix = `browser-check-${Date.now()}`;
   const filename = `${prefix}.json`;
@@ -25,12 +26,12 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('link', {name: 'Page 2', exact: true}).click();
   await page.locator('.detail-body[data-page="2"]').waitFor();
   if (await page.locator('#detail-content tbody tr').count() !== 20) throw Error('Pagination row count');
-  await page.locator('.collection-more>summary').click();
+  await page.locator('.workspace-more>summary').click();
   await page.getByRole('link', {name: 'Raw JSON', exact: true}).click();
-  await page.locator('#detail-content pre').waitFor();
+  await page.locator('#workspace-tool-content pre').waitFor();
   await page.getByRole('link', {name: 'Data', exact: true}).click();
   const display = `${prefix} renamed`;
-  await page.getByText('Manage dataset', {exact: true}).click();
+  await page.getByText('File settings', {exact: true}).click();
   await page.locator('#display-name').fill(display);
   await page.getByRole('button', {name: 'Rename', exact: true}).click();
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
@@ -43,9 +44,12 @@ async (page, artifactDir='output/playwright') => {
   if (await page.getByLabel('Row density',{exact:true}).inputValue()!=='comfortable') throw Error('Density was not remembered');
   await page.getByLabel('Row density',{exact:true}).selectOption('compact');
   await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  await settled();
   await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  await settled();
   if (!await page.locator('th[aria-sort=descending]').count()) throw Error('Header sort cycle failed');
   await page.getByRole('link',{name:'Sort id',exact:true}).click();
+  await settled();
   if (await page.locator('th[aria-sort]').count()) throw Error('Header sort clear failed');
   await page.locator('[data-inspect-cell]').first().click();
   if (!(await page.locator('#record-values').inputValue()).includes('9007199254740993')) throw Error('Inspector rounded nested numbers');
@@ -54,7 +58,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Copy big value',exact:true}).first().click();
   if (await page.evaluate(()=>navigator.clipboard.readText())!=='9007199254740993') throw Error('Clipboard rounded numbers');
   for (const kind of ['empty','null','missing','json']) if (!await page.locator('td[data-display-kind='+kind+']').count()) throw Error('Missing cell state '+kind);
-  await page.locator('#download>summary').click();
+  await page.locator('[data-workspace-target=export]').click();
   if (await page.locator('#collection-download-format').inputValue() !== 'original') throw Error('Original download must be the default');
   // Delay the queued response until processing finishes, and suppress custom
   // progress notifications. A single post-swap catch-up must still reveal ready.
@@ -80,12 +84,12 @@ async (page, artifactDir='output/playwright') => {
     if(format==='xlsx'){await page.unroute(exportRoute);await page.evaluate(()=>window.removeEventListener('fluxport:progress',window.__blockExportProgress,true));}
   }
   await page.keyboard.press('Escape');
-  if (await page.locator('#download').getAttribute('open') !== null) throw Error('Escape must close the chooser');
+  if (await page.locator('#file-workspace-tool').isVisible()) throw Error('Escape must close the export panel');
   const nativeContext = await page.context().browser().newContext({javaScriptEnabled:false,acceptDownloads:true});
   try {
     const nativePage = await nativeContext.newPage();
     await nativePage.goto(`${base}/collections/${collectionID}`);
-    await nativePage.locator('#download>summary').click();
+    await nativePage.getByRole('link',{name:'Export',exact:true}).click();
     const downloading = nativePage.waitForEvent('download');
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
     if (await (await downloading).failure()) throw Error('No-JavaScript original download failed');
@@ -106,8 +110,8 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.getByRole('button',{name:'Undo last change',exact:true}).click();
     if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
   } finally { await nativeContext.close(); }
-  await page.locator('.collection-more>summary').click();
-  await page.getByRole('link', {name:'Quality',exact:true}).click();
+  await page.locator('.workspace-more>summary').click();
+  await page.getByRole('link', {name:'Validate data',exact:true}).click();
   await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Records to check').fill('10');
   await page.getByLabel('Rules (JSON array)').fill('[{"field":"missing","required":true}]');
@@ -156,7 +160,7 @@ async (page, artifactDir='output/playwright') => {
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     for (let theme=0;theme<2;theme++) {
-      await page.locator('#download>summary').click();
+      await page.locator('[data-workspace-target=export]').click();
       await page.locator('#collection-download-format').selectOption('xlsx');
       const panel = await page.locator('.download-chooser').boundingBox();
       if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
@@ -166,7 +170,7 @@ async (page, artifactDir='output/playwright') => {
       await page.waitForTimeout(300);
     }
   }
-  await page.getByText('Manage dataset',{exact:true}).click();
+  await page.getByText('File settings',{exact:true}).click();
   for (const width of [1440, 390]) {
     await page.setViewportSize({width, height: width === 390 ? 844 : 1000});
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw Error('Page overflow');
@@ -177,7 +181,7 @@ async (page, artifactDir='output/playwright') => {
   await page.setViewportSize({width: 1440, height: 1000});
   await page.goto(`${base}/collections`);
   await page.getByRole('link',{name:csvname,exact:true}).click();
-  await page.locator('.dataset-tabs').getByRole('link',{name:'Changes',exact:true}).click();
+  await page.locator('[data-workspace-target=clean]').click();
   await page.locator('[data-cleanup-form] input[name=field]').fill('id');
   await page.getByRole('button',{name:'Add change',exact:true}).click();
   await page.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
@@ -185,6 +189,7 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] input[name=field]').fill('name');
   await page.getByRole('button',{name:'Add change',exact:true}).click();
+  await settled();
   if ((await page.locator('.change-comparison>div').last().locator('tbody tr').first().locator('td').last().innerText())!=='Example') throw Error('Trim preview failed');
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
@@ -193,17 +198,20 @@ async (page, artifactDir='output/playwright') => {
   }
   await page.setViewportSize({width:1440,height:1000});
   await page.getByRole('button',{name:'Undo last change',exact:true}).click();
+  await settled();
   if (await page.locator('.cleanup-steps textarea[name=steps]').count()!==1) throw Error('Cleanup undo failed');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] input[name=field]').fill('name');
   await page.getByRole('button',{name:'Add change',exact:true}).click();
+  await settled();
+  await page.getByText('Save steps for later',{exact:true}).click();
   await page.locator('[data-cleanup-form] input[name=name]').fill(prefix+' cleanup');
   await page.locator('.dataset-tabs').getByRole('link',{name:'Data',exact:true}).click();
-  await page.locator('.dataset-tabs').getByRole('link',{name:'Changes',exact:true}).click();
-  await page.getByRole('button',{name:'Restore changes',exact:true}).click();
+  await page.locator('[data-workspace-target=clean]').click();
   await page.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
   await page.getByRole('button',{name:'Save these steps',exact:true}).click();
-  const savedID=new URL(page.url()).searchParams.get('saved');
+  await page.waitForFunction(()=>!!document.querySelector('[data-cleanup-form]')?.dataset.saved);
+  const savedID=await page.locator('[data-cleanup-form]').getAttribute('data-saved');
   if (!savedID) throw Error('Cleanup steps were not saved');
   await page.locator('.cleanup-download select').selectOption('xlsx');
   await page.getByRole('button',{name:'Download result',exact:true}).click();
@@ -218,7 +226,7 @@ async (page, artifactDir='output/playwright') => {
   for (const name of [display, csvname, badname]) {
     await page.goto(`${base}/collections`);
     await page.getByRole('link', {name, exact: true}).click();
-    await page.getByText('Manage dataset',{exact:true}).click();
+    await page.getByText('File settings',{exact:true}).click();
     await page.locator('input[name=confirm]').check();
     await page.getByRole('button', {name: 'Delete source file', exact: true}).click();
     await page.getByRole('heading', {name: 'Your datasets', exact: true}).waitFor();

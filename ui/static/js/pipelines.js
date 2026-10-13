@@ -1,6 +1,8 @@
 (() => {
   'use strict';
-  const form=document.querySelector('[data-pipeline-form]');if(!form)return;
+  function initialize(){
+  const form=document.querySelector('[data-pipeline-form]');if(!form||form.dataset.initialized)return;
+  form.dataset.initialized='true';
   const list=form.querySelector('[data-pipeline-steps]');
   const examples={filter:{op:'filter',filters:[{field:'active',op:'eq',value:true}]},map:{op:'map',set:{category:'reviewed'},copy:{customer_name:'name'}},rename:{op:'rename',rules:{rename:{name:'display_name'}}},select:{op:'select',rules:{select:['id','name']}},drop:{op:'drop',rules:{drop:['internal_note']}},sort:{op:'sort',sort:[{field:'id',desc:false}]},deduplicate:{op:'deduplicate',keys:['id']},group:{op:'group',keys:['category'],aggregates:[{op:'count',as:'count'}]},join:{op:'join',join:{collection:'',left:'customer_id',right:'id',as:'customer',kind:'left'}}};
   examples.transform={op:'transform',transform:{kind:'trim',field:'name'}};examples.limit={op:'limit',limit:100};examples.append={op:'append',append:''};
@@ -20,4 +22,6 @@
   function capture(){const state=snapshot();if(state===history[cursor])return;history=history.slice(0,cursor+1);history.push(state);if(history.length>50)history.shift();cursor=history.length-1;controls();}
   list.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(capture,300);});list.addEventListener('change',capture);list.addEventListener('click',()=>queueMicrotask(capture));list.addEventListener('drop',()=>queueMicrotask(capture));form.querySelector('[data-add-step]').addEventListener('click',capture);
   undo.addEventListener('click',()=>{clearTimeout(timer);capture();if(cursor>0){list.innerHTML=history[--cursor];number();controls();}});redo.addEventListener('click',()=>{clearTimeout(timer);if(cursor<history.length-1){list.innerHTML=history[++cursor];number();controls();}});capture();
+  }
+  initialize();document.addEventListener('fluxport:tool-mounted',initialize);
 })();

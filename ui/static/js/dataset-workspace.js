@@ -1,6 +1,8 @@
 /* Friendly controls submit ordinary forms; cleanup itself uses the pipeline service. */
 (() => {
- const form=document.querySelector('[data-cleanup-form]');if(!form)return;
+ function initialize(){
+ const form=document.querySelector('[data-cleanup-form]');if(!form||form.dataset.initialized)return;
+ form.dataset.initialized='true';
  const action=form.elements.cleanup,field=form.elements.field;
  function controls(){
   form.querySelectorAll('[data-cleanup-for]').forEach(el=>el.hidden=el.dataset.cleanupFor!==action.value);
@@ -44,4 +46,6 @@
   const update=()=>{const previous=joinColumn.value;joinColumn.replaceChildren();for(const choice of choices.filter(c=>c.dataset===joinDataset.value)){const option=new Option(choice.value,choice.value);joinColumn.add(option)}if([...joinColumn.options].some(o=>o.value===previous))joinColumn.value=previous;};
   joinDataset.addEventListener('change',update);update();
  }
+ }
+ initialize();document.addEventListener('fluxport:tool-mounted',initialize);
 })();

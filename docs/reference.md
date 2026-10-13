@@ -27,6 +27,8 @@ Input filename comes before flags. Output defaults to stdout. Conversion works w
 
 ## Dashboard
 
+The collection workspace opens cleanup, SQL, export and inspection tools alongside its source table. `GET` and `POST /collections/:id/sql` provide SQL scoped to that file, including its saved queries and history. POST requires the existing CSRF token; the global `/sql` interface remains available. Panel navigation preserves in-page drafts and table state. Native forms remain usable without JavaScript.
+
 - **Overview:** collection, record, endpoint, and source-size totals.
 - **Collections:** expandable multi-file imports and drag-and-drop, editable names, per-file jobs, refresh/retry and endpoint controls. Remove preserves the source and persistently excludes it from discovery; Excluded files provides Restore. Delete source file is separate and explicitly confirmed.
 - **Dataset workspace:** Data combines collection preview and Explorer, including filters, sorting, saved views and optional source editing. Changes offers common cleanup controls, before/after previews, undo and reusable saved steps. Downloads offers originals, converted files and saved cleanup results. More tools opens Raw JSON, Quality, Schema, SQL and API configuration. Existing direct links and workbench endpoints still work.

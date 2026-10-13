@@ -17,8 +17,10 @@ async (page,artifactDir,workbook) => {
   if(!await page.getByText('1 duplicate rows found in checked data',{exact:true}).isVisible())throw Error('Missing duplicate suggestion');
   await page.getByRole('button',{name:'Preview trimming spaces',exact:true}).click();
   await page.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
+  await page.getByText('Save steps for later',{exact:true}).click();
   await page.getByLabel('Save these steps as',{exact:true}).fill(prefix+' recipe');await page.getByRole('button',{name:'Save these steps',exact:true}).click();
-  recipes.push(new URL(page.url()).searchParams.get('saved'));
+  await page.waitForFunction(()=>!!document.querySelector('[data-cleanup-form]')?.dataset.saved);
+  recipes.push(await page.locator('[data-cleanup-form]').getAttribute('data-saved'));
   await page.goto(base+'/collections/'+next+'/changes');await page.locator('.reuse-steps>summary').click();await page.getByRole('link',{name:prefix+' recipe',exact:true}).click();
   await page.getByRole('button',{name:'Preview result',exact:true}).click();
   if(!(await page.locator('.change-comparison').textContent()).includes('Alan'))throw Error('Reused cleanup result missing');

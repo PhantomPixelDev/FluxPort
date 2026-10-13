@@ -1,7 +1,10 @@
 (() => {
   'use strict';
+	let dataListeners;
+	function initialize(){
 	const sqlEditor=document.getElementById('sql-editor');
-	if(sqlEditor){
+	if(sqlEditor&&!sqlEditor.dataset.initialized){
+		sqlEditor.dataset.initialized='true';
 		const preview=document.getElementById('sql-highlight');
 		function highlight(){preview.replaceChildren();const tokens=sqlEditor.value.split(/(\b(?:SELECT|FROM|WHERE|WITH|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|BY|ORDER|ASC|DESC|LIMIT|OFFSET|AS|AND|OR|NOT|NULL|SUM|COUNT|AVG|MIN|MAX|DISTINCT|HAVING|UNION|ALL)\b)/gi);tokens.forEach((text,i)=>{if(i%2){const span=document.createElement('span');span.className='sql-keyword';span.textContent=text;preview.append(span);}else preview.append(document.createTextNode(text));});}
 		sqlEditor.addEventListener('input',highlight);highlight();
@@ -10,7 +13,9 @@
 		sqlEditor.form.elements.name.addEventListener('input',()=>sqlEditor.form.elements.name.setCustomValidity(''));
 	}
   const queryForm = document.querySelector('[data-sheet-query]');
-  if (!queryForm) return;
+  if (!queryForm||queryForm.dataset.initialized) return;
+  queryForm.dataset.initialized='true';
+  dataListeners?.abort();dataListeners=new AbortController();
   const filters = queryForm.querySelector('[data-filter-list]');
   const sorts = queryForm.querySelector('[data-sort-list]');
   const operators = [['eq','equals'],['neq','does not equal'],['contains','contains'],['starts','starts with'],['gt','greater than'],['gte','at least'],['lt','less than'],['lte','at most'],['null','missing / null'],['notnull','has a value']];
@@ -44,7 +49,7 @@
 	if(window.EventSource){
 		const initial=edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
 		async function check(){if(checking)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}
-		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();});
+		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();},{signal:dataListeners.signal});
 	}
   const boxes=()=>Array.from(edit.querySelectorAll('[name=record_id]:not(:disabled)'));
   function count(){const n=boxes().filter(b=>b.checked).length;const text=edit.querySelector('[data-selection-count]');if(text)text.textContent=n+' records selected';}
@@ -86,4 +91,6 @@
     handle.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();resize(heading.getBoundingClientRect().width+(event.key==='ArrowRight'?20:-20));}});
   });
   document.querySelector('[data-save-sheet-view]').addEventListener('submit',event=>{columns.filter(b=>b.checked).forEach(box=>{const input=document.createElement('input');input.type='hidden';input.name='columns';input.value=box.value;event.target.append(input);});});
+	}
+	initialize();document.addEventListener('fluxport:tool-mounted',initialize);document.addEventListener('fluxport:data-mounted',initialize);
 })();

@@ -1,0 +1,60 @@
+async (page, artifactDir) => {
+ const base=new URL(page.url()).origin,name='single-workspace-'+Date.now()+'.json';
+ let id;
+ try {
+  await page.goto(base+'/collections');await page.locator('#import>summary').click();
+  await page.locator('#import-file').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(Array.from({length:60},(_,i)=>({id:i+1,name:i===0?' Ada ':'Person '+i,nested:{enabled:true}}))))});
+  await page.getByRole('button',{name:'Open selected files',exact:true}).click();
+  await page.locator('#collection-table tr').filter({hasText:name}).filter({hasText:'ready'}).waitFor();
+  const href=await page.getByRole('link',{name,exact:true}).getAttribute('href');id=href.split('/')[2];
+  await page.goto(base+href);
+  const source=page.locator('#detail-content'),pane=page.locator('#file-workspace-tool');
+  await page.evaluate(()=>{document.querySelector('#detail-content').dataset.persistenceTest='kept';});
+  await page.locator('[data-workspace-target=clean]').click();
+  await pane.getByLabel('Action',{exact:true}).selectOption('trim');
+  await pane.getByLabel('Column',{exact:true}).fill('name');
+  await pane.getByRole('button',{name:'Add change',exact:true}).click();
+  await pane.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
+  const aligned=await pane.locator('.cleanup-controls').first().evaluate(row=>{const controls=[...row.querySelectorAll('input,select,button')].filter(e=>e.getBoundingClientRect().height);return Math.max(...controls.map(e=>e.getBoundingClientRect().bottom))-Math.min(...controls.map(e=>e.getBoundingClientRect().bottom))<2;});
+  if(!aligned)throw Error('Cleanup inputs and action button are not aligned');
+  if(!await pane.getByText('Trim spaces in name',{exact:true}).count())throw Error('Cleanup not retained');
+  await page.locator('[data-workspace-target=sql]').click();
+  const sql=pane.locator('#sql-editor');await sql.fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');
+  await pane.getByRole('button',{name:'Run query',exact:true}).click();
+  await pane.getByRole('heading',{name:'Results',exact:true}).waitFor();
+  await pane.getByRole('cell',{name:'60',exact:true}).waitFor();
+  await sql.fill('SELECT id FROM "c_'+id+'" LIMIT 3');
+  await page.locator('[data-workspace-target=clean]').click();
+  await pane.getByRole('heading',{name:'Before and after',exact:true}).waitFor();
+  await page.locator('[data-workspace-target=sql]').click();
+  if(await sql.inputValue()!=='SELECT id FROM "c_'+id+'" LIMIT 3')throw Error('SQL draft lost');
+  if(new URL(page.url()).pathname!==href||await source.getAttribute('data-persistence-test')!=='kept')throw Error('Workspace navigated or source table replaced');
+  await source.getByRole('link',{name:'Page 2',exact:true}).click();await source.locator('.detail-body[data-page="2"]').waitFor();
+  if(await sql.inputValue()!=='SELECT id FROM "c_'+id+'" LIMIT 3'||!await pane.isVisible())throw Error('Pagination lost the active SQL draft');
+  await source.getByRole('link',{name:'Sort id',exact:true}).click();await source.locator('th[aria-sort=ascending]').waitFor();
+  if(await sql.inputValue()!=='SELECT id FROM "c_'+id+'" LIMIT 3')throw Error('Sorting lost the SQL draft');
+  await sql.fill('SELECT invalid_column FROM "c_'+id+'"');
+  await pane.getByRole('button',{name:'Run query',exact:true}).click();
+  await pane.getByRole('alert').waitFor();
+  if(!(await sql.inputValue()).includes('invalid_column'))throw Error('SQL lost after error');
+  await page.locator('[data-workspace-target=export]').click();
+  await pane.locator('#collection-download-format').selectOption('xlsx');
+  await pane.getByRole('button',{name:'Check format changes',exact:true}).click();
+  await pane.getByRole('heading',{name:'Before you download',exact:true}).waitFor();
+  await pane.getByRole('button',{name:'Prepare download',exact:true}).click();
+  const ready=pane.getByRole('link',{name:'Download file',exact:true});await ready.waitFor();
+  const download=page.waitForEvent('download');await ready.click();if(await(await download).failure())throw Error('Workspace export failed');
+  await page.locator('[data-workspace-target=clean]').click();
+  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});if(width===390)await pane.evaluate(el=>el.scrollIntoView({block:'start'}));for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await page.waitForTimeout(200);if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Workspace overflow '+width);const unreadable=await page.evaluate(()=>{const rgb=s=>s.match(/[\d.]+/g)?.map(Number),lum=rgb=>rgb.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);return [...document.querySelectorAll('.button,.icon-button')].filter(el=>el.getBoundingClientRect().height&&el.textContent.trim()&&getComputedStyle(el).visibility!=='hidden').flatMap(el=>{const style=getComputedStyle(el);let current=el,bg;while(current){bg=rgb(getComputedStyle(current).backgroundColor);if(bg&&(bg.length<4||bg[3]===1))break;current=current.parentElement;}const fg=rgb(style.color);if(!bg||!fg)return [];const a=lum(fg),b=lum(bg),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);return ratio<4.5?[el.textContent.trim()+': '+ratio.toFixed(2)]:[];});});if(unreadable.length)throw Error('Unreadable buttons in '+theme+': '+unreadable.join(', '));await page.screenshot({path:artifactDir+'/workspace-'+width+'-'+theme+'.png'});}}
+  await page.keyboard.press('Escape');if(await pane.isVisible())throw Error('Escape did not close the tool');
+  await page.locator('[data-workspace-target=sql]').click();if(!(await sql.inputValue()).includes('invalid_column'))throw Error('Draft lost after closing');
+  const native=await page.context().browser().newContext({javaScriptEnabled:false});
+  try{const p=await native.newPage();await p.goto(base+href);await p.getByRole('link',{name:'SQL',exact:true}).click();await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+href);await p.getByRole('link',{name:'Export',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
+  console.log('Single collection workspace passed: persistent source, cleanup/SQL drafts, inline errors, exports, themes/mobile, Escape and no-JavaScript forms.');
+ } catch(error) {
+  console.log('Workspace failure at '+page.url()+': '+(await page.locator('#file-workspace-tool').textContent()).slice(-2600));
+  await page.screenshot({path:artifactDir+'/workspace-failure.png'});throw error;
+ } finally {
+  if(id){await page.goto(base+'/collections');const csrf=await page.locator('#import input[name=csrf]').inputValue();await page.request.post(base+'/collections/'+id+'/delete',{form:{csrf,confirm:'delete'}});}
+ }
+}

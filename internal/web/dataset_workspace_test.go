@@ -22,7 +22,7 @@ func TestDatasetCleanupJourneyPreservesSource(t *testing.T) {
 		t.Fatal(err)
 	}
 	page, body := call(t, app, "GET", "/collections/"+col.ID, "", nil, nil)
-	if !strings.Contains(body, "data-sheet-query") || !strings.Contains(body, "Dataset workspace") || strings.Contains(body, "Data explorer</h1>") {
+	if !strings.Contains(body, "data-sheet-query") || !strings.Contains(body, "data-file-workspace") || strings.Contains(body, "Data explorer</h1>") {
 		t.Fatal("dataset must open the unified explorer")
 	}
 	cookies, token := page.Cookies(), csrf(t, body)

@@ -207,6 +207,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/pipelines/:pipeline/schedule", server.schedulePipeline)
 	app.Get("/pipelines/:pipeline/export", server.exportPipeline)
 	app.Get("/sql", server.sqlPage)
+	app.Get("/collections/:id/sql", server.sqlPage)
+	app.Post("/collections/:id/sql", server.sqlPage)
 	app.Post("/sql", server.sqlPage)
 	app.Post("/sql/:query/delete", server.deleteSQL)
 	app.Post("/converter", server.convert)
@@ -383,6 +385,9 @@ func (s *Server) detail(c fiber.Ctx) error {
 		p.Limit = n
 	}
 	p.Tab = c.Query("tab", "preview")
+	if p.DownloadError != "" {
+		p.Tab = "downloads"
+	}
 	switch p.Tab {
 	case "preview", "raw", "schema", "configuration", "downloads":
 	default:

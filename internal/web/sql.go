@@ -24,22 +24,48 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 	sq := &SQLPage{Selected: map[string]bool{}, Engine: "auto", DuckDBTimeoutSeconds: int(s.Service.DuckDBTimeout.Seconds())}
 	p.SQL = sq
 	var err error
+	if id := c.Params("id"); id != "" {
+		p.Collection, err = s.Service.Get(id)
+		if err != nil {
+			return err
+		}
+		p.Active = "collections"
+		sq.Selected[id] = true
+	}
 	p.Collections, _, err = s.Service.List("", 1, 100)
 	if err != nil {
 		return err
+	}
+	if p.Collection.ID != "" {
+		p.Collections = []collections.Collection{p.Collection}
 	}
 	sq.Saved, err = s.Service.SavedSQL()
 	if err != nil {
 		return err
 	}
+	if p.Collection.ID != "" {
+		filtered := sq.Saved[:0]
+		for _, query := range sq.Saved {
+			if len(query.Collections) == 1 && query.Collections[0] == p.Collection.ID {
+				filtered = append(filtered, query)
+			}
+		}
+		sq.Saved = filtered
+	}
 	sq.History, err = s.Service.SQLHistory()
 	if err != nil {
 		return err
+	}
+	if p.Collection.ID != "" {
+		sq.History = collectionSQLHistory(sq.History, p.Collection.ID)
 	}
 	if id := c.Query("saved"); id != "" {
 		q, e := s.Service.GetSQL(id)
 		if e != nil {
 			return fiber.NewError(404, "Saved SQL query not found.")
+		}
+		if p.Collection.ID != "" && (len(q.Collections) != 1 || q.Collections[0] != p.Collection.ID) {
+			return fiber.NewError(404, "Saved query does not belong to this file.")
 		}
 		sq.Text = q.SQL
 		sq.Name = q.Name
@@ -63,8 +89,14 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 		sq.Engine = c.FormValue("engine")
 		sq.Published = c.FormValue("published") == "on"
 		ids := []string{}
+		if p.Collection.ID != "" {
+			ids = append(ids, p.Collection.ID)
+		}
 		for _, v := range c.Request().PostArgs().PeekMulti("collections") {
 			id := string(v)
+			if p.Collection.ID != "" {
+				continue
+			}
 			ids = append(ids, id)
 			sq.Selected[id] = true
 		}
@@ -74,11 +106,16 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 				p.Message = err.Error()
 				c.Status(422)
 			} else {
+				if p.Collection.ID != "" {
+					return c.Redirect().Status(303).To("/collections/" + p.Collection.ID + "/sql")
+				}
 				return c.Redirect().Status(303).To("/sql")
 			}
 		} else {
 			result, e := s.Service.SQLWithEngine(c.Context(), ids, sq.Text, sq.Engine)
-			sq.Result = &result
+			if e == nil {
+				sq.Result = &result
+			}
 			err = e
 			if e != nil {
 				p.Message = e.Error()
@@ -90,6 +127,9 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 			sq.History, e = s.Service.SQLHistory()
 			if e != nil {
 				return e
+			}
+			if p.Collection.ID != "" {
+				sq.History = collectionSQLHistory(sq.History, p.Collection.ID)
 			}
 			if err == nil && c.FormValue("action") == "export" {
 				return exportSQL(c, result, c.FormValue("format"))
@@ -152,8 +192,28 @@ func exportSQL(c fiber.Ctx, result collections.SQLResult, format string) error {
 	return c.Send(b)
 }
 func (s *Server) deleteSQL(c fiber.Ctx) error {
+	if id := c.FormValue("collection"); id != "" {
+		query, err := s.Service.GetSQL(c.Params("query"))
+		if err != nil || len(query.Collections) != 1 || query.Collections[0] != id {
+			return fiber.NewError(404, "Saved query does not belong to this file.")
+		}
+		if err := s.Service.DeleteSQL(query.ID); err != nil {
+			return err
+		}
+		return c.Redirect().Status(303).To("/collections/" + id + "/sql")
+	}
 	if err := s.Service.DeleteSQL(c.Params("query")); err != nil {
 		return err
 	}
 	return c.Redirect().Status(303).To("/sql")
+}
+
+func collectionSQLHistory(history []collections.SQLHistory, id string) []collections.SQLHistory {
+	filtered := history[:0]
+	for _, query := range history {
+		if len(query.Collections) == 1 && query.Collections[0] == id {
+			filtered = append(filtered, query)
+		}
+	}
+	return filtered
 }

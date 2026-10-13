@@ -13,7 +13,7 @@ import (
 func TestWorkbenchViewsEditsAndSQLRoutes(t *testing.T) {
 	app, s, col := setup(t, "", "")
 	resp, body := call(t, app, "GET", "/collections/"+col.ID+"/workbench", "", nil, nil)
-	if resp.StatusCode != 200 || !strings.Contains(body, "Dataset workspace") || !strings.Contains(body,"data-sheet-query") || strings.Contains(body, "<script>alert(1)</script>") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "data-file-workspace") || !strings.Contains(body, "data-sheet-query") || strings.Contains(body, "<script>alert(1)</script>") {
 		t.Fatal(resp.StatusCode, body)
 	}
 	cookies := resp.Cookies()
