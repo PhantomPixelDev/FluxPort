@@ -11,6 +11,7 @@ async (page, artifactDir) => {
   await page.goto(base+href);
   const source=page.locator('#detail-content'),pane=page.locator('#file-workspace-tool');
   const more=page.locator('.workspace-more'),moreSummary=more.locator('summary');
+  if(!await page.locator('.workspace-toolbar use').evaluateAll(items=>items.every(el=>el.getAttribute('href').includes('?v='))))throw Error('Toolbar icons do not use versioned asset URLs');
   if(await page.locator('.workspace-toolbar>a:visible').count()!==2)throw Error('Default file page must have only Clean and Download actions');
   if(await page.locator('.workspace-data-heading,.collection-tools,.activity-panel,.source-editing,.sheet-tools,.sheet-search-submit,.column-type').filter({visible:true}).count())throw Error('Advanced controls or repeated context visible by default');
   if(await page.locator('#main p:visible').filter({hasText:/\S/}).count())throw Error('Default table has explanatory paragraphs');

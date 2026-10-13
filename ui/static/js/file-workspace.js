@@ -44,8 +44,10 @@
  }
  const more=workspace.querySelector('.workspace-more'),moreSummary=more.querySelector('summary');
  workspace.classList.add('workspace-ready');
+ const iconSource=workspace.querySelector('.workspace-toolbar use')?.getAttribute('href').split('#')[0]||'/static/icons/icons.svg';
  const theme=document.getElementById('theme-toggle');if(theme){theme.classList.add('workspace-theme');theme.title='Switch color theme';theme.innerHTML='<svg class="workspace-action-icon" aria-hidden="true"><use href="/static/icons/icons.svg#sun"/></svg><span class="workspace-tool-label">Switch theme</span>';more.querySelector('[data-workspace-theme]').append(theme);}
  const signout=document.querySelector('.topbar-actions form');if(signout)more.querySelector('[data-workspace-theme]').append(signout);
+ theme?.querySelector('use').setAttribute('href',iconSource+'#sun');
  const mobileTools=matchMedia('(max-width:767px)'),extraTools=more.querySelector('.workspace-extra-tools'),desktopTools=workspace.querySelector('.workspace-desktop-tools');
  function arrangeTools(){more.open=false;(mobileTools.matches?more:desktopTools).append(extraTools);}
  mobileTools.addEventListener('change',arrangeTools);arrangeTools();
