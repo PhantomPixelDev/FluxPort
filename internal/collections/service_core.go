@@ -59,6 +59,7 @@ type Service struct {
 	Root              string
 	IndexDir          string
 	DownloadDir       string
+	ResultDir         string
 	MaxBytes          int64
 	RecordBytes       int64
 	StreamBytes       int64
@@ -94,8 +95,9 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	state := filepath.Dir(dbPath)
 	s := &Service{DB: db, Root: resolved, IndexDir: filepath.Join(state, "indexes"), DownloadDir: filepath.Join(state, "downloads"), MaxBytes: max, RecordBytes: 1 << 20, Reserve: 256 << 20, DuckDBMemoryBytes: 512 << 20, DuckDBTempBytes: 4 << 30, DuckDBTimeout: 30 * time.Second, locks: map[string]*lockEntry{}, DiskCheck: resources.Check}
 	s.DuckDBTempDir = filepath.Join(state, "duckdb-tmp")
+	s.ResultDir = filepath.Join(state, "results")
 	s.duckSlots = make(chan struct{}, min(2, runtime.GOMAXPROCS(0)))
-	for _, dir := range []string{s.IndexDir, s.DownloadDir} {
+	for _, dir := range []string{s.IndexDir, s.DownloadDir, s.ResultDir} {
 		if err = os.MkdirAll(dir, 0700); err != nil {
 			return nil, err
 		}
@@ -103,6 +105,7 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	s.Jobs = jobs.New(db)
 	s.Jobs.Register("index", s.indexJob)
 	s.Jobs.Register("convert", s.convertJob)
+	s.Jobs.Register("prepare_result", s.prepareResultJob)
 	return s, nil
 }
 func (s *Service) Configure(c config.Config) {
@@ -141,6 +144,7 @@ func (s *Service) Start(ctx context.Context, workers int) error {
 	}
 	s.cleanup()
 	s.cleanupDuckDBCaches()
+	s.cleanupResults()
 	s.startScheduler(ctx)
 	return nil
 }

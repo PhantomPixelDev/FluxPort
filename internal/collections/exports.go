@@ -15,6 +15,9 @@ import (
 )
 
 type convertPayload struct {
+	ResultID                     string            `json:"result_id,omitempty"`
+	DependsOn                    string            `json:"depends_on,omitempty"`
+	ResultRef                    *indexReference   `json:"-"`
 	Pipeline                     *Pipeline         `json:",omitempty"`
 	Generations                  map[string]string `json:",omitempty"`
 	CollectionID, Path, From, To string
@@ -94,6 +97,14 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 	if err = decoder.Decode(&p); err != nil {
 		return "", err
 	}
+	if p.ResultID != "" {
+		_, ref, e := s.resultReference(p.CollectionID, p.ResultID)
+		if e != nil {
+			return "", e
+		}
+		defer ref.release()
+		p.ResultRef = &ref
+	}
 	if binaryFormat(p.To) {
 		return s.binaryExportJob(ctx, j, p, progress)
 	}
@@ -107,7 +118,7 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 		if err != nil {
 			return "", err
 		}
-		schema, err := s.Fields(c)
+		schema, err := s.exportFields(c, p)
 		if err != nil {
 			return "", err
 		}
@@ -169,7 +180,7 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 			}
 		}
 	}
-	if p.To == "csv" && len(fields) == 0 && p.Pipeline == nil {
+	if p.To == "csv" && len(fields) == 0 && p.Pipeline == nil && p.ResultID == "" {
 		source := p.Path
 		format := p.From
 		if p.CollectionID != "" {
@@ -223,7 +234,13 @@ func (s *Service) convertJob(ctx context.Context, j jobs.Job, progress func(int6
 		return nil
 	}
 	if p.CollectionID != "" {
-		if p.Pipeline != nil {
+		if p.ResultRef != nil {
+			q := Query{}
+			if p.Query != nil {
+				q = *p.Query
+			}
+			err = s.eachReference(ctx, *p.ResultRef, q, emit)
+		} else if p.Pipeline != nil {
 			err = s.eachPipeline(ctx, *p.Pipeline, p.Generations, emit)
 		} else if p.Query != nil {
 			err = s.EachQuery(ctx, c, *p.Query, p.Generation, emit)
@@ -314,6 +331,40 @@ func (s *Service) RetryJob(id string) (jobs.Job, error) {
 	j, err := s.Jobs.Get(id)
 	if err != nil {
 		return j, err
+	}
+	if j.Kind == "prepare_result" {
+		var p preparePayload
+		d := json.NewDecoder(strings.NewReader(j.Payload))
+		d.UseNumber()
+		if err = d.Decode(&p); err != nil {
+			return j, err
+		}
+		return s.PrepareResult(p.Pipeline)
+	}
+	if j.Kind == "convert" {
+		var p convertPayload
+		d := json.NewDecoder(strings.NewReader(j.Payload))
+		d.UseNumber()
+		if err = d.Decode(&p); err != nil {
+			return j, err
+		}
+		if p.ResultID != "" {
+			prep, e := s.Jobs.Get(p.ResultID)
+			if e != nil {
+				return j, e
+			}
+			if prep.State != "ready" && prep.State != "running" && prep.State != "queued" {
+				prep, e = s.RetryJob(prep.ID)
+				if e != nil {
+					return j, e
+				}
+			}
+			q := Query{}
+			if p.Query != nil {
+				q = *p.Query
+			}
+			return s.ExportResultJob(p.CollectionID, prep.ID, p.To, q, p.Options)
+		}
 	}
 	if j.Kind == "import" {
 		return j, fmt.Errorf("re-upload the file to retry this import")

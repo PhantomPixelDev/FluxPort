@@ -118,11 +118,16 @@ func (s *Service) startScheduler(ctx context.Context) {
 		defer close(s.scheduleDone)
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
+		lastCleanup := time.Now()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case now := <-ticker.C:
+				if now.Sub(lastCleanup) >= time.Hour {
+					s.cleanupResults()
+					lastCleanup = now
+				}
 				if err := s.RunDueSchedules(now); err != nil {
 					_ = s.SetSetting("scheduler_error", err.Error())
 				}

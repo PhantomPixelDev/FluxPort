@@ -33,6 +33,10 @@ func (s *Service) SavePipeline(p Pipeline) (Pipeline, error) {
 	if p.Name == "" || len(p.Name) > 100 {
 		return p, fmt.Errorf("pipeline name must contain 1 to 100 characters")
 	}
+	if p.InputQuery != nil {
+		q := NormalizeInputQuery(*p.InputQuery)
+		p.InputQuery = &q
+	}
 	p.Version = 1
 	_, ids, err := CompilePipeline(p)
 	if err != nil {
@@ -125,7 +129,7 @@ func (s *Service) PreviewPipeline(ctx context.Context, p Pipeline, through int) 
 	if through >= 0 && through < len(p.Steps) {
 		p.Steps = p.Steps[:through+1]
 	}
-	text, ids, err := CompilePipeline(p)
+	text, ids, args, err := compileInputPipeline(p)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +139,7 @@ func (s *Service) PreviewPipeline(ctx context.Context, p Pipeline, through int) 
 		return nil, err
 	}
 	bytes := 0
-	_, err = s.sqlRun(ctx, ids, text+` LIMIT 20`, 0, 10*time.Second, func(_ []string, row []any) error {
+	_, err = s.sqlRunArgs(ctx, ids, text+` LIMIT 20`, args, 0, 10*time.Second, func(_ []string, row []any) error {
 		payload, ok := row[0].(string)
 		if !ok {
 			return fmt.Errorf("pipeline returned invalid record")
@@ -198,7 +202,7 @@ func (s *Service) eachPipeline(ctx context.Context, p Pipeline, generations map[
 	if err != nil {
 		return err
 	}
-	text, ids, err := CompilePipeline(p)
+	text, ids, args, err := compileInputPipeline(p)
 	if err != nil {
 		return err
 	}
@@ -211,7 +215,7 @@ func (s *Service) eachPipeline(ctx context.Context, p Pipeline, generations map[
 			return ErrConflict
 		}
 	}
-	_, err = s.sqlRun(ctx, ids, text, 0, 30*time.Minute, func(_ []string, row []any) error {
+	_, err = s.sqlRunArgs(ctx, ids, text, args, 0, 30*time.Minute, func(_ []string, row []any) error {
 		payload, ok := row[0].(string)
 		if !ok {
 			return fmt.Errorf("pipeline returned invalid record")

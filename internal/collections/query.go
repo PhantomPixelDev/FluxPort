@@ -187,7 +187,7 @@ func ValidateQuery(q Query) error { _, _, _, _, err := querySQL(q); return err }
 
 func (s *Service) Query(ctx context.Context, c Collection, q Query) (QueryResult, error) {
 	out := QueryResult{Records: []Record{}}
-	where, order, args, sortArgs, err := querySQL(q)
+	_, _, _, _, err := querySQL(q)
 	if err != nil {
 		return out, err
 	}
@@ -200,32 +200,35 @@ func (s *Service) Query(ctx context.Context, c Collection, q Query) (QueryResult
 	if q.Page > 1000000000 {
 		return out, fmt.Errorf("page exceeds limit")
 	}
-	c, err = s.ready(c)
+	ref, err := s.sourceReference(c, "")
 	if err != nil {
 		return out, err
 	}
-	unlock := s.lock(c.ID + "-generation")
-	c, err = s.Get(c.ID)
+	defer ref.release()
+	return s.queryReference(ctx, ref, q)
+}
+
+func (s *Service) queryReference(ctx context.Context, ref indexReference, q Query) (QueryResult, error) {
+	out := QueryResult{Records: []Record{}}
+	where, order, args, sortArgs, err := querySQL(q)
 	if err != nil {
-		unlock()
 		return out, err
 	}
-	if c.Status != "ready" {
-		unlock()
-		return out, ErrPending
+	if q.Page < 1 {
+		q.Page = 1
 	}
-	s.retainGeneration(c.Generation)
-	defer s.releaseGeneration(c.ID, c.Generation)
-	db, err := s.openIndex(c)
-	unlock()
+	if q.Limit < 1 {
+		q.Limit = 50
+	}
+	db, err := openReference(ref)
 	if err != nil {
 		return out, err
 	}
 	defer db.Close()
-	out.Generation = c.Generation
+	out.Generation = ref.generation
 	out.Page = q.Page
 	out.Limit = q.Limit
-	out.Total = c.Rows
+	out.Total = ref.rows
 	if where != "1" {
 		if err = db.QueryRowContext(ctx, `SELECT count(*) FROM records WHERE `+where, args...).Scan(&out.Total); err != nil {
 			return out, err
@@ -233,7 +236,13 @@ func (s *Service) Query(ctx context.Context, c Collection, q Query) (QueryResult
 	}
 	all := append(append([]any{}, args...), sortArgs...)
 	all = append(all, q.Limit, int64(q.Page-1)*int64(q.Limit))
-	rows, err := db.QueryContext(ctx, `SELECT record_id,ordinal,payload FROM records WHERE `+where+` ORDER BY `+order+` LIMIT ? OFFSET ?`, all...)
+	statement := `SELECT record_id,ordinal,payload FROM records WHERE ` + where + ` ORDER BY ` + order + ` LIMIT ? OFFSET ?`
+	if where == "1" && len(q.Sort) == 0 {
+		// Published indexes have contiguous ordinals: seek ordinary later pages.
+		statement = `SELECT record_id,ordinal,payload FROM records WHERE ordinal>=? ORDER BY ordinal LIMIT ?`
+		all = []any{int64(q.Page-1) * int64(q.Limit), q.Limit}
+	}
+	rows, err := db.QueryContext(ctx, statement, all...)
 	if err != nil {
 		return out, err
 	}
@@ -255,32 +264,24 @@ func (s *Service) Query(ctx context.Context, c Collection, q Query) (QueryResult
 
 // EachQuery streams the full filtered result from a single published generation.
 func (s *Service) EachQuery(ctx context.Context, c Collection, q Query, generation string, emit func(any) error) error {
-	where, order, args, sortArgs, err := querySQL(q)
+	_, _, _, _, err := querySQL(q)
 	if err != nil {
 		return err
 	}
-	c, err = s.ready(c)
+	ref, err := s.sourceReference(c, generation)
 	if err != nil {
 		return err
 	}
-	unlock := s.lock(c.ID + "-generation")
-	c, err = s.Get(c.ID)
+	defer ref.release()
+	return s.eachReference(ctx, ref, q, emit)
+}
+
+func (s *Service) eachReference(ctx context.Context, ref indexReference, q Query, emit func(any) error) error {
+	where, order, args, sortArgs, err := querySQL(NormalizeInputQuery(q))
 	if err != nil {
-		unlock()
 		return err
 	}
-	if c.Status != "ready" {
-		unlock()
-		return ErrPending
-	}
-	if generation != "" && c.Generation != generation {
-		unlock()
-		return ErrConflict
-	}
-	s.retainGeneration(c.Generation)
-	defer s.releaseGeneration(c.ID, c.Generation)
-	db, err := s.openIndex(c)
-	unlock()
+	db, err := openReference(ref)
 	if err != nil {
 		return err
 	}

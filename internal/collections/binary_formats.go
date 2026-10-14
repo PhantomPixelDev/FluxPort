@@ -290,6 +290,13 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 	tmp := path + ".tmp"
 	defer os.Remove(tmp)
 	each := func(emit func(any) error) error {
+		if p.ResultRef != nil {
+			q := Query{}
+			if p.Query != nil {
+				q = *p.Query
+			}
+			return s.eachReference(ctx, *p.ResultRef, q, emit)
+		}
 		if p.Pipeline != nil {
 			return s.eachPipeline(ctx, *p.Pipeline, p.Generations, emit)
 		}
@@ -313,7 +320,7 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 		return nil
 	}
 	if p.To == "xlsx" {
-		fields, err := s.Fields(c)
+		fields, err := s.exportFields(c, p)
 		if err != nil {
 			return "", err
 		}
@@ -428,7 +435,7 @@ func (s *Service) binaryExportJob(ctx context.Context, j jobs.Job, p convertPayl
 				if p.Pipeline != nil {
 					return "", fmt.Errorf("Cannot infer typed columns from an empty pipeline result; choose JSON or lossless Parquet")
 				}
-				fields, e := s.Fields(c)
+				fields, e := s.exportFields(c, p)
 				if e != nil {
 					return "", e
 				}

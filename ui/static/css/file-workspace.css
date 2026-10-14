@@ -53,7 +53,7 @@ body:has([data-file-workspace]) .breadcrumbs>span,body:has([data-file-workspace]
 [data-file-workspace] .sheet-data .sheet-index .button{min-height:24px;padding:0 4px}
 [data-file-workspace] .sheet-data{padding:0;overflow:hidden}
 [data-file-workspace] .sheet-data>form>p{display:none}
-[data-file-workspace] #detail-content .workspace-shortcuts{display:none}
+[data-file-workspace] .file-workspace-data .workspace-shortcuts{display:none}
 @container(max-width:680px){[data-file-workspace] .sheet-query-bar{grid-template-columns:minmax(120px,1fr) 100px auto}[data-file-workspace] .sheet-query-bar>.sheet-density{grid-column:1}[data-file-workspace] .sheet-query-bar>.toolbar-disclosure>summary{width:100%}}
 @container(max-width:440px){[data-file-workspace] .sheet-query-bar{grid-template-columns:repeat(6,minmax(0,1fr))}[data-file-workspace] .sheet-query-bar>.sheet-search{grid-column:span 4}[data-file-workspace] .sheet-query-bar>.sheet-limit{grid-column:span 3;grid-row:2}[data-file-workspace] .sheet-query-bar>.button{grid-column:span 2;grid-row:1}[data-file-workspace] .sheet-query-bar>.sheet-density{grid-column:span 3;grid-row:2}[data-file-workspace] .sheet-query-bar>.toolbar-disclosure{grid-column:span 3}[data-file-workspace] .sheet-query-bar input,[data-file-workspace] .sheet-query-bar select,[data-file-workspace] .sheet-query-bar .button{height:44px}}
 @container(max-width:440px){[data-file-workspace] .sheet-query-bar>label.sheet-search:first-child{grid-column:span 4;grid-row:1}}
@@ -146,3 +146,15 @@ body:has([data-file-workspace]) .breadcrumbs>span,body:has([data-file-workspace]
 @media(max-width:1000px){[data-file-workspace] .workspace-edit-clean{display:inline-flex}.cleanup-preview .record-scroll{max-height:360px}}
 @media(max-width:1000px){.file-workspace-grid:has(>.file-workspace-tool:not([hidden])){grid-template-columns:minmax(0,1fr)}.file-workspace-tool{position:static;max-height:none;border-left:0;border-top:1px solid var(--border);padding:18px 0 0;margin-top:18px}.file-workspace-grid:has(>.file-workspace-tool:not([hidden])) .file-workspace-data .record-scroll{max-height:300px}.workspace-tool-heading{position:static}}
 @media(max-width:600px){body:has([data-file-workspace]) #main{padding:14px 12px}[data-file-workspace] .collection-heading>div:first-child{display:block}[data-file-workspace] .collection-title{margin-top:6px}[data-file-workspace] .workspace-toolbar{gap:2px}[data-file-workspace] .workspace-toolbar>a{padding:10px 11px;font-size:13px}.workspace-more>summary{padding:10px}.workspace-source-label span{display:none}[data-file-workspace] .detail-title{font-size:20px}#workspace-tool-content .panel{padding:12px}.workspace-tool-context{max-width:190px}}
+/* Captured input and complete-result context stay compact beside the data. */
+.file-workspace-tool .cleanup-input{display:flex;align-items:end;gap:.5rem;margin:0 0 .75rem}
+.file-workspace-tool .cleanup-input label{flex:1;font-size:.8rem}
+.file-workspace-tool .cleanup-input select{margin:0;min-height:38px}
+.prepared-status{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;padding:.5rem 0;font-size:.82rem}
+.prepared-status form{margin:0}.prepared-status small{color:var(--muted)}
+.file-workspace-data [data-cleaned-dataset]:has(.sheet-data) [data-browse-prepared],.file-workspace-data [data-cleaned-dataset]:has(.sheet-data) [data-refresh-prepared]{display:none}
+.cleaned-context{margin:.2rem 0 .6rem}
+.workspace-ready .cleaned-context,.workspace-ready [data-cleaned-dataset]:has(.sheet-data) .prepared-status[data-prepared-state=ready]{display:none}
+.download-row-scope{display:block;margin:.7rem 0 0}
+.download-row-scope select{margin:0}
+.download-chooser [data-download-count]{margin:.5rem 0;color:var(--muted);font-size:.8rem}

@@ -13,13 +13,14 @@ import (
 )
 
 type DownloadReview struct {
-	Format, Pipeline string
-	Dataset, Draft   string
-	Notes            []string
-	Details          []string
-	Checked          int
-	Total            int64
-	Saved, Blocked   bool
+	ResultID, Query, Generation, Scope string
+	Format, Pipeline                   string
+	Dataset, Draft                     string
+	Notes                              []string
+	Details                            []string
+	Checked                            int
+	Total                              int64
+	Saved, Blocked                     bool
 }
 
 func (s *Server) reviewDownload(c fiber.Ctx) error {
@@ -41,7 +42,14 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 	p.Collection = col
 	review := &DownloadReview{Format: format, Pipeline: c.FormValue("pipeline", c.Query("pipeline")), Total: col.Rows}
 	review.Dataset, review.Draft = c.FormValue("dataset", c.Query("dataset")), c.FormValue("draft")
-	recipe, err := s.downloadPipeline(c, col)
+	review.ResultID = c.FormValue("result_id", c.Query("result_id"))
+	review.Query = c.FormValue("query", c.Query("query"))
+	review.Generation = c.FormValue("generation", col.Generation)
+	review.Scope = c.FormValue("scope", "matching")
+	var recipe *collections.Pipeline
+	if review.ResultID == "" {
+		recipe, err = s.downloadPipeline(c, col)
+	}
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
@@ -49,12 +57,12 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 		review.Pipeline = recipe.ID
 	}
 	p.DownloadReview = review
-	if c.Get("HX-Request") == "true" && review.Dataset != "current" {
-		c.Set("HX-Redirect", "/collections/"+col.ID+"/export-check?format="+url.QueryEscape(format)+"&pipeline="+url.QueryEscape(review.Pipeline))
+	if c.Get("HX-Request") == "true" && c.Get("X-Fluxport-Workspace") != "1" && (review.Dataset != "current" || review.ResultID != "") {
+		c.Set("HX-Redirect", "/collections/"+col.ID+"/export-check?format="+url.QueryEscape(format)+"&pipeline="+url.QueryEscape(review.Pipeline)+"&result_id="+url.QueryEscape(review.ResultID)+"&query="+url.QueryEscape(review.Query)+"&dataset="+url.QueryEscape(review.Dataset)+"&scope="+url.QueryEscape(review.Scope))
 		return c.SendStatus(200)
 	}
 	if format == "original" {
-		if recipe != nil {
+		if recipe != nil && c.FormValue("original_shortcut") != "1" {
 			return fiber.NewError(422, "Choose an output format for cleaned data")
 		}
 		review.Notes = []string{"Exact source bytes, with no conversion. Excel downloads include the entire original workbook."}
@@ -63,13 +71,38 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 25*time.Second)
 	defer cancel()
 	rows := []any{}
-	if recipe != nil {
+	if review.ResultID != "" && review.Dataset != "original" {
+		q, e := decodeQuery(review.Query)
+		if e != nil {
+			return fiber.NewError(400, e.Error())
+		}
+		if review.Scope == "entire" {
+			q = collections.Query{}
+		}
+		q.Page, q.Limit = 1, 20
+		r, e := s.Service.QueryResult(ctx, col.ID, review.ResultID, q)
+		if e != nil {
+			return resultHTTPError(e)
+		}
+		for _, record := range r.Records {
+			rows = append(rows, record.Value)
+		}
+		review.Total = r.Total
+		review.Saved = true
+	} else if recipe != nil {
 		rows, err = s.Service.PreviewPipeline(ctx, *recipe, -1)
 		review.Saved = true
 	} else {
 		stop := errors.New("sample complete")
 		bytes := 0
-		err = s.Service.EachQuery(ctx, col, collections.Query{}, col.Generation, func(row any) error {
+		q, e := decodeQuery(review.Query)
+		if e != nil {
+			return fiber.NewError(400, e.Error())
+		}
+		if review.Scope == "entire" {
+			q = collections.Query{}
+		}
+		err = s.Service.EachQuery(ctx, col, q, col.Generation, func(row any) error {
 			raw, e := conversion.MarshalJSON(row)
 			if e != nil {
 				return e

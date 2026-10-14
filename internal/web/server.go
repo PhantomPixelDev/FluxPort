@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -37,6 +38,11 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	PreparedJob                                                                            *jobs.Job
+	Prepared                                                                               *collections.PreparedResult
+	ResultID                                                                               string
+	JobsResource                                                                           string
+	RawQueryJSON                                                                           string
 	DownloadReview                                                                         *DownloadReview
 	Insights                                                                               *DatasetInsights
 	DatasetFormats                                                                         []string
@@ -180,6 +186,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/export", server.exportJob)
 	app.Get("/collections/:id", server.detail)
 	app.Get("/collections/:id/workbench", server.workbench)
+	app.Post("/collections/:id/cleaned-results", server.prepareCleanedResult)
+	app.Get("/collections/:id/cleaned-results/:result", server.cleanedResultStatus)
 	app.Get("/collections/:id/changes", server.datasetChanges)
 	app.Post("/collections/:id/changes", server.datasetChanges)
 	app.Post("/collections/:id/export-check", server.reviewDownload)
@@ -388,6 +396,28 @@ func (s *Server) detail(c fiber.Ctx) error {
 	}
 	p := s.base(c, col.Name, "collections")
 	p.Collection = col
+	if resultID := c.Query("result_id"); resultID != "" && (c.Query("tab", "preview") == "preview" || c.Query("tab") == "raw") {
+		p, err = s.resultPage(c, col.ID, resultID)
+		if err != nil {
+			return err
+		}
+		p.Title = col.Name
+		if c.Query("tab") == "raw" && p.Workbench != nil {
+			values := []string{}
+			for _, row := range p.Workbench.Rows {
+				values = append(values, row.JSON)
+			}
+			p.Preview = "[" + strings.Join(values, ",") + "]"
+			p.RawQueryJSON = p.Workbench.QueryJSON
+			p.Workbench = nil
+			p.PreparedJob = nil
+			p.Tab = "raw"
+		}
+		if c.Get("HX-Request") == "true" {
+			return c.Render("partials/detail", p)
+		}
+		return c.Render("pages/detail", p, "layouts/base")
+	}
 	if message, ok := c.Locals("download_error").(string); ok {
 		p.DownloadError = message
 		p.DownloadOpen = true
@@ -404,6 +434,7 @@ func (s *Server) detail(c fiber.Ctx) error {
 		p.Jobs = []jobs.Job{job}
 		p.DownloadFormat = downloadJobFormat(job)
 		p.DownloadDraft = downloadJobDraft(job)
+		p.ResultID = downloadJobResult(job)
 		p.DownloadOpen = true
 	}
 	p.Query = strings.TrimSpace(c.Query("q"))
@@ -435,6 +466,30 @@ func (s *Server) detail(c fiber.Ctx) error {
 		return c.Render("pages/detail", p, "layouts/base")
 	}
 	if p.Tab == "downloads" {
+		q, e := decodeQuery(c.Query("query", c.FormValue("query")))
+		if e != nil {
+			return fiber.NewError(400, e.Error())
+		}
+		b, _ := json.Marshal(q)
+		p.Workbench = &Workbench{Query: q, QueryJSON: string(b), Generation: col.Generation, ResultID: c.Query("result_id", c.FormValue("result_id", p.ResultID)), DatasetRows: col.Rows}
+		p.ResultID = p.Workbench.ResultID
+		if p.ResultID != "" {
+			job, e := s.Service.Jobs.Get(p.ResultID)
+			if e != nil || job.Resource != col.ID || job.Kind != "prepare_result" {
+				return fiber.NewError(404, "Cleaned result not found")
+			}
+			if job.State == "ready" {
+				if d, e := s.Service.PreparedResult(col.ID, p.ResultID); e == nil {
+					p.Workbench.DatasetRows = d.Rows
+				}
+			}
+		}
+		if p.DownloadFormat == "" && (c.Query("query") != "" || p.ResultID != "") {
+			p.DownloadFormat = col.Format
+			if p.ResultID != "" {
+				p.DownloadFormat = "json"
+			}
+		}
 		p.Pipeline = &PipelinePage{}
 		all, e := s.Service.Pipelines()
 		if e != nil {

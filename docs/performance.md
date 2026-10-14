@@ -1,5 +1,18 @@
 # Release measurements
 
+## Complete cleaned results: 0.3.12
+
+Measured on Windows with Go 1.26.1 on 2026-10-14. NDJSON records are approximately 1 KiB. The captured input filters to the latter half, sorts descending, selects three columns and trims Unicode text. Counts, last-page values and exact large integers passed. Preparation reuses the source index and produces a private result index. Ordinary pages now seek indexed ordinals directly.
+
+| Source | Source rows | Cleaned rows | Source indexing | Preparation | Last cleaned page | Peak sampled Go heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 100 MiB | 98,284 | 49,142 | 21.60 s | 10.21 s | 8.34 ms | 3.86 MiB |
+| 1 GiB | 1,005,476 | 502,738 | 295.87 s | 94.75 s | 5.74 ms | 4.28 MiB |
+
+These are local observations, not speed guarantees. Heap is sampled every 10 ms during indexing and preparation; it is not total process RSS or DuckDB memory. Windows filesystem/cache and concurrent work affect timing. [Raw Windows report](prepared-large-windows-0.3.12.json). Linux runs the same opt-in 100 MiB / 1 GiB test in the [Checks workflow](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml), with a downloadable `prepared-large-linux-0.3.12` measurement artifact; its timings are reported from the actual Ubuntu runner, not inferred from Windows.
+
+To reproduce, set `FLUXPORT_PREPARED_LARGE_TESTS=1` and optionally `FLUXPORT_PREPARED_BENCH_REPORT=<report.json>`, then run `go test ./internal/collections -run '^TestPreparedLargeWorkflow$' -timeout 25m -count=1 -v`. Generated sources and indexes live in the test temporary directory and are removed. These figures belong to the native Go/SQLite cleanup path; SQL engine benchmarks are documented separately.
+
 Measurements below are historical and version-specific. DuckDB is now bundled in the standard build, so the pre-DuckDB binary sizes and idle memory below must not be used as current release figures. See the dated Windows/Linux reports for later measurements.
 
 ## Conversion fidelity follow-up: 0.2.1

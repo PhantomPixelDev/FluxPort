@@ -39,6 +39,7 @@ type PipelineStep struct {
 	Join       *PipelineJoin              `json:"join,omitempty"`
 }
 type Pipeline struct {
+	InputQuery *Query         `json:"input_query,omitempty"`
 	Revision   int            `json:"revision,omitempty"`
 	Validation []quality.Rule `json:"validation,omitempty"`
 	ID         string         `json:"id"`
@@ -205,6 +206,20 @@ func pipelineRuleExpression(r transformations.Rules) (string, error) {
 // CompilePipeline produces SELECT-only CTEs over disposable source indexes.
 // Global operations use SQLite's disk-backed sorting and grouping.
 func CompilePipeline(p Pipeline) (string, []string, error) {
+	if p.InputQuery != nil {
+		q := NormalizeInputQuery(*p.InputQuery)
+		p.InputQuery = nil
+		text, ids, err := CompilePipeline(p)
+		if err != nil {
+			return "", nil, err
+		}
+		root, args, err := pipelineInputSQL(p.Source, q)
+		if err != nil {
+			return "", nil, err
+		}
+		root, err = bindPipelineSQL(root, args)
+		return strings.Replace(text, pipelineRootSQL(p.Source), root, 1), ids, err
+	}
 	if _, err := quality.NewValidator(p.Validation); err != nil {
 		return "", nil, err
 	}

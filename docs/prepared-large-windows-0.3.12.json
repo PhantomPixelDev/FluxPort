@@ -1,0 +1,34 @@
+[
+  {
+    "baseline_heap_bytes": 804584,
+    "cleaned_payload_bytes": 2506242,
+    "cleaned_rows": 49142,
+    "go": "go1.26.1",
+    "index_seconds": 21.5967636,
+    "os": "windows",
+    "page_ms": 8.336,
+    "passed": true,
+    "peak_heap_bytes": 4045896,
+    "prepare_seconds": 10.2077137,
+    "source_bytes": 104857918,
+    "source_rows": 98284,
+    "target_bytes": 104857600,
+    "version": "0.3.12"
+  },
+  {
+    "baseline_heap_bytes": 1277392,
+    "cleaned_payload_bytes": 26147852,
+    "cleaned_rows": 502738,
+    "go": "go1.26.1",
+    "index_seconds": 295.8732736,
+    "os": "windows",
+    "page_ms": 5.739,
+    "passed": true,
+    "peak_heap_bytes": 4489304,
+    "prepare_seconds": 94.7525252,
+    "source_bytes": 1073742734,
+    "source_rows": 1005476,
+    "target_bytes": 1073741824,
+    "version": "0.3.12"
+  }
+]

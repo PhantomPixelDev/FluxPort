@@ -191,6 +191,10 @@ func (s *Service) SQLStream(ctx context.Context, ids []string, text string, emit
 }
 
 func (s *Service) sqlRun(ctx context.Context, ids []string, text string, rowLimit int, timeout time.Duration, emit func([]string, []any) error, expected map[string]string) (out SQLResult, err error) {
+	return s.sqlRunArgs(ctx, ids, text, nil, rowLimit, timeout, emit, expected)
+}
+
+func (s *Service) sqlRunArgs(ctx context.Context, ids []string, text string, args []any, rowLimit int, timeout time.Duration, emit func([]string, []any) error, expected map[string]string) (out SQLResult, err error) {
 	releases := []func(){}
 	defer func() {
 		for _, release := range releases {
@@ -334,7 +338,7 @@ func (s *Service) sqlRun(ctx context.Context, ids []string, text string, rowLimi
 	if _, err = conn.ExecContext(ctx, `PRAGMA query_only=ON`); err != nil {
 		return out, err
 	}
-	rows, err := conn.QueryContext(ctx, text)
+	rows, err := conn.QueryContext(ctx, text, args...)
 	if err != nil {
 		return out, err
 	}

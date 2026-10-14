@@ -41,9 +41,9 @@ async (page, artifactDir) => {
   if(!await pane.getByText('Trim spaces in name',{exact:true}).count())throw Error('Cleanup not retained');
   const preview=page.locator('#workspace-result');
   if(await source.isVisible()||await preview.locator('tbody tr').count()!==20)throw Error('Cleanup must show one result sample table');
-  await preview.getByRole('button',{name:'Inspect cleaned JSON value',exact:true}).first().click();
-  if(await page.getByLabel('Complete cleaned JSON value',{exact:true}).inputValue()!=='{"enabled":true}')throw Error('Cleaned JSON inspector changed the value');
-  await page.getByRole('button',{name:'Close cleaned value',exact:true}).click();
+  await preview.locator('.sheet-data').waitFor();await preview.getByRole('button',{name:'Inspect JSON in nested',exact:true}).first().click();
+  if(await preview.getByLabel('Complete record JSON',{exact:true}).inputValue()!=='{"enabled":true}')throw Error('Cleaned JSON inspector changed the value');
+  await preview.getByRole('button',{name:'Close record',exact:true}).click();
   await page.getByRole('button',{name:'Original',exact:true}).click();if(!await source.isVisible()||await preview.isVisible())throw Error('Original/result switch unclear');
   await page.getByRole('button',{name:'Cleaned',exact:true}).click();
   await page.locator('[data-workspace-target=export]').click();
@@ -81,7 +81,7 @@ async (page, artifactDir) => {
   await page.locator('[data-workspace-target=export]').click();
   await pane.getByRole('button',{name:'Another format',exact:true}).click();
   await pane.locator('#collection-download-format').selectOption('xlsx');
-  await pane.getByText('Options',{exact:true}).click();await pane.getByText('Format details',{exact:true}).click();await pane.getByRole('button',{name:'Check format changes',exact:true}).click();
+  await pane.getByText('Format details',{exact:true}).click();await pane.getByRole('button',{name:'Check format changes',exact:true}).click();
   await pane.getByRole('heading',{name:'Format compatibility',exact:true}).waitFor();
   const automatic=page.waitForEvent('download');await pane.getByRole('button',{name:'Download file',exact:true}).click();
   const ready=pane.locator('a[href*="/download"]');await ready.waitFor();

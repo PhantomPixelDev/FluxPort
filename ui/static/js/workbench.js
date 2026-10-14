@@ -13,7 +13,9 @@
 		sqlEditor.form.addEventListener('submit',event=>{if(event.submitter?.value==='save'&&!sqlEditor.form.elements.name.value.trim()){event.preventDefault();sqlEditor.form.elements.name.focus();sqlEditor.form.elements.name.setCustomValidity('Enter a name for this query.');sqlEditor.form.elements.name.reportValidity();}else sqlEditor.form.setAttribute('aria-busy','true');});
 		sqlEditor.form.elements.name.addEventListener('input',()=>sqlEditor.form.elements.name.setCustomValidity(''));
 	}
-  const queryForm = document.querySelector('[data-sheet-query]');
+  const workspace=document.querySelector('[data-file-workspace]');
+  const root=workspace?(workspace.dataset.dataView==='result'?document.getElementById('workspace-result'):document.getElementById('detail-content')):document;
+  const queryForm = root.querySelector('[data-sheet-query]');
   if (!queryForm||queryForm.dataset.initialized) return;
   queryForm.dataset.initialized='true';
   dataListeners?.abort();dataListeners=new AbortController();
@@ -24,7 +26,7 @@
     const wrapper = document.createElement('label'); wrapper.append(document.createTextNode(label));
     const element = document.createElement(options ? 'select' : 'input'); element.setAttribute(marker, '');
     if (options) options.forEach(([value,text]) => { const o=document.createElement('option');o.value=value;o.textContent=text;element.append(o); });
-    else if (marker.endsWith('field')) {element.setAttribute('list','sheet-fields');element.required=true;}
+    else if (marker.endsWith('field')) {element.setAttribute('list',root.querySelector('datalist').id);element.required=true;}
     wrapper.append(element);return wrapper;
   }
   function addRule(kind) {
@@ -46,9 +48,9 @@
     const sort=Array.from(sorts.children).map(row=>({field:row.querySelector('[data-sort-field]').value,desc:row.querySelector('[data-sort-direction]').value==='desc'}));
     queryForm.querySelector('[name=query]').value='{"search":'+JSON.stringify(queryForm.querySelector('[data-query-search]').value)+',"limit":'+Number(queryForm.querySelector('[data-query-limit]').value)+',"filters":['+filterJSON.join(',')+'],"sort":'+JSON.stringify(sort)+'}';
   });
-  const sheet=document.querySelector('.sheet-data'),edit=sheet.querySelector('[data-sheet-edit]');
+  const sheet=root.querySelector('.sheet-data'),edit=sheet.querySelector('[data-sheet-edit]');
 	if(window.EventSource){
-		const initial=edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
+		const initial=sheet.dataset.sourceGeneration||edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
 		async function check(){if(checking)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}
 		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();},{signal:dataListeners.signal});
 	}
@@ -56,8 +58,8 @@
   function count(){const n=boxes().filter(b=>b.checked).length;const text=edit.querySelector('[data-selection-count]');if(text)text.textContent=n+' records selected';}
   edit.addEventListener('change',event=>{if(event.target.matches('[data-select-page]'))boxes().forEach(b=>b.checked=event.target.checked);count();});
   edit.addEventListener('submit',event=>{const n=boxes().filter(b=>b.checked).length;if(!n){event.preventDefault();return;}if(edit.elements.method.value==='DELETE'&&!window.confirm('Permanently delete '+n+' selected records from the source?'))event.preventDefault();});
-  const dialog=document.getElementById('record-dialog');let activeID='';
-  const inspector=document.getElementById('record-values'),useRecord=dialog.querySelector('[data-use-record]');
+  const dialog=root.querySelector('[data-record-dialog]');let activeID='';
+  const inspector=root.querySelector('[data-record-values]'),useRecord=dialog.querySelector('[data-use-record]');
   function inspect(value,title,record){inspector.value=value;inspector.readOnly=!record||sheet.dataset.editable!=='true';useRecord.hidden=!record||sheet.dataset.editable!=='true';dialog.querySelector('[data-inspector-title]').textContent=title;dialog.querySelector('[data-copy-feedback]').textContent='';dialog.showModal();}
   async function copy(value){try{await navigator.clipboard.writeText(value);const notice=document.getElementById('feedback');if(notice)notice.textContent='Value copied.';dialog.querySelector('[data-copy-feedback]').textContent='Copied';}catch{inspect(value,'Copy complete value',false);inspector.select();dialog.querySelector('[data-copy-feedback]').textContent='Press Ctrl+C or Command+C to copy.';}}
   edit.addEventListener('click',event=>{
@@ -67,7 +69,7 @@
    const button=event.target.closest('[data-edit-record]');if(!button)return;activeID=button.dataset.editRecord;const source=Array.from(edit.querySelectorAll('[data-record-json]')).find(e=>e.dataset.recordJson===activeID);inspect(source.value,'Record values',true);
   });
   dialog.querySelector('[data-copy-inspector]').addEventListener('click',()=>copy(inspector.value));
-  dialog.querySelector('[data-use-record]').addEventListener('click',()=>{const box=boxes().find(b=>b.value===activeID);if(!box)return;boxes().forEach(b=>b.checked=b===box);edit.elements.method.value='PUT';edit.elements.value.value=document.getElementById('record-values').value;dialog.close();count();edit.elements.value.focus();});
+  dialog.querySelector('[data-use-record]').addEventListener('click',()=>{const box=boxes().find(b=>b.value===activeID);if(!box)return;boxes().forEach(b=>b.checked=b===box);edit.elements.method.value='PUT';edit.elements.value.value=inspector.value;dialog.close();count();edit.elements.value.focus();});
   const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='comfortable'?'comfortable':'compact';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
   const key='fluxport-sheet-'+sheet.dataset.collection;let prefs=Object.create(null);try{Object.assign(prefs,JSON.parse(localStorage.getItem(key)||'{}')||{});}catch{}
   const columns=Array.from(queryForm.querySelectorAll('[data-sheet-column]'));
@@ -91,7 +93,7 @@
     handle.addEventListener('pointerdown',event=>{event.preventDefault();const start=event.clientX,width=heading.getBoundingClientRect().width;handle.setPointerCapture(event.pointerId);const move=e=>resize(width+e.clientX-start);handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',()=>handle.removeEventListener('pointermove',move),{once:true});});
     handle.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();resize(heading.getBoundingClientRect().width+(event.key==='ArrowRight'?20:-20));}});
   });
-  document.querySelector('[data-save-sheet-view]').addEventListener('submit',event=>{columns.filter(b=>b.checked).forEach(box=>{const input=document.createElement('input');input.type='hidden';input.name='columns';input.value=box.value;event.target.append(input);});});
+  root.querySelector('[data-save-sheet-view]')?.addEventListener('submit',event=>{columns.filter(b=>b.checked).forEach(box=>{const input=document.createElement('input');input.type='hidden';input.name='columns';input.value=box.value;event.target.append(input);});});
 	}
 	initialize();document.addEventListener('fluxport:tool-mounted',initialize);document.addEventListener('fluxport:data-mounted',initialize);
 })();

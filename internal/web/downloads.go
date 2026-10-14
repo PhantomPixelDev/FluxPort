@@ -42,6 +42,14 @@ func downloadJobSteps(job jobs.Job) string {
 	return ""
 }
 
+func downloadJobResult(job jobs.Job) string {
+	var payload struct {
+		ResultID string `json:"result_id"`
+	}
+	_ = json.Unmarshal([]byte(job.Payload), &payload)
+	return payload.ResultID
+}
+
 func downloadJobDraft(job jobs.Job) string {
 	var payload struct{ Pipeline *collections.Pipeline }
 	if json.Unmarshal([]byte(job.Payload), &payload) == nil && payload.Pipeline != nil && payload.Pipeline.ID == "" {
@@ -166,6 +174,7 @@ func downloadFilename(displayName, format, suffix string) string {
 func (s *Server) jobDownloadFilename(job jobs.Job) string {
 	var payload struct {
 		Path, CollectionID, To string
+		ResultID               string `json:"result_id"`
 		Pipeline               *collections.Pipeline
 		Query                  *collections.Query
 	}
@@ -184,8 +193,11 @@ func (s *Server) jobDownloadFilename(job jobs.Job) string {
 		display = strings.Split(strings.Split(job.Name, " → ")[0], " · ")[0]
 	}
 	suffix := ""
-	if payload.Pipeline != nil {
+	if payload.Pipeline != nil || payload.ResultID != "" {
 		suffix = "-cleaned"
+		if payload.Query != nil && (payload.Query.Search != "" || len(payload.Query.Filters) > 0) {
+			suffix += "-filtered"
+		}
 	} else if payload.Query != nil {
 		suffix = "-filtered"
 	}

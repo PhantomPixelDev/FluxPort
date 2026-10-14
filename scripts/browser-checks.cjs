@@ -23,6 +23,8 @@ const {chromium} = require('playwright');
     await improvements(page,artifactDir,fs.readFileSync(path.join(artifactDir,'multi-sheet.xlsx')));
     const workspace=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'file-workspace-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
     await workspace(page,artifactDir);
+	const scoped=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'scoped-workflow-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
+	await scoped(page,artifactDir);
     console.log('Browser workflow checks passed: imports, partial failures, pagination, quality, pipelines, undo/redo, export, exclusions, restore, themes and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.stack); process.exitCode=1; });

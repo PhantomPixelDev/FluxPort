@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
 	"fluxport/internal/collections"
 	"fluxport/internal/conversion"
+	"fluxport/internal/jobs"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -24,6 +26,9 @@ type SheetRow struct {
 }
 type SheetFilter struct{ Field, Op, Value, Label string }
 type Workbench struct {
+	ResultID                           string
+	DatasetRows                        int64
+	SourceGeneration                   string
 	Query                              collections.Query
 	QueryJSON, Generation, ColumnsJSON string
 	Filters                            []SheetFilter
@@ -60,8 +65,13 @@ func (s *Server) workbench(c fiber.Ctx) error {
 func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection) error {
 	var err error
 	w := &Workbench{ColumnsJSON: "null"}
+	w.ResultID = c.Query("result_id")
+	if v, ok := c.Locals("result_id").(string); ok {
+		w.ResultID = v
+	}
+	w.SourceGeneration = col.Generation
 	p.Workbench = w
-	if col.Format == "xlsx" {
+	if col.Format == "xlsx" && w.ResultID == "" {
 		if info, e := s.Service.Workbook(col); e == nil {
 			w.Workbook = &info
 		}
@@ -114,7 +124,21 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 	}
 	ctx, cancel := context.WithTimeout(c.Context(), 25*time.Second)
 	defer cancel()
-	result, err := s.Service.Query(ctx, col, w.Query)
+	var result collections.QueryResult
+	if w.ResultID != "" {
+		d, e := s.Service.PreparedResult(col.ID, w.ResultID)
+		if e != nil {
+			return resultHTTPError(e)
+		}
+		p.Prepared = &d
+		p.ResultID = w.ResultID
+		w.DatasetRows = d.Rows
+		p.Fields = d.Fields
+		result, err = s.Service.QueryResult(ctx, col.ID, w.ResultID, w.Query)
+	} else {
+		w.DatasetRows = col.Rows
+		result, err = s.Service.Query(ctx, col, w.Query)
+	}
 	if err != nil {
 		p.Message = err.Error()
 		p.Pages = 1
@@ -132,7 +156,9 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		if p.Page < p.Pages {
 			p.Next = p.Page + 1
 		}
-		p.Fields, _ = s.Service.Fields(col)
+		if w.ResultID == "" {
+			p.Fields, _ = s.Service.Fields(col)
+		}
 		values := make([]any, len(result.Records))
 		for i, row := range result.Records {
 			values[i] = row.Value
@@ -148,6 +174,9 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		}
 		for _, name := range p.Headers {
 			column := sheetColumn(name, types[name], col.ID, w.Query)
+			if column.SortURL != "" && w.ResultID != "" {
+				column.SortURL += "&result_id=" + url.QueryEscape(w.ResultID)
+			}
 			if w.Scalar {
 				column.SortURL = ""
 			}
@@ -182,6 +211,16 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 	}
 	w.QueryJSON = string(qbytes)
 	w.Pages = sheetPages(p.Page, p.Pages, col.ID, w.Query)
+	if w.ResultID != "" {
+		p.Collection.CRUD = false
+		p.Collection.ReadOnly = true
+		p.Collection.Rows = w.DatasetRows
+		for i := range w.Pages {
+			if w.Pages[i].URL != "" {
+				w.Pages[i].URL += "&result_id=" + url.QueryEscape(w.ResultID)
+			}
+		}
+	}
 	for _, filter := range w.Query.Filters {
 		value, _ := json.Marshal(filter.Value)
 		label := map[string]string{"eq": "equals", "neq": "does not equal", "contains": "contains", "starts": "starts with", "gt": "greater than", "gte": "at least", "lt": "less than", "lte": "at most", "null": "missing / null", "notnull": "has a value"}[filter.Op]
@@ -211,6 +250,9 @@ func (s *Server) workbenchFailure(c fiber.Ctx, err error) error {
 	return s.workbench(c)
 }
 func (s *Server) editRecords(c fiber.Ctx) error {
+	if err := rejectResultMutation(c); err != nil {
+		return err
+	}
 	changes := []collections.Mutation{}
 	method := c.FormValue("method")
 	if method != "PATCH" && method != "PUT" && method != "DELETE" && method != "FIELD" {
@@ -259,7 +301,12 @@ func (s *Server) exportWorkbench(c fiber.Ctx) error {
 	if err != nil {
 		return s.workbenchFailure(c, err)
 	}
-	job, err := s.Service.ExportQueryJob(c.Params("id"), c.FormValue("generation"), c.FormValue("format"), q)
+	var job jobs.Job
+	if result := c.FormValue("result_id"); result != "" {
+		job, err = s.Service.ExportResultJob(c.Params("id"), result, c.FormValue("format"), q, conversion.Options{SpreadsheetSafe: true})
+	} else {
+		job, err = s.Service.ExportQueryJob(c.Params("id"), c.FormValue("generation"), c.FormValue("format"), q)
+	}
 	if err != nil {
 		return s.workbenchFailure(c, err)
 	}

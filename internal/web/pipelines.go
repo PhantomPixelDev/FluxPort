@@ -2,10 +2,12 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"fluxport/internal/collections"
 	"fluxport/internal/conversion"
@@ -19,28 +21,30 @@ type PipelineCard struct {
 	Parameters         PipelineParameters
 }
 type PipelinePage struct {
-	ViewCells      [][]CleanupCell
-	PreviewColumns int
-	Reusable       []collections.Pipeline
-	JoinColumns    []JoinColumnChoice
-	JoinSummary    *JoinPreviewSummary
-	Cleanup        PipelineParameters
-	BeforeHeaders  []string
-	BeforeCells    [][]string
-	Schedule       collections.Schedule
-	ValidationJSON string
-	Revisions      []collections.PipelineRevision
-	Runs           []jobs.Job
-	Definition     collections.Pipeline
-	Saved          []collections.Pipeline
-	Cards          []PipelineCard
-	Preview        string
-	Through        int
-	SourceQuery    string
-	AvailableCount int
-	HasPreview     bool
-	PreviewStep    int
-	ImportText     string
+	InputQueryJSON   string
+	SourceGeneration string
+	ViewCells        [][]CleanupCell
+	PreviewColumns   int
+	Reusable         []collections.Pipeline
+	JoinColumns      []JoinColumnChoice
+	JoinSummary      *JoinPreviewSummary
+	Cleanup          PipelineParameters
+	BeforeHeaders    []string
+	BeforeCells      [][]string
+	Schedule         collections.Schedule
+	ValidationJSON   string
+	Revisions        []collections.PipelineRevision
+	Runs             []jobs.Job
+	Definition       collections.Pipeline
+	Saved            []collections.Pipeline
+	Cards            []PipelineCard
+	Preview          string
+	Through          int
+	SourceQuery      string
+	AvailableCount   int
+	HasPreview       bool
+	PreviewStep      int
+	ImportText       string
 }
 
 func decodePipelineSteps(values [][]byte) ([]collections.PipelineStep, error) {
@@ -78,10 +82,20 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 			return err
 		}
 		p.Title, p.Active, p.Tab = p.Collection.Name, "collections", "changes"
+		pp.SourceGeneration = p.Collection.Generation
 	}
 	pp.Saved, err = s.Service.Pipelines()
 	if err != nil {
 		return err
+	}
+	if workspace && c.Query("result_id") != "" {
+		pp.Definition, pp.SourceGeneration, err = s.Service.PreparedDefinition(p.Collection.ID, c.Query("result_id"))
+		if err != nil {
+			return fiber.NewError(404, err.Error())
+		}
+		if pp.SourceGeneration != p.Collection.Generation {
+			p.Message = "Source changed. Update the cleanup input before applying these steps."
+		}
 	}
 	if workspace {
 		for _, recipe := range pp.Saved {
@@ -110,6 +124,17 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		}
 	}
 	pp.SourceQuery = c.Query("q")
+	if workspace && pp.Definition.InputQuery == nil && c.Query("input_query") != "" {
+		q, e := decodeQuery(c.Query("input_query"))
+		if e != nil {
+			return fiber.NewError(400, e.Error())
+		}
+		q = collections.NormalizeInputQuery(q)
+		pp.Definition.InputQuery = &q
+	}
+	if workspace && c.Method() == "GET" && pp.Definition.ID == "" && pp.Definition.InputQuery == nil {
+		pp.Definition.InputQuery = &collections.Query{}
+	}
 	if c.Query("collection") != "" {
 		pp.Definition.Source = c.Query("collection")
 	}
@@ -125,9 +150,28 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 			pp.Definition.Source = p.Collection.ID
 		}
 		pp.Definition.Revision, _ = strconv.Atoi(c.FormValue("revision"))
+		if workspace {
+			if expected := c.FormValue("source_generation"); expected != "" && expected != p.Collection.Generation && c.FormValue("action") != "recapture" {
+				pp.SourceGeneration = expected
+				err = fmt.Errorf("Source changed. Recapture the input before applying these changes")
+			}
+			if c.FormValue("scope", "matching") != "entire" && c.FormValue("input_query") != "" {
+				q, e := decodeQuery(c.FormValue("input_query"))
+				if e != nil {
+					err = e
+				} else {
+					q = collections.NormalizeInputQuery(q)
+					pp.Definition.InputQuery = &q
+				}
+			} else {
+				pp.Definition.InputQuery = nil
+			}
+		}
 		pp.SourceQuery = c.FormValue("q")
 		posted := c.Request().PostArgs().PeekMulti("steps")
-		pp.Definition.Steps, err = decodePipelineSteps(posted)
+		if err == nil {
+			pp.Definition.Steps, err = decodePipelineSteps(posted)
+		}
 		if err == nil && workspace {
 			if c.FormValue("action") == "add_join" {
 				err = s.validateJoinChoice(p.Collection, pp.Definition.Steps, c)
@@ -210,7 +254,15 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 				}
 				if err == nil && c.FormValue("action") == "run" {
 					var job jobs.Job
-					job, err = s.Service.PipelineJob(pp.Definition, c.FormValue("format", "json"))
+					if workspace {
+						prep, e := s.Service.PrepareResult(pp.Definition)
+						err = e
+						if err == nil {
+							job, err = s.Service.ExportResultJob(p.Collection.ID, prep.ID, c.FormValue("format", "json"), collections.Query{}, conversion.Options{SpreadsheetSafe: true})
+						}
+					} else {
+						job, err = s.Service.PipelineJob(pp.Definition, c.FormValue("format", "json"))
+					}
 					if err == nil && workspace {
 						return c.Redirect().Status(303).To("/collections/" + p.Collection.ID + "?tab=downloads&steps=" + pp.Definition.ID + "&download_job=" + job.ID + "#download")
 					}
@@ -227,6 +279,15 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 				}
 			case "search":
 			default:
+				if workspace && len(pp.Definition.Steps) > 0 {
+					job, e := s.Service.PrepareResult(pp.Definition)
+					if e != nil {
+						err = e
+					} else {
+						p.PreparedJob = &job
+						p.ResultID = job.ID
+					}
+				}
 				pp.Through = len(pp.Definition.Steps) - 1
 				if n, e := strconv.Atoi(c.FormValue("through")); e == nil {
 					pp.Through = n
@@ -235,8 +296,17 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 					pp.Through = len(pp.Definition.Steps) - 1
 				}
 				var rows []any
-				rows, err = s.Service.PreviewPipeline(c.Context(), pp.Definition, pp.Through)
 				if err == nil {
+					ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
+					rows, err = s.Service.PreviewPipeline(ctx, pp.Definition, pp.Through)
+					expired := ctx.Err() != nil
+					cancel()
+					if err != nil && p.PreparedJob != nil && expired {
+						err = nil
+						rows = nil
+					}
+				}
+				if err == nil && rows != nil {
 					pp.HasPreview = true
 					pp.PreviewStep = pp.Through + 1
 					b, e := conversion.Encode(rows, "json")
@@ -259,7 +329,7 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 	}
 	if workspace {
 		pp.Definition.Source = p.Collection.ID
-		if c.Method() == "GET" && len(pp.Definition.Steps) > 0 {
+		if c.Method() == "GET" && len(pp.Definition.Steps) > 0 && p.Message == "" {
 			rows, e := s.Service.PreviewPipeline(c.Context(), pp.Definition, -1)
 			if e == nil {
 				pp.HasPreview = true
@@ -283,6 +353,25 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		}
 		pp.Saved = filtered
 		p.Fields, _ = s.Service.Fields(p.Collection)
+		if pp.HasPreview {
+			if values, e := conversion.Decode([]byte(pp.Preview), "json"); e == nil {
+				p.Fields = collections.Schema(conversion.Rows(values))
+			}
+		}
+		if len(pp.Definition.Steps) > 0 && p.Message == "" && p.PreparedJob == nil {
+			job, e := s.Service.PrepareResult(pp.Definition)
+			if e != nil {
+				p.Message = e.Error()
+			} else {
+				p.PreparedJob = &job
+				p.ResultID = job.ID
+			}
+		}
+		if p.PreparedJob != nil && p.PreparedJob.State == "ready" {
+			if d, e := s.Service.PreparedResult(p.Collection.ID, p.PreparedJob.ID); e == nil {
+				p.Fields = d.Fields
+			}
+		}
 		if pp.HasPreview {
 			if len(pp.Definition.Steps) > 0 && pp.Definition.Steps[len(pp.Definition.Steps)-1].Join != nil {
 				pp.JoinSummary, err = s.joinPreviewSummary(c, pp.Definition)
@@ -355,6 +444,12 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
+	}
+	if pp.Definition.InputQuery != nil {
+		b, _ := json.Marshal(pp.Definition.InputQuery)
+		pp.InputQueryJSON = string(b)
+	} else {
+		pp.InputQueryJSON = "{}"
 	}
 	if workspace {
 		return c.Render("pages/changes", p, "layouts/base")

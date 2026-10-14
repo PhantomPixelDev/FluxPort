@@ -14,6 +14,10 @@ CRUD retains bounded atomic source replacement. Large sources expose effective r
 
 ## Jobs and events
 
+`prepare_result` jobs write private SQLite indexes and JSON manifests in the state directory’s `results/`, outside the watched source root. Publication uses fsync/rename; ownership, dependency generations and expiry are checked server-side. An internal immutable index reference lets original and cleaned data share bound query/rendering paths, holding a lease throughout reads and exports. Recipes may store `input_query`: page/limit are discarded while filters and sort are retained. Output browsing queries remain separate.
+
+Preparations are keyed by dependency generations, captured query, steps and validation rules; equivalent work is reused. UI request/result identities prevent old completions replacing newer drafts. Export dependencies stay staged until preparation succeeds, using no worker while waiting. Job payloads and result manifests persist descriptors without a metadata migration. Restart interrupts incomplete jobs and removes abandoned partials; ready results survive unchanged-source verification. Results expire after 24 hours, and hourly/startup/on-preparation cleanup removes expired unleased indexes.
+
 Migration version 3 preserves existing IDs and configuration and adds display names, exclusions, stamps, schemas, generation pointers and jobs. A staged phase prevents workers claiming indexes before collection linkage. Default workers are at most two, limited by CPUs. Handlers report throttled progress, honor cancellation and contain panics as failures. Restart marks unfinished jobs interrupted; startup reconciles affected sources.
 
 Authenticated native SSE streams carry job IDs, resources and states. The browser debounces events and requests HTMX fragments. Preview page/tab state is retained, and only the affected detail refreshes. A 20-second comment heartbeat maintains connections. No periodic browser polling runs.

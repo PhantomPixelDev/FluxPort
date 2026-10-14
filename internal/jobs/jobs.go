@@ -92,11 +92,22 @@ func (m *Manager) Start(parent context.Context, workers int) error {
 func (m *Manager) Stop()         { m.cancel(); m.wg.Wait() }
 func (m *Manager) Started() bool { m.mu.Lock(); defer m.mu.Unlock(); return m.started }
 func (m *Manager) Submit(kind, resource, name, payload string, total int64) (Job, error) {
-	now := time.Now().UTC().Format(time.RFC3339)
-	j := Job{ID: ID(), Kind: kind, Resource: resource, Name: name, State: "queued", Payload: payload, Total: total, Created: now, Updated: now}
+	state := "queued"
 	if kind == "index" {
-		j.State = "staged"
+		state = "staged"
 	}
+	return m.submit(kind, resource, name, payload, total, state)
+}
+
+// SubmitWaiting persists a dependency without consuming a processing worker.
+// payload.depends_on identifies the prerequisite job.
+func (m *Manager) SubmitWaiting(kind, resource, name, payload string, total int64) (Job, error) {
+	return m.submit(kind, resource, name, payload, total, "staged")
+}
+
+func (m *Manager) submit(kind, resource, name, payload string, total int64, state string) (Job, error) {
+	now := time.Now().UTC().Format(time.RFC3339)
+	j := Job{ID: ID(), Kind: kind, Resource: resource, Name: name, State: state, Payload: payload, Total: total, Created: now, Updated: now}
 	_, err := m.db.Exec(`INSERT INTO jobs(`+columns+`) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.ID, j.Kind, j.Resource, j.Name, j.State, j.Payload, 0, total, 0, "", "", now, now)
 	if err != nil {
 		return j, err
@@ -109,7 +120,10 @@ func (m *Manager) Get(id string) (Job, error) {
 	return scan(m.db.QueryRow(`SELECT `+columns+` FROM jobs WHERE id=?`, id))
 }
 func (m *Manager) List() ([]Job, error) {
-	rows, err := m.db.Query(`SELECT ` + columns + ` FROM jobs ORDER BY created DESC,id DESC LIMIT 100`)
+	return m.ListResource("")
+}
+func (m *Manager) ListResource(resource string) ([]Job, error) {
+	rows, err := m.db.Query(`SELECT `+columns+` FROM jobs WHERE (?='' OR resource=?) ORDER BY created DESC,id DESC LIMIT 100`, resource, resource)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +161,7 @@ func (m *Manager) Cancel(id string) error {
 		}
 	}
 	m.notify(id)
+	m.signal()
 	return nil
 }
 func (m *Manager) CancelResource(resource string) error {
@@ -222,6 +237,9 @@ func (m *Manager) Subscribe() (chan string, func(), error) {
 	return ch, func() { m.mu.Lock(); delete(m.subscribers, ch); m.mu.Unlock() }, nil
 }
 func (m *Manager) claim() (Job, error) {
+	if err := m.resolveDependencies(); err != nil {
+		return Job{}, err
+	}
 	tx, err := m.db.Begin()
 	if err != nil {
 		return Job{}, err
@@ -312,6 +330,30 @@ func (m *Manager) execute(j Job) {
 		slog.Error("finish job", "error", e)
 	}
 	m.notify(j.ID)
+	m.signal()
+}
+
+func (m *Manager) resolveDependencies() error {
+	rows, err := m.db.Query(`UPDATE jobs SET state=CASE WHEN (SELECT state FROM jobs d WHERE d.id=json_extract(jobs.payload,'$.depends_on'))='ready' THEN 'queued' ELSE 'failed' END,error=CASE WHEN (SELECT state FROM jobs d WHERE d.id=json_extract(jobs.payload,'$.depends_on'))='ready' THEN '' ELSE 'Cleaned data could not be prepared. Retry preparation, then download again.' END,updated=? WHERE state='staged' AND kind='convert' AND json_valid(payload) AND json_extract(payload,'$.depends_on') IS NOT NULL AND COALESCE((SELECT state FROM jobs d WHERE d.id=json_extract(jobs.payload,'$.depends_on')),'missing') IN ('ready','failed','cancelled','interrupted','missing') RETURNING id`, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return err
+	}
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err = rows.Scan(&id); err != nil {
+			break
+		}
+		ids = append(ids, id)
+	}
+	if err == nil {
+		err = rows.Err()
+	}
+	rows.Close()
+	for _, id := range ids {
+		m.notify(id)
+	}
+	return err
 }
 
 func (m *Manager) Activate(id string) error {

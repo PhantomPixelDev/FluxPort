@@ -60,7 +60,7 @@ async (page, artifactDir='output/playwright') => {
   if (await page.evaluate(()=>navigator.clipboard.readText())!=='9007199254740993') throw Error('Clipboard rounded numbers');
   for (const kind of ['empty','null','missing','json']) if (!await page.locator('td[data-display-kind='+kind+']').count()) throw Error('Missing cell state '+kind);
   await page.locator('[data-workspace-target=export]').click();
-  if (await page.locator('#collection-download-format').inputValue() !== 'original') throw Error('Original download must be the default');
+  if (await page.locator('#collection-download-format').inputValue() !== 'json') throw Error('Download must default to the displayed dataset format');
   // Delay the queued response until processing finishes, and suppress custom
   // progress notifications. A single post-swap catch-up must still reveal ready.
   await page.evaluate(()=>{window.__blockExportProgress=e=>e.stopImmediatePropagation();window.addEventListener('fluxport:progress',window.__blockExportProgress,true);});
@@ -91,6 +91,7 @@ async (page, artifactDir='output/playwright') => {
     const nativePage = await nativeContext.newPage();
     await nativePage.goto(`${base}/collections/${collectionID}`);
     await nativePage.getByRole('link',{name:'Convert / Download',exact:true}).click();
+    await nativePage.locator('#collection-download-format').selectOption('original');
     const downloading = nativePage.waitForEvent('download');
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
     if (await (await downloading).failure()) throw Error('No-JavaScript original download failed');
@@ -141,10 +142,10 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
   if(await page.locator('#file-workspace-tool').isVisible())await page.locator('[data-close-workspace-tool]').click();
-  await openMore();await page.locator('[data-workspace-target=views]').click();
-  await page.locator('form[action$="/workbench/export"] select[name="format"]').selectOption('csv');
-  await page.getByRole('button', {name: 'Download this view', exact: true}).click();
-  await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
+  await page.locator('[data-workspace-target=export]').click();
+  await page.locator('#collection-download-format').selectOption('csv');
+  const filteredDownload=page.waitForEvent('download');await page.locator('[data-download-submit]').click();
+  await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();await filteredDownload;
   await page.goto(`${base}/collections`);
   await page.getByRole('button', {name: `Remove ${display}`, exact: true}).click();
   await page.getByRole('link', {name: display, exact: true}).waitFor({state: 'detached'});
@@ -186,12 +187,12 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('id');
   await page.getByRole('button',{name:'Apply',exact:true}).click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
-  if (await page.locator('.cleanup-result-table').last().locator('tbody tr').count()!==2) throw Error('Duplicate rows remained');
+  await page.locator('#workspace-result [data-cleaned-total="2"]').waitFor();if(await page.locator('#workspace-result tbody tr').count()!==2)throw Error('Duplicate rows remained');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
   await page.getByRole('button',{name:'Apply',exact:true}).click();
   await settled();
-  if ((await page.locator('.cleanup-result-table').last().locator('tbody tr').first().locator('td').last().innerText())!=='Example') throw Error('Trim preview failed');
+  await page.locator('#workspace-result .cell-value').getByText('Example',{exact:true}).waitFor();
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     if (await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)) throw Error('Changes page overflow');

@@ -207,7 +207,13 @@ func (s *Server) jobs(c fiber.Ctx) error {
 	}
 	p := s.base(c, "Processing", "collections")
 	var err error
-	p.Jobs, err = s.Service.Jobs.List()
+	p.JobsResource = c.Query("collection", c.FormValue("collection"))
+	if p.JobsResource != "" {
+		if _, err = s.Service.Get(p.JobsResource); err != nil {
+			return err
+		}
+	}
+	p.Jobs, err = s.Service.Jobs.ListResource(p.JobsResource)
 	if err != nil {
 		return err
 	}
@@ -216,6 +222,19 @@ func (s *Server) jobs(c fiber.Ctx) error {
 func (s *Server) cancelJob(c fiber.Ctx) error {
 	if err := s.Service.Jobs.Cancel(c.Params("id")); err != nil {
 		return err
+	}
+	if c.FormValue("result_view") == "fragment" {
+		j, err := s.Service.Jobs.Get(c.Params("id"))
+		if err != nil {
+			return err
+		}
+		if j.Kind != "prepare_result" {
+			return fiber.NewError(400, "Invalid result job")
+		}
+		if c.Get("HX-Request") != "true" {
+			return c.Redirect().Status(303).To("/collections/" + j.Resource + "?result_id=" + j.ID)
+		}
+		return s.renderCleanedResult(c, j.Resource, j.ID)
 	}
 	if c.FormValue("download_view") == "compact" {
 		job, err := s.Service.Jobs.Get(c.Params("id"))
@@ -360,21 +379,47 @@ func (s *Server) exportJob(c fiber.Ctx) error {
 		return err
 	}
 	var recipe *collections.Pipeline
-	if c.FormValue("download_view") == "compact" {
+	if c.FormValue("download_view") == "compact" && c.FormValue("result_id") == "" && c.FormValue("format") != "original" {
 		recipe, err = s.downloadPipeline(c, col)
 		if err != nil {
 			return s.downloadError(c, err)
 		}
 	}
 	if c.FormValue("format") == "original" && c.FormValue("download_view") == "compact" {
-		if recipe != nil {
+		if c.FormValue("dataset") != "original" && c.FormValue("dataset") != "" && c.FormValue("original_shortcut") != "1" {
 			return s.downloadError(c, fmt.Errorf("Choose an output format to download saved changes"))
 		}
 		return s.originalDownload(c, col)
 	}
 	var job jobs.Job
-	if recipe != nil {
-		job, err = s.Service.PipelineJob(*recipe, c.FormValue("format", "json"))
+	if resultID := c.FormValue("result_id"); resultID != "" && c.FormValue("dataset") != "original" {
+		q, e := decodeQuery(c.FormValue("query"))
+		if e != nil {
+			return s.downloadError(c, e)
+		}
+		if c.FormValue("scope") == "entire" {
+			q = collections.Query{}
+		}
+		job, err = s.Service.ExportResultJob(col.ID, resultID, c.FormValue("format", "json"), q, conversion.Options{SpreadsheetSafe: true})
+	} else if recipe != nil {
+		prep, e := s.Service.PrepareResult(*recipe)
+		if e != nil {
+			return s.downloadError(c, e)
+		}
+		q, e := decodeQuery(c.FormValue("query"))
+		if e != nil {
+			return s.downloadError(c, e)
+		}
+		if c.FormValue("scope") == "entire" {
+			q = collections.Query{}
+		}
+		job, err = s.Service.ExportResultJob(col.ID, prep.ID, c.FormValue("format", "json"), q, conversion.Options{SpreadsheetSafe: true})
+	} else if c.FormValue("query") != "" && c.FormValue("scope") != "entire" {
+		q, e := decodeQuery(c.FormValue("query"))
+		if e != nil {
+			return s.downloadError(c, e)
+		}
+		job, err = s.Service.ExportQueryJob(col.ID, c.FormValue("generation"), c.FormValue("format", col.Format), q)
 	} else {
 		job, err = s.Service.ExportJobWithOptions(col.ID, c.FormValue("format", col.Format), conversion.Options{SpreadsheetSafe: c.FormValue("spreadsheet_safe") == "on"})
 	}

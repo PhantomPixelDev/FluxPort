@@ -29,6 +29,19 @@ jobs:
         run: '"C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
       - run: go test ./...
       - run: go vet ./...
+      - name: Large cleaned-result workflow (Linux)
+        if: runner.os == 'Linux'
+        env:
+          FLUXPORT_PREPARED_LARGE_TESTS: '1'
+          FLUXPORT_PREPARED_BENCH_REPORT: ${{ runner.temp }}/prepared-large-linux-0.3.12.json
+        run: go test ./internal/collections -run '^TestPreparedLargeWorkflow$' -timeout 25m -count=1 -v
+      - name: Upload measured large-workflow results
+        if: runner.os == 'Linux' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: prepared-large-linux-0.3.12
+          path: ${{ runner.temp }}/prepared-large-linux-0.3.12.json
+          if-no-files-found: warn
   browser:
     runs-on: ubuntu-24.04
     steps:
