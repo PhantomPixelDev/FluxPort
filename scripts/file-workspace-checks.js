@@ -36,6 +36,20 @@ async (page, artifactDir) => {
    if(key==='clean')await result.locator('.sheet-data').waitFor();
    for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await fit(key+' '+width+' '+theme);if([390,1440].includes(width)){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:artifactDir+'/focused-'+key+'-'+width+'-'+theme+'.png'});}}}
    await page.setViewportSize({width:1440,height:1000});
+   if(key==='insights'){
+    for(const width of [320,390,768,1024,1440,2560]){
+     await page.setViewportSize({width,height:1000});
+     const card=pane.locator('.column-summary').first(),summary=card.locator('summary');
+     const size=await summary.evaluate(el=>({height:el.getBoundingClientRect().height,padding:parseFloat(getComputedStyle(el).paddingLeft)}));
+     if(size.height>56||size.height<40||size.padding<12)throw Error('Column summary needs compact padded controls at '+width);
+     await summary.focus();await page.keyboard.press('Enter');
+     if(await card.getAttribute('open')===null)throw Error('Summary keyboard expansion failed');
+     await fit('Expanded summary '+width);
+     if([390,1440].includes(width))await page.screenshot({path:artifactDir+'/summary-expanded-'+width+'.png'});
+     await page.keyboard.press('Enter');
+    }
+    await page.setViewportSize({width:1440,height:1000});
+   }
   }
   await open('clean');await pane.getByText('Advanced',{exact:true}).click();await fit('Expanded advanced cleanup');
   await page.evaluate(()=>document.documentElement.style.zoom='2');await fit('200 percent zoom');await page.evaluate(()=>document.documentElement.style.zoom='');

@@ -1,5 +1,11 @@
 # FluxPort
 
+### Inspect layout and search controls (0.3.15)
+
+Inspect → Summary shows compact column cards. Expand a card to see missing, null, empty, distinct and common values; use the Column selector to focus on one field. Cards wrap to the available width and retain native keyboard and no-JavaScript operation. Sampling limits and cleanup suggestions are unchanged.
+
+![Column summaries in the light theme](images/inspect.png)
+
 ### Focused collection views (0.3.14)
 
 Collection pages share Data, Clean, SQL and Inspect views. Existing view URLs still return full native pages. Opt in to a dedicated HTML view fragment using `X-Fluxport-View: workspace`; responses vary by this header. Existing HTMX data fragments and compact export responses retain their contracts. Source editing, format mappings and processing limits are unchanged.
