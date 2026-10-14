@@ -14,7 +14,7 @@ async (page,artifactDir,workbook) => {
    const href=await page.getByRole('link',{name,exact:true}).getAttribute('href');imported.push(href.split('/')[2]);
   }
   const [left,right,next,xlsx]=imported;
-  await page.goto(base+'/collections/'+left);await page.getByLabel('Table options',{exact:true}).click();await page.locator('[data-show-types]').check();await page.keyboard.press('Escape');await page.getByRole('link',{name:'Summary of name',exact:true}).click();
+  await page.goto(base+'/collections/'+left);await page.getByLabel('Columns and table options',{exact:true}).click();await page.locator('[data-show-types]').check();await page.keyboard.press('Escape');await page.getByRole('link',{name:'Summary of name',exact:true}).click();
   await page.getByRole('heading',{name:'Column summaries',exact:true}).waitFor();
   await page.getByText('1 duplicate rows found in checked data',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Preview trimming spaces',exact:true}).click();

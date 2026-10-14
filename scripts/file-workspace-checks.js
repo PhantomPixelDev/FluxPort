@@ -2,6 +2,28 @@ async (page, artifactDir) => {
  const base=new URL(page.url()).origin,name='focused-workspace-'+Date.now()+'-Unicode-山田-long-file-name.json';let id;
  const pane=page.locator('#file-workspace-tool'),result=page.locator('#workspace-result');
  const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]'));
+ const calmLayout=async label=>{
+  const problems=await page.evaluate(()=>{
+   const visible=e=>e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&!e.closest('details:not([open])')&&!e.closest('.sheet-table');
+   const target=innerWidth<=767?44:40,issues=[];
+   for(const el of document.querySelectorAll('.field-control,.button,.icon-button')){
+    if(!visible(el)||el.disabled||el.getAttribute('aria-disabled')==='true')continue;
+    if(el.getBoundingClientRect().height<target-.75)issues.push('Short control '+(el.getAttribute('aria-label')||el.name||el.textContent.trim()).slice(0,40));
+   }
+   for(const el of document.querySelectorAll('.download-chooser,.workspace-clean-advanced,.column-summary-body')){
+    if(!visible(el))continue;const padding=parseFloat(getComputedStyle(el).paddingLeft);
+    if(padding<16||padding>24)issues.push('Unexpected content padding '+el.className+': '+padding);
+   }
+   for(const group of document.querySelectorAll('.cleanup-controls,.sql-actions,.insights-filter,.download-fields')){
+    if(!visible(group))continue;
+    const boxes=[...group.querySelectorAll('input:not([type=hidden]),select,button')].filter(visible).map(e=>e.getBoundingClientRect());
+    for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)if(Math.abs(boxes[i].top-boxes[j].top)<4&&Math.abs(boxes[i].bottom-boxes[j].bottom)>2)issues.push('Uneven controls in '+group.className);
+   }
+   const data=document.querySelector('.workspace-main[data-active-view=data] .detail-body');if(data&&visible(data)&&parseFloat(getComputedStyle(data).paddingLeft)!==0)issues.push('Double padding around Data');
+   if(document.querySelector('#file-workspace-tool [data-close-workspace-tool]'))issues.push('Duplicate Back to data action');
+   return [...new Set(issues)];
+  });if(problems.length)throw Error(label+': '+problems.join('; '));
+ };
  const open=async key=>{
   if(['insights','quality','schema','raw'].includes(key)){await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();await settled();if(key!=='insights'){await page.locator('[data-workspace-group=inspect] [data-workspace-target='+key+']').click();await settled();}}
   else if(key==='settings'){if(await page.locator('.workspace-file-action').isVisible())await page.locator('.workspace-file-action').click();else{await page.locator('.workspace-more>summary').click();await page.locator('.workspace-extra-tools [data-workspace-target=settings]').click();}await settled();}
@@ -18,7 +40,7 @@ async (page, artifactDir) => {
   for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});await fit('Data '+width);}
   await page.setViewportSize({width:1440,height:1000});
   await open('clean');if(await page.locator('#workspace-original').getAttribute('open')!==null)throw Error('Original starts expanded in Clean');
-  await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await pane.getByRole('button',{name:'Apply',exact:true}).click();
+  await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await pane.getByRole('button',{name:'Apply change',exact:true}).click();
   await result.locator('.sheet-data').waitFor();await result.locator('[data-cleaned-total="60"]').waitFor();
   if(await pane.locator('[data-cleanup-preview],table').count())throw Error('Cleanup still duplicates the sample inside the controls');
   if(await page.locator('#detail-content').isVisible())throw Error('Original table should be collapsed in Clean');
@@ -36,6 +58,8 @@ async (page, artifactDir) => {
    if(key==='clean')await result.locator('.sheet-data').waitFor();
    for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await fit(key+' '+width+' '+theme);if([390,1440].includes(width)){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:artifactDir+'/focused-'+key+'-'+width+'-'+theme+'.png'});}}}
    await page.setViewportSize({width:1440,height:1000});
+   await calmLayout(key+' desktop');await page.setViewportSize({width:390,height:1000});await calmLayout(key+' mobile');await page.setViewportSize({width:1440,height:1000});
+   await page.evaluate(()=>document.documentElement.style.zoom='2');await fit(key+' 200 percent zoom');await page.evaluate(()=>document.documentElement.style.zoom='');
    if(key==='insights'){
     for(const width of [320,390,768,1024,1440,2560]){
      await page.setViewportSize({width,height:1000});

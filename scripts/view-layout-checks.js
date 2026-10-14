@@ -3,7 +3,7 @@ async (page, artifactDir) => {
  try{
   for(const path of ['/collections','/overview','/converter','/sql','/pipelines','/explorer','/workflow','/settings','/excluded','/not-a-real-page']){
    const response=await page.goto(base+path);if(response.status()!==(path==='/not-a-real-page'?404:200))throw Error('Unexpected page status '+path);
-   for(const width of [390,1440]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){
+   for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){
     await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Global page overflow '+path+' '+width);
     const unreadable=await page.evaluate(()=>{
@@ -17,7 +17,10 @@ async (page, artifactDir) => {
      await search.locator('input').focus();
      if(await search.evaluate(el=>getComputedStyle(el).outlineStyle)==='none')throw Error('Search focus ring missing');
     }
-    await page.screenshot({path:artifactDir+'/page-'+path.slice(1)+'-'+width+'-'+theme+'.png'});
+    const short=await page.locator('.field-control,.button,.icon-button').evaluateAll(es=>es.filter(e=>e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&!e.closest('details:not([open])')&&!e.disabled&&e.getAttribute('aria-disabled')!=='true').filter(e=>e.getBoundingClientRect().height<(innerWidth<=767?44:40)-.75).map(e=>e.getAttribute('aria-label')||e.name||e.textContent.trim()));
+    if(short.length)throw Error('Short controls '+path+' '+width+': '+short.join(', '));
+    if([390,1440].includes(width))await page.screenshot({path:artifactDir+'/page-'+path.slice(1)+'-'+width+'-'+theme+'.png'});
+    await page.evaluate(()=>document.documentElement.style.zoom='2');if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Zoom overflow '+path+' '+width+' '+JSON.stringify(await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,items:[...document.querySelectorAll('body *')].filter(e=>!e.closest('.table-scroll')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,5).map(e=>({class:e.className,text:e.textContent.trim().slice(0,30),right:e.getBoundingClientRect().right}))}))));await page.evaluate(()=>document.documentElement.style.zoom='');
    }}
   }
   if(errors.length)throw Error('App page errors: '+errors.join('; '));

@@ -31,7 +31,7 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();
   await page.locator('[data-workspace-group=inspect] [data-workspace-target=raw]').click();
   await page.locator('#workspace-tool-content pre').waitFor();
-  await page.locator('[data-close-workspace-tool]').click();
+  await page.getByRole('link',{name:'Data',exact:true}).click();
   const display = `${prefix} renamed`;
   await openSettings();
   await page.locator('#display-name').fill(display);
@@ -39,13 +39,15 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
   await page.getByRole('link',{name:'Data',exact:true}).click();
   const collectionID = new URL(page.url()).pathname.split('/')[2];
+  if(await page.getByLabel('Row density',{exact:true}).inputValue()!=='comfortable')throw Error('New tables should default to Comfortable');
+  await page.getByLabel('Row density',{exact:true}).selectOption('compact');
   const compact=await page.locator('.sheet-table tbody tr').first().boundingBox();
-  await page.getByLabel('Table options',{exact:true}).click();await page.getByLabel('Row density',{exact:true}).selectOption('comfortable');await page.keyboard.press('Escape');
+  await page.getByLabel('Columns and table options',{exact:true}).click();await page.getByLabel('Row density',{exact:true}).selectOption('comfortable');await page.keyboard.press('Escape');
   const comfortable=await page.locator('.sheet-table tbody tr').first().boundingBox();
   if (comfortable.height<=compact.height) throw Error('Density did not change row height');
   await page.reload();
   if (await page.getByLabel('Row density',{exact:true}).inputValue()!=='comfortable') throw Error('Density was not remembered');
-  await page.getByLabel('Table options',{exact:true}).click();await page.getByLabel('Row density',{exact:true}).selectOption('compact');await page.keyboard.press('Escape');
+  await page.getByLabel('Columns and table options',{exact:true}).click();await page.getByLabel('Row density',{exact:true}).selectOption('compact');await page.keyboard.press('Escape');
   await page.getByRole('link',{name:'Sort id',exact:true}).click();
   await settled();
   await page.getByRole('link',{name:'Sort id',exact:true}).click();
@@ -109,7 +111,7 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.goto(`${base}/collections/${collectionID}/changes`);
     await nativePage.getByLabel('Change',{exact:true}).selectOption('deduplicate');
     await nativePage.getByLabel('Column',{exact:true}).selectOption('id');
-    await nativePage.getByRole('button',{name:'Apply',exact:true}).click();
+    await nativePage.getByRole('button',{name:'Apply change',exact:true}).click();
     await nativePage.getByRole('heading',{name:'Cleaned data',exact:true}).waitFor();
     await nativePage.getByRole('button',{name:'Undo',exact:true}).click();
     if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
@@ -143,7 +145,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByText('Recipe settings and API',{exact:true}).click();
   await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
-  if(await page.locator('#file-workspace-tool').isVisible())await page.locator('[data-close-workspace-tool]').click();
+  if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();
   await page.locator('[data-workspace-target=export]').click();
   await page.locator('#collection-download-format').selectOption('csv');
   const filteredDownload=page.waitForEvent('download');await page.locator('[data-download-submit]').click();
@@ -187,12 +189,12 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('link',{name:csvname,exact:true}).click();
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('id');
-  await page.getByRole('button',{name:'Apply',exact:true}).click();
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
   await page.locator('#workspace-result [data-cleaned-total="2"]').waitFor();if(await page.locator('#workspace-result tbody tr').count()!==2)throw Error('Duplicate rows remained');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
-  await page.getByRole('button',{name:'Apply',exact:true}).click();
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
   await settled();
   await page.locator('#workspace-result .cell-value').getByText('Example',{exact:true}).waitFor();
   for (const width of [1440,390]) {
@@ -206,11 +208,11 @@ async (page, artifactDir='output/playwright') => {
   if (await page.locator('.cleanup-steps textarea[name=steps]').count()!==1) throw Error('Cleanup undo failed');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
-  await page.getByRole('button',{name:'Apply',exact:true}).click();
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
   await settled();
   await page.getByText('Advanced',{exact:true}).click();
   await page.locator('[data-cleanup-form] input[name=name]').fill(prefix+' cleanup');
-  if(await page.locator('#file-workspace-tool').isVisible())await page.locator('[data-close-workspace-tool]').click();
+  if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
   await page.getByRole('button',{name:'Save these steps',exact:true}).click();

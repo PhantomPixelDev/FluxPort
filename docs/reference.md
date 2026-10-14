@@ -1,5 +1,11 @@
 # FluxPort
 
+### Calm workspace (0.3.16)
+
+Files, collection views and advanced pages share explicit field, button and table components. New tables default to Comfortable density; existing browser preferences are retained. Filters and column controls expand into the main workspace. Clean exposes rows to clean and Apply change, with saved steps and joins under Advanced. Convert / Download groups Data, Rows and Format and shows the submitted job in place. File settings separates Name, Source and deletion; API, saved views and collection history remain accessible through its navigation.
+
+Interface text uses 15 px, tables 14 px, controls 40 px on desktop and 44 px on mobile, with 16/24 px content padding. No public endpoints, query semantics, processing engines or metadata migrations changed.
+
 ### Inspect layout and search controls (0.3.15)
 
 Inspect → Summary shows compact column cards. Expand a card to see missing, null, empty, distinct and common values; use the Column selector to focus on one field. Cards wrap to the available width and retain native keyboard and no-JavaScript operation. Sampling limits and cleanup suggestions are unchanged.

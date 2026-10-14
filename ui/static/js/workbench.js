@@ -27,8 +27,8 @@
   const sorts = queryForm.querySelector('[data-sort-list]');
   const operators = [['eq','equals'],['neq','does not equal'],['contains','contains'],['starts','starts with'],['gt','greater than'],['gte','at least'],['lt','less than'],['lte','at most'],['null','missing / null'],['notnull','has a value']];
   function control(label, marker, options) {
-    const wrapper = document.createElement('label'); wrapper.append(document.createTextNode(label));
-    const element = document.createElement(options ? 'select' : 'input'); element.setAttribute(marker, '');
+    const wrapper = document.createElement('label'); wrapper.className='field-label'; wrapper.append(document.createTextNode(label));
+    const element = document.createElement(options ? 'select' : 'input'); element.className='field-control'; element.setAttribute(marker, '');
     if (options) options.forEach(([value,text]) => { const o=document.createElement('option');o.value=value;o.textContent=text;element.append(o); });
     else if (marker.endsWith('field')) {element.setAttribute('list',root.querySelector('datalist').id);element.required=true;}
     wrapper.append(element);return wrapper;
@@ -74,7 +74,7 @@
   });
   dialog.querySelector('[data-copy-inspector]').addEventListener('click',()=>copy(inspector.value));
   dialog.querySelector('[data-use-record]').addEventListener('click',()=>{const box=boxes().find(b=>b.value===activeID);if(!box)return;boxes().forEach(b=>b.checked=b===box);edit.elements.method.value='PUT';edit.elements.value.value=inspector.value;dialog.close();count();edit.elements.value.focus();});
-  const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='comfortable'?'comfortable':'compact';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
+  const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='compact'?'compact':'comfortable';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
   const key='fluxport-sheet-'+sheet.dataset.collection;let prefs=Object.create(null);try{Object.assign(prefs,JSON.parse(localStorage.getItem(key)||'{}')||{});}catch{}
   const columns=Array.from(queryForm.querySelectorAll('[data-sheet-column]'));
 	function inlineEdit(cell){
@@ -82,7 +82,7 @@
 		const row=cell.closest('tr'),id=row.querySelector('[name=record_id]').value;
 		const original=cell.querySelector('[data-cell-raw]')?.value||'',originalHTML=cell.innerHTML;
 		if(original.length>=512||cell.dataset.displayKind==='json'||sheet.dataset.scalar==='true'){row.querySelector('[data-edit-record]').click();return;}
-		const input=document.createElement('input');input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
+		const input=document.createElement('input');input.className='field-control';input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
 		input.addEventListener('keydown',event=>{if(event.key==='Escape'){cell.innerHTML=originalHTML;cell.focus();}if(event.key==='Enter'){event.preventDefault();const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;try{JSON.parse(raw);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();}});
 	}
 	sheet.addEventListener('dblclick',event=>{const cell=event.target.closest('td[data-sheet-cell]');if(cell)inlineEdit(cell);});

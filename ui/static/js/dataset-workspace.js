@@ -8,7 +8,7 @@
   form.querySelectorAll('[data-cleanup-for]').forEach(el=>el.hidden=el.dataset.cleanupFor!==action.value);
   if(field.tagName==='SELECT')field.options[0].textContent=action.value==='deduplicate'?'All columns':'Choose a column';
   field.required=action.value!=='deduplicate';
-  form.querySelector('[data-cleanup-help]').textContent=action.value==='deduplicate'?'Leave Column empty to remove identical rows. Your source file stays unchanged.':'Your source file stays unchanged. Preview the result before downloading.';
+  form.querySelector('[data-cleanup-help]').textContent=action.value==='deduplicate'?'All columns compares complete rows. Your original file stays unchanged.':'Your original file stays unchanged.';
  }
  action.addEventListener('change',controls);controls();
  const key='fluxport-cleanup-'+form.dataset.collection;

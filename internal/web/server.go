@@ -326,7 +326,7 @@ func (s *Server) static(c fiber.Ctx) error {
 	return c.Send(b)
 }
 func (s *Server) listData(c fiber.Ctx) (Page, error) {
-	p := s.base(c, "Your datasets", "collections")
+	p := s.base(c, "Files", "collections")
 	p.Query = c.Query("q")
 	if c.Method() == "POST" {
 		p.Query = c.FormValue("q")

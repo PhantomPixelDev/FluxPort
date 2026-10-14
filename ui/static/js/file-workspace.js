@@ -95,7 +95,7 @@
  }
  function inspectCleanedValue(value){
   let dialog=workspace.querySelector('.workspace-value-dialog');
-  if(!dialog){dialog=document.createElement('dialog');dialog.className='workspace-value-dialog';dialog.setAttribute('aria-label','Cleaned JSON value');dialog.innerHTML='<form method="dialog"><button class="button small" aria-label="Close cleaned value">Close</button></form><h2>JSON value</h2><textarea class="mono" rows="12" readonly aria-label="Complete cleaned JSON value"></textarea><button class="button" type="button" data-copy-cleaned>Copy value</button><span role="status"></span>';workspace.append(dialog);dialog.querySelector('[data-copy-cleaned]').addEventListener('click',async()=>{const input=dialog.querySelector('textarea');try{await navigator.clipboard.writeText(input.value);dialog.querySelector('[role=status]').textContent='Copied';}catch{input.focus();input.select();dialog.querySelector('[role=status]').textContent='Press Ctrl+C or Command+C to copy.';}});}
+  if(!dialog){dialog=document.createElement('dialog');dialog.className='workspace-value-dialog';dialog.setAttribute('aria-label','Cleaned JSON value');dialog.innerHTML='<form method="dialog"><button class="button small" aria-label="Close cleaned value">Close</button></form><h2>JSON value</h2><textarea class="mono field-control" rows="12" readonly aria-label="Complete cleaned JSON value"></textarea><button class="button" type="button" data-copy-cleaned>Copy value</button><span role="status"></span>';workspace.append(dialog);dialog.querySelector('[data-copy-cleaned]').addEventListener('click',async()=>{const input=dialog.querySelector('textarea');try{await navigator.clipboard.writeText(input.value);dialog.querySelector('[role=status]').textContent='Copied';}catch{input.focus();input.select();dialog.querySelector('[role=status]').textContent='Press Ctrl+C or Command+C to copy.';}});}
   dialog.querySelector('textarea').value=value;dialog.querySelector('[role=status]').textContent='';dialog.showModal();
  }
  function syncExport(){
@@ -129,7 +129,7 @@
   const source=workspace.querySelector(selectors[key]);if(!source)return cache.get(key)?.node;
   source.querySelector(':scope>summary')?.remove();node.append(...source.childNodes);source.remove();
   if(key==='settings'){
-   const editing=workspace.querySelector('#detail-content .source-editing');if(editing)node.prepend(editing);
+   const editing=workspace.querySelector('#detail-content .source-editing');if(editing)(node.querySelector('[data-source-section]')||node).append(editing);
    node.querySelectorAll('[hx-post]').forEach(form=>{for(const attr of [...form.attributes])if(attr.name.startsWith('hx-'))form.removeAttribute(attr.name);});
    const refresh=node.querySelector('form[action$="/refresh"]');if(refresh){const input=document.createElement('input');input.type='hidden';input.name='return_collection';input.value='1';refresh.append(input);}
   }
@@ -216,7 +216,7 @@
    node.querySelector('.workspace-shortcuts')?.remove();
    const preview=node.querySelector('[data-cleanup-preview]');if(preview){preview.querySelector('.cleanup-original-sample')?.remove();node.workspacePreview=preview;preview.remove();}
    const status=node.querySelector('[data-prepared-result]');if(status){node.workspaceStatus=status;status.remove();}
-   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.className='workspace-clean-advanced';advanced.append(summary);cleanup.append(advanced);
+   let advanced=cleanup.querySelector('.workspace-clean-advanced');if(!advanced){advanced=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Advanced';advanced.className='workspace-clean-advanced';advanced.append(summary);cleanup.append(advanced);}
    if(reuse)advanced.append(reuse);
    const save=cleanup.querySelector('.cleanup-save');if(save){advanced.append(save);const previewButton=save.querySelector('[value=preview]');if(previewButton)previewButton.hidden=true;}
    const reset=cleanup.querySelector('[value=reset]');if(reset)advanced.append(reset);
@@ -339,7 +339,7 @@
   const form=select.closest('form'),source=form?.querySelector('[data-download-source]');
   if(source){
    const original=select.value==='original',button=form.querySelector('[data-download-submit]');
-   if(button){button.textContent=original?'Download original file':'Convert & download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}
+   if(button){button.textContent=original?'Download original file':'Download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}
    const rowScope=form.querySelector('.download-row-scope');if(rowScope)rowScope.hidden=original;
    const sourceOptions=form.querySelector('.download-source-options');if(sourceOptions)sourceOptions.hidden=original;
    const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=original?'Exact source bytes.':form.elements.scope.value==='entire'?'All rows in this dataset.':'Matching rows, in table order.';

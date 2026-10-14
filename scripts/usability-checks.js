@@ -12,7 +12,7 @@ async (page) => {
   await page.goto(base+'/collections/'+col.id);
   await page.locator('#record-search').fill('match');
   await page.locator('#page-size').selectOption('50');
-  await page.getByRole('button',{name:'Apply',exact:true}).click();
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.section-caption')?.textContent.includes('65 records'));
   if(await page.locator('.preview-table tbody tr').count()!==50)throw Error('Wrong page size');
   await page.locator('#jump-page').fill('2');
