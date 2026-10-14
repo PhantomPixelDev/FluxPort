@@ -16,7 +16,7 @@ async (page,artifactDir,workbook) => {
   const [left,right,next,xlsx]=imported;
   await page.goto(base+'/collections/'+left);await page.getByLabel('Table options',{exact:true}).click();await page.locator('[data-show-types]').check();await page.keyboard.press('Escape');await page.getByRole('link',{name:'Summary of name',exact:true}).click();
   await page.getByRole('heading',{name:'Column summaries',exact:true}).waitFor();
-  if(!await page.getByText('1 duplicate rows found in checked data',{exact:true}).isVisible())throw Error('Missing duplicate suggestion');
+  await page.getByText('1 duplicate rows found in checked data',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Preview trimming spaces',exact:true}).click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
   await page.getByText('Advanced',{exact:true}).click();
