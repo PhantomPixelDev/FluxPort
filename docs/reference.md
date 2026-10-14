@@ -1,6 +1,6 @@
 # FluxPort
 
-### Calm workspace (0.3.17)
+### Calm workspace (0.3.18)
 
 The Data toolbar keeps Search, Filter, Columns and density aligned. Filter and column settings expand across the workspace, on original and cleaned data.
 

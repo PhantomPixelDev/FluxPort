@@ -1216,7 +1216,8 @@ body:has(.collection-workspace) #main {
   }
 
   .collection-workspace .sheet-query-bar>label:first-child {
-    grid-column: auto;
+    flex: 1 0 100%;
+    max-width: none;
   }
 }
 

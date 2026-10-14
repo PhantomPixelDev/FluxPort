@@ -2047,20 +2047,6 @@ dialog form {
   align-items: end;
 }
 
-.sheet-query-bar label {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.sheet-query-bar input {
-  width: 100%;
-}
-
-.sheet-query-bar select {
-  width: 100%;
-}
-
 .sheet-query textarea {
   width: 100%;
 }
@@ -2830,6 +2816,7 @@ dialog form {
 }
 
 .sheet-toolbar .sheet-density {
+  flex: 0 0 130px;
   width: 130px;
 }
 
@@ -4271,7 +4258,8 @@ textarea.field-control {
   }
 
   .sheet-toolbar .sheet-density {
-    flex: 1;
+    flex: 1 1 130px;
+    min-width: 130px;
   }
 
   .sheet-toolbar .column-options {
