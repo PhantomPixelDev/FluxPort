@@ -94,7 +94,7 @@ func run() error {
 		idle, peak := rss(cmd.Process.Pid)
 		runs = append(runs, map[string]any{"startup_ms": float64(startup.Microseconds()) / 1000, "idle_rss_bytes": idle, "peak_rss_bytes": peak})
 		if iteration == 4 {
-			for _, path := range []string{"/", "/static/css/app.css", "/static/js/htmx.min.js", "/static/js/app.js", "/static/icons/icons.svg", "/static/icons/logo.svg"} {
+			for _, path := range []string{"/", "/static/css/tokens.css", "/static/css/components.css", "/static/css/workspace.css", "/static/js/htmx.min.js", "/static/js/app.js", "/static/icons/icons.svg", "/static/icons/logo.svg"} {
 				req, _ := http.NewRequest("GET", "http://"+address+path, nil)
 				req.Header.Set("Accept-Encoding", "gzip")
 				resp, e := client.Do(req)

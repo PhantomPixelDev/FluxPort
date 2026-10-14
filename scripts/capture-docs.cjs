@@ -38,7 +38,7 @@ const path=require('node:path');
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(dir,'downloads.png')});
   await page.goto('file:///'+path.join(dir,'social-preview.html').replaceAll('\\','/'));
   await page.setViewportSize({width:1280,height:640});await page.screenshot({path:path.join(dir,'social-preview.png')});
-  await page.goto(base+'/collections/'+id);await openMore();await page.locator('[data-workspace-target=settings]').click();await page.locator('input[name=confirm]').check();await page.getByRole('button',{name:'Delete source file',exact:true}).click();
+  await page.goto(base+'/collections/'+id);await openMore();await page.locator('.workspace-file-action').click();await page.locator('input[name=confirm]').check();await page.getByRole('button',{name:'Delete source file',exact:true}).click();
   console.log('Real light-mode Data, Changes, Downloads and social preview screenshots generated.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e.stack);process.exitCode=1});

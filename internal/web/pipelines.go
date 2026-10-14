@@ -111,7 +111,7 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 			recipe.ID, recipe.Source, recipe.Name, recipe.Revision = "", p.Collection.ID, defaultCleanupName(p.Collection.Name), 0
 			recipe.Name = uniqueCleanupName(recipe.Name, pp.Saved)
 			pp.Definition = recipe
-			p.Message = "Steps copied for this dataset. Preview the result before saving."
+			p.InfoMessage = "Steps copied for this dataset."
 		}
 	}
 	if id := c.Query("saved"); id != "" {
@@ -452,11 +452,18 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		pp.InputQueryJSON = "{}"
 	}
 	if workspace {
-		return c.Render("pages/changes", p, "layouts/base")
+		return s.renderCollectionView(c, "clean", p)
 	}
 	if c.Method() == "GET" && pp.Definition.Source == "" {
 		p.Title = "Saved steps"
 		return c.Render("pages/saved-steps", p, "layouts/base")
+	}
+	if (c.Get("X-Fluxport-View") == "workspace" || c.Query("workspace") == "1") && pp.Definition.Source != "" {
+		p.Collection, err = s.Service.Get(pp.Definition.Source)
+		if err != nil {
+			return err
+		}
+		return s.renderCollectionView(c, "advanced", p)
 	}
 	return c.Render("pages/pipelines", p, "layouts/base")
 }

@@ -70,5 +70,5 @@ func (s *Server) qualityPage(c fiber.Ctx) error {
 			q.Report = &report
 		}
 	}
-	return c.Render("pages/quality", p, "layouts/base")
+	return s.renderCollectionView(c, "quality", p)
 }

@@ -44,7 +44,7 @@ func (s *Server) datasetInsights(c fiber.Ctx) error {
 		}
 	}
 	p.Insights = insight
-	return c.Render("pages/insights", p, "layouts/base")
+	return s.renderCollectionView(c, "insights", p)
 }
 
 func (s *Server) selectWorkbookSheet(c fiber.Ctx) error {

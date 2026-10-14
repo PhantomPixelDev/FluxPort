@@ -1,5 +1,11 @@
 # FluxPort
 
+### Focused collection views (0.3.14)
+
+Collection pages share Data, Clean, SQL and Inspect views. Existing view URLs still return full native pages. Opt in to a dedicated HTML view fragment using `X-Fluxport-View: workspace`; responses vary by this header. Existing HTMX data fragments and compact export responses retain their contracts. Source editing, format mappings and processing limits are unchanged.
+
+Browser workspace state is versioned and scoped to the collection. Existing drafts/preferences migrate; invalid stored URLs and unavailable views/results are ignored or show a preparation recovery action. SQL is never executed merely by restoring a view.
+
 ### Captured cleanup and prepared results (0.3.12)
 
 `POST /collections/:id/cleaned-results` accepts a JSON pipeline in form field `definition`, optional `source_generation`, and the existing CSRF token. The URL pins ownership. Native forms redirect to `?result_id=<job-id>`; `HX-Request: true` returns a compact progress/result fragment. `GET /collections/:id/cleaned-results/:result` provides the same fragment, or redirects native navigation to the collection. Use `retry=<preparation-job-id>` on POST to prepare again.

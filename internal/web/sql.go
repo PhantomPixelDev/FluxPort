@@ -158,6 +158,9 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 		sq.Text = `SELECT * FROM "` + selected.Table + `" LIMIT 100`
 		sq.Selected[selected.ID] = true
 	}
+	if p.Collection.ID != "" {
+		return s.renderCollectionView(c, "sql", p)
+	}
 	return c.Render("pages/sql", p, "layouts/base")
 }
 func exportSQL(c fiber.Ctx, result collections.SQLResult, format string) error {

@@ -3,6 +3,7 @@
 async (page, artifactDir='output/playwright') => {
   const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true],#detail-content[aria-busy=true]'));
   const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
+  const openSettings=async()=>{if(await page.locator('.workspace-file-action').isVisible())await page.locator('.workspace-file-action').click();else{await openMore();await page.locator('.workspace-extra-tools [data-workspace-target=settings]').click();}};
   const base = new URL(page.url()).origin;
   const prefix = `browser-check-${Date.now()}`;
   const filename = `${prefix}.json`;
@@ -27,15 +28,16 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('link', {name: 'Page 2', exact: true}).click();
   await page.locator('.detail-body[data-page="2"]').waitFor();
   if (await page.locator('#detail-content tbody tr').count() !== 20) throw Error('Pagination row count');
-  await openMore();
-  await page.getByRole('link', {name: 'Inspect JSON', exact: true}).click();
+  await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();
+  await page.locator('[data-workspace-group=inspect] [data-workspace-target=raw]').click();
   await page.locator('#workspace-tool-content pre').waitFor();
   await page.locator('[data-close-workspace-tool]').click();
   const display = `${prefix} renamed`;
-  await openMore();await page.locator('[data-workspace-target=settings]').click();
+  await openSettings();
   await page.locator('#display-name').fill(display);
   await page.getByRole('button', {name: 'Rename', exact: true}).click();
   await page.getByRole('heading', {name: display, exact: true}).waitFor();
+  await page.getByRole('link',{name:'Data',exact:true}).click();
   const collectionID = new URL(page.url()).pathname.split('/')[2];
   const compact=await page.locator('.sheet-table tbody tr').first().boundingBox();
   await page.getByLabel('Table options',{exact:true}).click();await page.getByLabel('Row density',{exact:true}).selectOption('comfortable');await page.keyboard.press('Escape');
@@ -112,8 +114,8 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.getByRole('button',{name:'Undo',exact:true}).click();
     if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
   } finally { await nativeContext.close(); }
-  await openMore();
-  await page.getByRole('link', {name:'Validate data',exact:true}).click();
+  await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();
+  await page.locator('[data-workspace-group=inspect] [data-workspace-target=quality]').click();
   await page.getByText('Validation rules and scan settings',{exact:true}).click();
   await page.getByLabel('Records to check').fill('10');
   await page.getByLabel('Rules (JSON array)').fill('[{"field":"missing","required":true}]');
@@ -172,7 +174,7 @@ async (page, artifactDir='output/playwright') => {
       await page.waitForTimeout(300);
     }
   }
-  await openMore();await page.locator('[data-workspace-target=settings]').click();
+  await openSettings();
   for (const width of [1440, 390]) {
     await page.setViewportSize({width, height: width === 390 ? 844 : 1000});
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw Error('Page overflow');
@@ -228,10 +230,10 @@ async (page, artifactDir='output/playwright') => {
   for (const name of [display, csvname, badname]) {
     await page.goto(`${base}/collections`);
     await page.getByRole('link', {name, exact: true}).click();
-    await openMore();await page.locator('[data-workspace-target=settings]').click();
+    await openSettings();
     await page.locator('input[name=confirm]').check();
     await page.getByRole('button', {name: 'Delete source file', exact: true}).click();
-    await page.getByRole('heading', {name: 'Your datasets', exact: true}).waitFor();
+    await page.getByRole('heading', {name: 'Files', exact: true}).waitFor();
   }
   await page.waitForTimeout(1000);
   const refreshes = [];

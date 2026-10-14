@@ -66,7 +66,7 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 			return fiber.NewError(422, "Choose an output format for cleaned data")
 		}
 		review.Notes = []string{"Exact source bytes, with no conversion. Excel downloads include the entire original workbook."}
-		return c.Render("pages/download-review", p, "layouts/base")
+		return s.renderCollectionView(c, "export", p)
 	}
 	ctx, cancel := context.WithTimeout(c.Context(), 25*time.Second)
 	defer cancel()
@@ -177,5 +177,5 @@ func (s *Server) reviewDownload(c fiber.Ctx) error {
 			review.Notes = append(review.Notes, "The checked rows cannot be converted: "+e.Error())
 		}
 	}
-	return c.Render("pages/download-review", p, "layouts/base")
+	return s.renderCollectionView(c, "export", p)
 }

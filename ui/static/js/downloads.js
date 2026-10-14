@@ -1,5 +1,7 @@
 /* One source download or one background export; updates arrive through SSE. */
 (() => {
+ // The focused workspace owns its download forms and SSE lifecycle.
+ if(document.querySelector('[data-file-workspace]'))return;
  const chooser=document.getElementById('download');
  const status=document.getElementById('collection-download-status');
  const form=document.querySelector('[data-collection-download]');
@@ -21,7 +23,7 @@
   const state=document.querySelector('#collection-metadata [data-state]')?.dataset.state;
   if(state&&form){
    form.querySelectorAll('option:not([value=original])').forEach(o=>o.disabled=state!=='ready');
-   const notice=chooser.querySelector('[data-download-pending]');
+   const notice=chooser?.querySelector('[data-download-pending]');
    if(notice)notice.hidden=state==='ready';
   }
  }

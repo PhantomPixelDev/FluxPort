@@ -38,6 +38,9 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	InfoMessage                                                                            string
+	WorkspaceView                                                                          string
+	Original                                                                               *Page
 	PreparedJob                                                                            *jobs.Job
 	Prepared                                                                               *collections.PreparedResult
 	ResultID                                                                               string
@@ -294,7 +297,7 @@ func (s *Server) errorHandler(c fiber.Ctx, err error) error {
 	}
 	p := s.base(c, "Request failed", "error")
 	p.Message = message
-	if c.Get("HX-Request") == "true" {
+	if c.Get("HX-Request") == "true" || c.Get("X-Fluxport-View") == "workspace" {
 		return c.Render("partials/error", p)
 	}
 	return c.Render("pages/error", p, "layouts/base")
@@ -413,10 +416,10 @@ func (s *Server) detail(c fiber.Ctx) error {
 			p.PreparedJob = nil
 			p.Tab = "raw"
 		}
-		if c.Get("HX-Request") == "true" {
+		if c.Get("HX-Request") == "true" && c.Get("X-Fluxport-View") != "workspace" {
 			return c.Render("partials/detail", p)
 		}
-		return c.Render("pages/detail", p, "layouts/base")
+		return s.renderCollectionView(c, detailWorkspaceView(p.Tab), p)
 	}
 	if message, ok := c.Locals("download_error").(string); ok {
 		p.DownloadError = message
@@ -459,11 +462,11 @@ func (s *Server) detail(c fiber.Ctx) error {
 		if err := s.fillWorkbench(c, &p, col); err != nil {
 			return err
 		}
-		if c.Get("HX-Request") == "true" {
+		if c.Get("HX-Request") == "true" && c.Get("X-Fluxport-View") != "workspace" {
 			p.Fragment = true
 			return c.Render("partials/detail", p)
 		}
-		return c.Render("pages/detail", p, "layouts/base")
+		return s.renderCollectionView(c, detailWorkspaceView(p.Tab), p)
 	}
 	if p.Tab == "downloads" {
 		q, e := decodeQuery(c.Query("query", c.FormValue("query")))
@@ -514,13 +517,13 @@ func (s *Server) detail(c fiber.Ctx) error {
 			recipe, e := s.Service.GetPipeline(id)
 			if e != nil || recipe.Source != col.ID {
 				if len(p.Jobs) > 0 || p.DownloadError != "" {
-					return c.Render("pages/detail", p, "layouts/base")
+					return s.renderCollectionView(c, detailWorkspaceView(p.Tab), p)
 				}
 				return fiber.NewError(404, "Saved steps not found for this dataset")
 			}
 			p.Pipeline.Definition = recipe
 		}
-		return c.Render("pages/detail", p, "layouts/base")
+		return s.renderCollectionView(c, detailWorkspaceView(p.Tab), p)
 	}
 	p.Page = 1
 	if n, e := strconv.Atoi(c.Query("page")); e == nil && n > 0 && n <= 1000000000 {
@@ -553,11 +556,11 @@ func (s *Server) detail(c fiber.Ctx) error {
 			return err
 		}
 	}
-	if c.Get("HX-Request") == "true" {
+	if c.Get("HX-Request") == "true" && c.Get("X-Fluxport-View") != "workspace" {
 		p.Fragment = true
 		return c.Render("partials/detail", p)
 	}
-	return c.Render("pages/detail", p, "layouts/base")
+	return s.renderCollectionView(c, detailWorkspaceView(p.Tab), p)
 }
 func (s *Server) update(c fiber.Ctx) error {
 	rules := strings.TrimSpace(c.FormValue("rules"))
