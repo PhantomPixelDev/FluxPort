@@ -19,6 +19,17 @@ func TestInsightsSuggestionsAndFormatReview(t *testing.T) {
 	if page.StatusCode != 200 || !strings.Contains(body, "Preview trimming spaces") || !strings.Contains(body, "duplicate rows") || !strings.Contains(body, "Checked 3 of 3") {
 		t.Fatal(page.StatusCode, body)
 	}
+	if !strings.Contains(body, `class="data-table insights-table"`) || !strings.Contains(body, `scope="col" class="insights-count">Missing`) || strings.Contains(body, `column-summary-grid`) {
+		t.Fatal("Insights lack consistent column statistics table")
+	}
+	_, numericBody := call(t, app, "GET", "/collections/"+col.ID+"/insights?field=id", "", nil, nil)
+	if !strings.Contains(numericBody, "9007199254740993") || !strings.Contains(numericBody, "<dt>Minimum</dt>") {
+		t.Fatal("Numeric details lose exact integer statistics")
+	}
+	_, nativeBody := call(t, app, "GET", "/collections/"+col.ID+"/insights?detail=0", "", nil, nil)
+	if !strings.Contains(nativeBody, `id="column-details-0" class="column-detail-row" >`) {
+		t.Fatal("Native detail links do not expand the requested row")
+	}
 	form := url.Values{"csrf": {csrf(t, body)}, "format": {"xlsx"}}
 	resp, body := call(t, app, "POST", "/collections/"+col.ID+"/export-check", form.Encode(), map[string]string{"Content-Type": "application/x-www-form-urlencoded"}, page.Cookies())
 	if resp.StatusCode != 200 || !strings.Contains(body, "numeric values become exact text cells") || !strings.Contains(body, "nested values become JSON text") || !strings.Contains(body, "Download file") {

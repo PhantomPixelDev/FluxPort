@@ -4,7 +4,7 @@
 
 FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, NDJSON and TOML. Open a file, inspect its rows, remove duplicates or fix values, and download the result. Developers can reuse saved steps, query datasets with DuckDB, automate work from the CLI and publish REST endpoints.
 
-[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.18](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.18) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
+[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.19](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.19) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
 
 [![Checks](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml) · [MIT license](LICENSE)
 
@@ -29,19 +29,19 @@ The online demo is a shared public workspace. Install your own instance for priv
 
 ## Get started
 
-Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.18/SHA256SUMS):
+Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/SHA256SUMS):
 
 | Platform | Download | Start |
 | --- | --- | --- |
-| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.18/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
-| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.18/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
+| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
+| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
 For Docker, clone this repository and run:
 
 ```sh
-docker compose build --build-arg VERSION=0.3.18
+docker compose build --build-arg VERSION=0.3.19
 docker compose up -d
 ```
 

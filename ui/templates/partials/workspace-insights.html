@@ -1,9 +1,49 @@
 <div class="workspace-insights">
 {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
-
-<section aria-label="Column summaries"><div class="insights-toolbar"><p class="muted">Checked {{.Insights.Report.Checked}} of {{.Insights.Report.Total}} rows. {{if .Insights.Report.Partial}}These are sample statistics.{{end}} {{if .Insights.Report.DuplicatesCapped}}Duplicate counts are a lower bound.{{end}}</p>
-<form method="get" class="insights-filter"><label class="field-label">Column<select name="field" aria-label="Column" class="field-control"><option value="">All columns</option>{{range .Insights.Fields}}<option value="{{.Name}}" {{if eq $.Insights.Field .Name}}selected{{end}}>{{.Name}}</option>{{end}}</select></label><button class="button">Show summary</button></form></div>
-{{if .Insights.Report.DuplicateRows}}<div class="insight-suggestion"><span>{{.Insights.Report.DuplicateRows}} duplicate rows found in checked data</span><form method="post" action="/collections/{{.Collection.ID}}/changes"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="cleanup" value="deduplicate"><button class="button small" name="action" value="add">Preview removing duplicates</button></form></div>{{end}}
-<div class="column-summary-grid">{{range .Insights.Columns}}<details class="column-summary" {{if $.Insights.Field}}open{{end}}><summary><span class="column-summary-name">{{.Name}}</span> <span class="column-summary-type">{{range .Types}}{{.}} {{end}}</span></summary><div class="column-summary-body"><div class="column-statistics"><span>Missing: {{.Missing}}</span><span>Null: {{.Null}}</span><span>Empty text: {{.Empty}}</span><span>Repeated non-null: {{.Repeated}}{{if .DistinctCapped}}+{{end}}</span><span>Distinct: {{.Distinct}}{{if .DistinctCapped}}+{{end}}</span>{{if .NumericCount}}<span>Minimum: {{.Min}}</span><span>Maximum: {{.Max}}</span><span>Mean (approximate): {{.Mean}}</span>{{end}}</div><h3>Common values in checked rows{{if .CommonCapped}} (tracked values only){{end}}</h3><ul>{{range .Common}}<li><code>{{.Value}}</code> · {{.Count}}</li>{{end}}</ul>{{if .Whitespace}}<p>{{.Whitespace}} values have extra whitespace.</p>{{if and (eq (len .Types) 1) (eq (index .Types 0) "string") (eq .Missing 0)}}<form method="post" action="/collections/{{$.Collection.ID}}/changes"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="field" value="{{.Name}}"><input type="hidden" name="cleanup" value="trim"><button class="button small" name="action" value="add">Preview trimming spaces</button></form>{{end}}{{end}}</div></details>{{end}}</div>
-<details class="insights-details"><summary>About these statistics</summary><p class="muted small-text">Suggestions start a new set of changes without modifying the source. Common values track up to 64 values per column.</p></details></section></div>
-
+<section aria-label="Column summaries">
+  <div class="insights-toolbar">
+    <p class="muted">Checked {{.Insights.Report.Checked}} of {{.Insights.Report.Total}} rows.{{if .Insights.Report.Partial}} Sample statistics.{{end}}{{if .Insights.Report.DuplicatesCapped}} Duplicate counts are a lower bound.{{end}}</p>
+    <form method="get" class="insights-filter">
+      <label class="field-label"><span class="sr-only">Column</span><select name="field" aria-label="Column" class="field-control"><option value="">All columns</option>{{range .Insights.Fields}}<option value="{{.Name}}" {{if eq $.Insights.Field .Name}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+      <button class="button">Show summary</button>
+    </form>
+  </div>
+  {{if .Insights.Report.DuplicateRows}}<div class="insight-suggestion"><span>{{.Insights.Report.DuplicateRows}} duplicate rows found in checked data</span><form method="post" action="/collections/{{.Collection.ID}}/changes"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="cleanup" value="deduplicate"><button class="button small" name="action" value="add">Preview removing duplicates</button></form></div>{{end}}
+  <div class="insights-table-scroll" tabindex="0" aria-label="Column statistics; scroll horizontally for more columns">
+    <table class="data-table insights-table">
+      <caption class="sr-only">Column statistics from {{.Insights.Report.Checked}} checked rows</caption>
+      <thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col" class="insights-count">Missing</th><th scope="col" class="insights-count">Null</th><th scope="col" class="insights-count">Empty text</th><th scope="col" class="insights-count">Distinct</th></tr></thead>
+      <tbody>
+      {{range $i, $column := .Insights.Columns}}
+        <tr class="column-summary-row">
+          <th scope="row"><a class="column-details-toggle" href="/collections/{{$.Collection.ID}}/insights?field={{$.Insights.Field | urlquery}}&amp;detail={{$i}}" data-column-details="column-details-{{$i}}" aria-controls="column-details-{{$i}}" aria-label="Details for {{.Name}}" aria-expanded="{{if eq $i $.Insights.Expanded}}true{{else}}false{{end}}"><span class="column-toggle-icon" aria-hidden="true">▸</span><span>{{.Name}}</span></a></th>
+          <td><span class="insights-type" title="{{range .Types}}{{.}} {{end}}">{{if eq (len .Types) 1}}{{if eq (index .Types 0) "string"}}Text{{else if eq (index .Types 0) "number"}}Number{{else if eq (index .Types 0) "boolean"}}Boolean{{else if or (eq (index .Types 0) "object") (eq (index .Types 0) "array")}}JSON{{else}}{{index .Types 0}}{{end}}{{else}}Mixed{{end}}</span></td>
+          <td class="insights-count">{{.Missing}}</td><td class="insights-count">{{.Null}}</td><td class="insights-count">{{.Empty}}</td><td class="insights-count">{{.Distinct}}{{if .DistinctCapped}}+{{end}}</td>
+        </tr>
+        <tr id="column-details-{{$i}}" class="column-detail-row" {{if ne $i $.Insights.Expanded}}hidden{{end}}>
+          <td colspan="6">
+            <section class="column-summary-body" aria-label="Details for {{.Name}}">
+              <h3>{{.Name}}</h3>
+              <div class="column-detail-layout">
+                <div><h4>Statistics</h4><dl class="column-metrics">
+                  <dt>Repeated non-null</dt><dd>{{.Repeated}}{{if .DistinctCapped}}+{{end}}</dd>
+                  <dt>Extra whitespace</dt><dd>{{.Whitespace}}</dd>
+                  <dt>Minimum</dt><dd>{{if .NumericCount}}{{.Min}}{{else}}—{{end}}</dd>
+                  <dt>Maximum</dt><dd>{{if .NumericCount}}{{.Max}}{{else}}—{{end}}</dd>
+                  <dt>Mean <span class="muted">(approximate)</span></dt><dd>{{if .NumericCount}}{{.Mean}}{{else}}—{{end}}</dd>
+                </dl>{{if .NumericSkipped}}<p class="muted small-text">{{.NumericSkipped}} numeric values were excluded from these statistics.</p>{{end}}
+                {{if and .Whitespace (eq (len .Types) 1) (eq (index .Types 0) "string") (eq .Missing 0)}}<form method="post" action="/collections/{{$.Collection.ID}}/changes"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="field" value="{{.Name}}"><input type="hidden" name="cleanup" value="trim"><button class="button small" name="action" value="add">Preview trimming spaces</button></form>{{end}}</div>
+                <div><h4>Common values</h4>{{if .CommonCapped}}<p class="muted small-text">Tracked values only.</p>{{end}}
+                  {{if .Common}}<div class="common-values-scroll"><table class="data-table common-values-table"><thead><tr><th scope="col">Value</th><th scope="col" class="insights-count">Rows</th></tr></thead><tbody>{{range .Common}}<tr><td><code>{{.Value}}</code></td><td class="insights-count">{{.Count}}</td></tr>{{end}}</tbody></table></div>{{else}}<p class="muted">No values in checked rows.</p>{{end}}
+                </div>
+              </div>
+            </section>
+          </td>
+        </tr>
+      {{else}}<tr><td colspan="6" class="muted">No columns to summarize.</td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+  <details class="insights-details"><summary>About these statistics</summary><p class="muted small-text">Missing, null and empty text are counted separately. Counts ending in + are lower bounds. Common values track up to 64 values per column. Suggestions create changes without modifying the source.</p></details>
+</section>
+</div>

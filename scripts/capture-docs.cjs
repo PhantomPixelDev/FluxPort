@@ -36,7 +36,7 @@ const path=require('node:path');
   await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();
   await automatic;
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(dir,'downloads.png')});
-  await page.goto(base+'/collections/'+id+'/insights');await page.setViewportSize({width:1440,height:1000});await page.locator('.column-summary summary').first().click();await page.screenshot({path:path.join(dir,'inspect.png')});
+  await page.goto(base+'/collections/'+id+'/insights');await page.setViewportSize({width:1440,height:1000});await page.locator('button[data-column-details]').first().click();await page.screenshot({path:path.join(dir,'inspect.png')});
   await page.goto('file:///'+path.join(dir,'social-preview.html').replaceAll('\\','/'));
   await page.setViewportSize({width:1280,height:640});await page.screenshot({path:path.join(dir,'social-preview.png')});
   await page.goto(base+'/collections/'+id);await openMore();await page.locator('.workspace-file-action').click();await page.locator('input[name=confirm]').check();await page.getByRole('button',{name:'Delete source file',exact:true}).click();

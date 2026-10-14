@@ -5,14 +5,16 @@ import (
 	"fluxport/internal/collections"
 	"fluxport/internal/quality"
 	"github.com/gofiber/fiber/v3"
+	"strconv"
 	"time"
 )
 
 type DatasetInsights struct {
-	Fields  []collections.Field
-	Report  collections.QualityReport
-	Columns []quality.Column
-	Field   string
+	Fields   []collections.Field
+	Report   collections.QualityReport
+	Columns  []quality.Column
+	Field    string
+	Expanded int
 }
 
 func (s *Server) datasetInsights(c fiber.Ctx) error {
@@ -37,10 +39,18 @@ func (s *Server) datasetInsights(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	insight := &DatasetInsights{Report: report, Field: field, Fields: fields}
+	insight := &DatasetInsights{Report: report, Field: field, Fields: fields, Expanded: -1}
 	for _, column := range report.Columns {
 		if insight.Field == "" || column.Name == insight.Field {
 			insight.Columns = append(insight.Columns, column)
+		}
+	}
+	if insight.Field != "" && len(insight.Columns) > 0 {
+		insight.Expanded = 0
+	}
+	if value := c.Query("detail"); value != "" {
+		if index, err := strconv.Atoi(value); err == nil && index >= 0 && index < len(insight.Columns) {
+			insight.Expanded = index
 		}
 	}
 	p.Insights = insight

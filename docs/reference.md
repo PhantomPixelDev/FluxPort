@@ -1,6 +1,8 @@
 # FluxPort
 
-### Calm workspace (0.3.18)
+### Calm workspace (0.3.19)
+
+Inspect → Summary lists columns in one statistics table. Missing, null, empty-text and distinct counts stay aligned; Details opens a full-width row with consistent statistics and common values. Native links work without JavaScript.
 
 The Data toolbar keeps Search, Filter, Columns and density aligned. Filter and column settings expand across the workspace, on original and cleaned data.
 

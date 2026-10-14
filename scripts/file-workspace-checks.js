@@ -101,14 +101,18 @@ async (page, artifactDir) => {
    if(key==='insights'){
     for(const width of [320,390,768,1024,1440,2560]){
      await page.setViewportSize({width,height:1000});
-     const card=pane.locator('.column-summary').first(),summary=card.locator('summary');
-     const size=await summary.evaluate(el=>({height:el.getBoundingClientRect().height,padding:parseFloat(getComputedStyle(el).paddingLeft)}));
-     if(size.height>56||size.height<40||size.padding<12)throw Error('Column summary needs compact padded controls at '+width);
-     await summary.focus();await page.keyboard.press('Enter');
-     if(await card.getAttribute('open')===null)throw Error('Summary keyboard expansion failed');
-     await fit('Expanded summary '+width);
+     const table=pane.locator('.insights-table'),buttons=table.locator('button[data-column-details]'),first=buttons.first();
+     if(await table.locator('.column-summary-row').count()<5||await pane.locator('.column-summary-grid').count())throw Error('Column summaries are not one table');
+     const id=await first.getAttribute('aria-controls'),details=table.locator('#'+id);
+     await first.focus();await page.keyboard.press('Enter');
+     if(await first.getAttribute('aria-expanded')!=='true'||!await details.isVisible())throw Error('Column detail keyboard expansion failed');
+     if(await details.locator('td[colspan="6"]').count()!==1)throw Error('Column details do not span the summary table');
+     await fit('Expanded column details '+width);
+     const body=details.locator('.column-summary-body'),available=(await pane.locator('.insights-table-scroll').boundingBox()).width-2;if((await body.boundingBox()).width<Math.min(960,available)-2)throw Error('Column details still use a narrow card at '+width);
      if([390,1440].includes(width))await page.screenshot({path:artifactDir+'/summary-expanded-'+width+'.png'});
-     await page.keyboard.press('Enter');
+     await buttons.nth(1).click();
+     if(await details.isVisible()||await table.locator('.column-detail-row:not([hidden])').count()!==1)throw Error('Opening another column leaves competing detail panels');
+     await buttons.nth(1).click();if(await table.locator('.column-detail-row:not([hidden])').count())throw Error('Column details do not close');
     }
     await page.setViewportSize({width:1440,height:1000});
    }
@@ -120,7 +124,7 @@ async (page, artifactDir) => {
   if((await(await page.request.get(base+'/collections/'+id+'/export?original=1')).text())!==input)throw Error('Original source bytes changed');
   await open('sql');const draft='SELECT id FROM "c_'+id+'" LIMIT 2';await pane.locator('#sql-editor').fill(draft);await page.reload();await pane.locator('#sql-editor').waitFor();if(await pane.locator('#sql-editor').inputValue()!==draft||await sqlResult.locator('table').count())throw Error('Restored SQL lost draft or executed automatically');
   await page.keyboard.press('Escape');if(await pane.isVisible())throw Error('Escape does not return to Data');
-  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id);await p.setViewportSize({width:1440,height:1000});await toolbarLayout(p.locator('#detail-content'),'Native toolbar');await p.setViewportSize({width:390,height:1000});for(const name of ['Filter and sort','Columns and table options']){const summary=p.getByLabel(name,{exact:true});await summary.click();if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Native expanded '+name+' overflows');await summary.click();}await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').getAttribute('open')!==null)throw Error('Native original starts expanded');await p.locator('#workspace-original>summary').click();await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
+  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id);await p.setViewportSize({width:1440,height:1000});await toolbarLayout(p.locator('#detail-content'),'Native toolbar');await p.setViewportSize({width:390,height:1000});for(const name of ['Filter and sort','Columns and table options']){const summary=p.getByLabel(name,{exact:true});await summary.click();if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Native expanded '+name+' overflows');await summary.click();}await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').getAttribute('open')!==null)throw Error('Native original starts expanded');await p.locator('#workspace-original>summary').click();await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+'/collections/'+id+'/insights');await p.locator('a[data-column-details]').first().click();await p.locator('.column-detail-row:not([hidden])').waitFor();if(await p.locator('.insights-table').count()!==1)throw Error('Native summaries are not a table');await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
   console.log('Focused workspace passed: all full-width views, expandable original, preserved drafts/pagination, errors, exact exports, six widths, both themes, zoom and no-JavaScript views.');
  }catch(error){await page.screenshot({path:artifactDir+'/focused-failure.png',fullPage:true});console.log('Focused failure: '+page.url()+' '+(await pane.textContent()).slice(-1400));throw error;}
  finally{if(id){await page.goto(base+'/collections');const csrf=await page.locator('#import input[name=csrf]').inputValue();await page.request.post(base+'/collections/'+id+'/delete',{form:{csrf,confirm:'delete'}});}}
