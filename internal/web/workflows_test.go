@@ -95,7 +95,9 @@ func TestStreamUploadBeyondRequestBufferLimit(t *testing.T) {
 	go app.Listener(listener)
 	defer app.Shutdown()
 	base := "http://" + listener.Addr().String()
-	client := &http.Client{Timeout: 20 * time.Second}
+	// This verifies streamed upload correctness, not a throughput deadline.
+	// Shared CI runners can take longer to transfer and index the 12 MiB fixture.
+	client := &http.Client{Timeout: 60 * time.Second}
 	resp, e := client.Get(base + "/collections")
 	if e != nil {
 		t.Fatal(e)
@@ -142,7 +144,7 @@ func TestStreamUploadBeyondRequestBufferLimit(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("stream rejected: %d %s", resp.StatusCode, string(b))
 	}
-	deadline := time.Now().Add(15 * time.Second)
+	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
 		cols, _, _ := s.List("stream", 1, 20)
 		if len(cols) == 1 && cols[0].Status == "ready" {
