@@ -1415,7 +1415,7 @@ summary {
 }
 
 .converter-grid.collection-mode {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0,1fr);
 }
 
 .converter-grid.collection-mode .data-textarea {
@@ -1563,6 +1563,7 @@ summary {
 }
 
 .workflow-step {
+  min-width: 0;
   padding: 22px;
   display: flex;
   flex-direction: column;
@@ -1641,7 +1642,7 @@ summary {
 }
 
 .converter-source:has(#collection-input[hidden]) {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0,1fr);
 }
 
 .converter-source:has(#collection-input[hidden])>label {
@@ -4008,7 +4009,7 @@ textarea.field-control {
   }
 
   .explorer-fields {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 
   .request-line>.button {
@@ -4064,7 +4065,7 @@ textarea.field-control {
   }
 
   .workflow-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 
   .browse-controls label {
@@ -4133,12 +4134,12 @@ textarea.field-control {
 @media(max-width:600px) {
   .filter-row {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 
   .sort-row {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 
   .sheet-query {
@@ -4188,7 +4189,7 @@ textarea.field-control {
   }
 
   .pipeline-source {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 
   .pipeline-panel .panel-toolbar>label {
