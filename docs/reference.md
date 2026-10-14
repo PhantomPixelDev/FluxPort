@@ -1,6 +1,8 @@
 # FluxPort
 
-### Calm workspace (0.3.16)
+### Calm workspace (0.3.17)
+
+The Data toolbar keeps Search, Filter, Columns and density aligned. Filter and column settings expand across the workspace, on original and cleaned data.
 
 Files, collection views and advanced pages share explicit field, button and table components. New tables default to Comfortable density; existing browser preferences are retained. Filters and column controls expand into the main workspace. Clean exposes rows to clean and Apply change, with saved steps and joins under Advanced. Convert / Download groups Data, Rows and Format and shows the submitted job in place. File settings separates Name, Source and deletion; API, saved views and collection history remain accessible through its navigation.
 

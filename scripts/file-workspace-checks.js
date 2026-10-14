@@ -24,6 +24,38 @@ async (page, artifactDir) => {
    return [...new Set(issues)];
   });if(problems.length)throw Error(label+': '+problems.join('; '));
  };
+ const toolbarLayout=async (scope,label)=>{
+  const problems=await scope.locator('.sheet-query-bar').evaluateAll(groups=>{
+   const issues=[];
+   for(const group of groups){
+    if(!group.checkVisibility())continue;
+    const controls=[...group.querySelectorAll('.sheet-search input,.toolbar-disclosure>summary,.sheet-density select,.sheet-search-submit')].filter(e=>e.checkVisibility()).map(e=>({name:e.getAttribute('aria-label')||e.tagName,box:e.getBoundingClientRect()}));
+    for(let i=0;i<controls.length;i++)for(let j=i+1;j<controls.length;j++){
+     const a=controls[i],b=controls[j],ac=(a.box.top+a.box.bottom)/2,bc=(b.box.top+b.box.bottom)/2;
+     if(Math.abs(ac-bc)<20&&(Math.abs(a.box.top-b.box.top)>1||Math.abs(a.box.bottom-b.box.bottom)>1))issues.push('Misaligned '+a.name+' / '+b.name);
+    }
+   }return issues;
+  });if(problems.length)throw Error(label+': '+problems.join('; '));
+ };
+ const checkToolbar=async (scope,label)=>{
+  for(const width of [320,390,768,1024,1440,2560]){
+   await page.setViewportSize({width,height:1000});
+   for(const theme of ['light','dark']){
+    await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
+    for(const density of ['compact','comfortable']){
+     await scope.locator('[data-sheet-density]').selectOption(density);
+     await toolbarLayout(scope,label+' '+width+' '+theme+' '+density);
+    }
+   }
+   for(const name of ['Filter and sort','Columns and table options']){
+    const summary=scope.getByLabel(name,{exact:true});await summary.click();
+    const fits=await summary.evaluate(el=>{const details=el.parentElement,bar=details.closest('.sheet-query-bar');return details.getBoundingClientRect().width>=bar.getBoundingClientRect().width-1&&getComputedStyle(details).marginTop==='0px';});
+    if(!fits)throw Error(label+' expanded '+name+' has cramped width or extra margin at '+width);
+    await summary.click();
+   }
+  }
+  await page.setViewportSize({width:1440,height:1000});
+ };
  const open=async key=>{
   if(['insights','quality','schema','raw'].includes(key)){await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();await settled();if(key!=='insights'){await page.locator('[data-workspace-group=inspect] [data-workspace-target='+key+']').click();await settled();}}
   else if(key==='settings'){if(await page.locator('.workspace-file-action').isVisible())await page.locator('.workspace-file-action').click();else{await page.locator('.workspace-more>summary').click();await page.locator('.workspace-extra-tools [data-workspace-target=settings]').click();}await settled();}
@@ -38,10 +70,11 @@ async (page, artifactDir) => {
   if(await page.locator('link[rel=stylesheet]').count()!==3)throw Error('Legacy stylesheet layers still load');
   await page.locator('#detail-content .sheet-data').waitFor();
   for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});await fit('Data '+width);}
-  await page.setViewportSize({width:1440,height:1000});
+  await checkToolbar(page.locator('#detail-content'),'Original toolbar');
   await open('clean');if(await page.locator('#workspace-original').getAttribute('open')!==null)throw Error('Original starts expanded in Clean');
   await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await pane.getByRole('button',{name:'Apply change',exact:true}).click();
   await result.locator('.sheet-data').waitFor();await result.locator('[data-cleaned-total="60"]').waitFor();
+  await checkToolbar(result,'Cleaned toolbar');
   if(await pane.locator('[data-cleanup-preview],table').count())throw Error('Cleanup still duplicates the sample inside the controls');
   if(await page.locator('#detail-content').isVisible())throw Error('Original table should be collapsed in Clean');
   await page.locator('#workspace-original>summary').click();await page.locator('#detail-content').waitFor({state:'visible'});
@@ -82,7 +115,7 @@ async (page, artifactDir) => {
   if((await(await page.request.get(base+'/collections/'+id+'/export?original=1')).text())!==input)throw Error('Original source bytes changed');
   await open('sql');const draft='SELECT id FROM "c_'+id+'" LIMIT 2';await pane.locator('#sql-editor').fill(draft);await page.reload();await pane.locator('#sql-editor').waitFor();if(await pane.locator('#sql-editor').inputValue()!==draft||await sqlResult.locator('table').count())throw Error('Restored SQL lost draft or executed automatically');
   await page.keyboard.press('Escape');if(await pane.isVisible())throw Error('Escape does not return to Data');
-  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').getAttribute('open')!==null)throw Error('Native original starts expanded');await p.locator('#workspace-original>summary').click();await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
+  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id);await p.setViewportSize({width:1440,height:1000});await toolbarLayout(p.locator('#detail-content'),'Native toolbar');await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').getAttribute('open')!==null)throw Error('Native original starts expanded');await p.locator('#workspace-original>summary').click();await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
   console.log('Focused workspace passed: all full-width views, expandable original, preserved drafts/pagination, errors, exact exports, six widths, both themes, zoom and no-JavaScript views.');
  }catch(error){await page.screenshot({path:artifactDir+'/focused-failure.png',fullPage:true});console.log('Focused failure: '+page.url()+' '+(await pane.textContent()).slice(-1400));throw error;}
  finally{if(id){await page.goto(base+'/collections');const csrf=await page.locator('#import input[name=csrf]').inputValue();await page.request.post(base+'/collections/'+id+'/delete',{form:{csrf,confirm:'delete'}});}}
