@@ -1,7 +1,7 @@
 (() => {
  document.addEventListener('change',event=>{if(event.target.matches('[data-show-types]'))document.querySelector('[data-file-workspace]')?.classList.toggle('show-column-types',event.target.checked);});
   'use strict';
-	let dataListeners;
+	const dataListeners=new WeakMap();
 	function initialize(){
 	const sqlEditor=document.getElementById('sql-editor');
 	if(sqlEditor&&!sqlEditor.dataset.initialized){
@@ -14,11 +14,15 @@
 		sqlEditor.form.elements.name.addEventListener('input',()=>sqlEditor.form.elements.name.setCustomValidity(''));
 	}
   const workspace=document.querySelector('[data-file-workspace]');
-  const root=workspace?(workspace.dataset.dataView==='result'?document.getElementById('workspace-result'):document.getElementById('detail-content')):document;
+  const roots=workspace?[document.getElementById('detail-content'),document.getElementById('workspace-result')]:[document];
+  roots.forEach(initializeTable);
+ }
+ function initializeTable(root){
+  if(!root)return;
   const queryForm = root.querySelector('[data-sheet-query]');
   if (!queryForm||queryForm.dataset.initialized) return;
   queryForm.dataset.initialized='true';
-  dataListeners?.abort();dataListeners=new AbortController();
+  dataListeners.get(root)?.abort();const listeners=new AbortController();dataListeners.set(root,listeners);
   const filters = queryForm.querySelector('[data-filter-list]');
   const sorts = queryForm.querySelector('[data-sort-list]');
   const operators = [['eq','equals'],['neq','does not equal'],['contains','contains'],['starts','starts with'],['gt','greater than'],['gte','at least'],['lt','less than'],['lte','at most'],['null','missing / null'],['notnull','has a value']];
@@ -52,7 +56,7 @@
 	if(window.EventSource){
 		const initial=sheet.dataset.sourceGeneration||edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
 		async function check(){if(checking)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}
-		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();},{signal:dataListeners.signal});
+		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();},{signal:listeners.signal});
 	}
   const boxes=()=>Array.from(edit.querySelectorAll('[name=record_id]:not(:disabled)'));
   function count(){const n=boxes().filter(b=>b.checked).length;const text=edit.querySelector('[data-selection-count]');if(text)text.textContent=n+' records selected';}

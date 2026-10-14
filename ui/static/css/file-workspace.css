@@ -158,3 +158,17 @@ body:has([data-file-workspace]) .breadcrumbs>span,body:has([data-file-workspace]
 .download-row-scope{display:block;margin:.7rem 0 0}
 .download-row-scope select{margin:0}
 .download-chooser [data-download-count]{margin:.5rem 0;color:var(--muted);font-size:.8rem}
+
+/* Controls stay beside the source; output tables span the workspace below it. */
+[data-file-workspace] .workspace-output{min-width:0;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);scroll-margin-top:calc(var(--workspace-header-height,100px) + 16px)}
+[data-file-workspace] .workspace-output[hidden]{display:none!important}
+#workspace-sql-result .sql-panel{margin:0;padding:0;border:0;background:transparent;max-width:none}
+#workspace-sql-result .section-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+#workspace-sql-result h2{margin:0;font-size:17px}
+#workspace-sql-result .section-caption>span{font-size:12px;color:var(--muted)}
+#workspace-sql-result .record-scroll{max-height:560px;border:1px solid var(--border);border-radius:10px}
+[data-file-workspace] #detail-content{scroll-margin-top:calc(var(--workspace-header-height,100px) + 16px)}
+
+[data-file-workspace] #workspace-result .cleaned-context{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+#workspace-result .cleaned-context h2{margin:0;font-size:17px}
+[data-file-workspace] .workspace-output .workspace-shortcuts{display:none}

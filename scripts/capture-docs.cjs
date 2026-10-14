@@ -28,7 +28,7 @@ const path=require('node:path');
   await page.getByLabel('Change',{exact:true}).selectOption('trim');await page.getByLabel('Column',{exact:true}).selectOption('customer');await page.getByRole('button',{name:'Apply',exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true]'));
   await page.locator('#workspace-result [data-cleaned-total="3"]').waitFor();
-  await page.setViewportSize({width:1440,height:950});
+  await page.setViewportSize({width:1440,height:1100});await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:path.join(dir,'changes.png')});
   await page.locator('[data-workspace-target=export]').click();await page.locator('#collection-download-format').selectOption('xlsx');
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(dir,'download-options.png')});

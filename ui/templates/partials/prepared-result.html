@@ -1,4 +1,4 @@
 <section data-cleaned-dataset="{{.ResultID}}" {{if .Workbench}}data-cleaned-total="{{.Workbench.DatasetRows}}" data-cleaned-scope="{{if .Prepared.InputQuery}}matching{{else}}entire{{end}}"{{end}}>
 {{template "partials/prepared-status" .}}
-{{if .Workbench}}<div class="cleaned-context muted small-text">Cleaned data · {{.Workbench.DatasetRows}} rows · {{if .Prepared.InputQuery}}Captured matching source rows{{else}}Entire source file{{end}}</div>{{template "partials/dataset-data" .}}{{end}}
+{{if .Workbench}}<div class="cleaned-context"><h2>Cleaned data</h2><span class="muted small-text">{{.Workbench.DatasetRows}} rows · {{if .Prepared.InputQuery}}Matching source rows{{else}}Entire source file{{end}}</span></div>{{template "partials/dataset-data" .}}{{end}}
 </section>

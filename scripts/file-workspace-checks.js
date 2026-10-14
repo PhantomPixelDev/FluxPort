@@ -40,7 +40,9 @@ async (page, artifactDir) => {
   if(!aligned)throw Error('Cleanup inputs and action button are not aligned');
   if(!await pane.getByText('Trim spaces in name',{exact:true}).count())throw Error('Cleanup not retained');
   const preview=page.locator('#workspace-result');
-  if(await source.isVisible()||await preview.locator('tbody tr').count()!==20)throw Error('Cleanup must show one result sample table');
+  if(!await source.isVisible())throw Error('Cleanup hides the original table');
+  const sourceBox=await source.boundingBox(),resultBox=await preview.boundingBox(),workspaceBox=await page.locator('[data-file-workspace]').boundingBox();
+  if(resultBox.y<sourceBox.y+sourceBox.height||resultBox.width<workspaceBox.width-2)throw Error('Cleanup results must be full-width below the original table');
   await preview.locator('.sheet-data').waitFor();await preview.getByRole('button',{name:'Inspect JSON in nested',exact:true}).first().click();
   if(await preview.getByLabel('Complete record JSON',{exact:true}).inputValue()!=='{"enabled":true}')throw Error('Cleaned JSON inspector changed the value');
   await preview.getByRole('button',{name:'Close record',exact:true}).click();
@@ -58,8 +60,13 @@ async (page, artifactDir) => {
   await openMore();await page.locator('[data-workspace-target=sql]').click();
   const sql=pane.locator('#sql-editor');await sql.fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');
   await pane.getByRole('button',{name:'Run query',exact:true}).click();
-  await pane.getByRole('heading',{name:'Results',exact:true}).waitFor();
-  await pane.getByRole('cell',{name:'60',exact:true}).waitFor();
+  const sqlResults=page.locator('#workspace-sql-result');
+  await sqlResults.getByRole('heading',{name:'Results',exact:true}).waitFor();
+  await sqlResults.getByRole('cell',{name:'60',exact:true}).waitFor();
+  if(await pane.locator('[data-sql-results]').count()||!await source.isVisible())throw Error('SQL results are inside the sidebar or hide the source');
+  const sqlBox=await sqlResults.boundingBox(),originalBox=await source.boundingBox(),fullBox=await page.locator('[data-file-workspace]').boundingBox();
+  if(sqlBox.y<originalBox.y+originalBox.height||sqlBox.width<fullBox.width-2)throw Error('SQL results must be full-width below the original table');
+  for(const width of [390,1440]){await page.setViewportSize({width,height:1000});if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('SQL results overflow at '+width);const box=await sqlResults.boundingBox(),main=await page.locator('[data-file-workspace]').boundingBox();if(box.width<main.width-2)throw Error('SQL result table is narrow at '+width);}
   await sql.fill('SELECT id FROM "c_'+id+'" LIMIT 3');
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
@@ -73,6 +80,7 @@ async (page, artifactDir) => {
   await sql.fill('SELECT invalid_column FROM "c_'+id+'"');
   await pane.getByRole('button',{name:'Run query',exact:true}).click();
   await pane.getByRole('alert').waitFor();
+  if(await page.locator('#workspace-sql-result').isVisible())throw Error('Failed query still shows stale results');
   if(!(await sql.inputValue()).includes('invalid_column'))throw Error('SQL lost after error');
   await page.locator('[data-workspace-target=export]').click();await pane.locator('#collection-download-format').selectOption('json');
   const delayed='**/collections/'+id+'/export';await page.route(delayed,async route=>{const response=await route.fetch();await page.waitForTimeout(500);await route.fulfill({response});});
