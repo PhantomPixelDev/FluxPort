@@ -1,6 +1,12 @@
 // Pass this callback to Playwright CLI run-code against an isolated FluxPort instance.
 // It creates synthetic files, preserves/restores one, then deletes its own sources.
 async (page, artifactDir='output/playwright') => {
+ const applyChange=async()=>{
+  const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/changes'));
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  const result=await response;if(!result.ok())throw Error('Cleanup request failed: '+result.status());
+  await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]')&&document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+ };
   const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true],#detail-content[aria-busy=true]'));
   const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
   const openSettings=async()=>{if(await page.locator('.workspace-file-action').isVisible())await page.locator('.workspace-file-action').click();else{await openMore();await page.locator('.workspace-extra-tools [data-workspace-target=settings]').click();}};
@@ -189,14 +195,14 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('link',{name:csvname,exact:true}).click();
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('id');
-  await page.getByRole('button',{name:'Apply change',exact:true}).click();
-  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await applyChange();
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   if(await page.locator('#detail-content tbody tr').count()!==2)throw Error('Duplicate rows remained');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
-  await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  await applyChange();
   await settled();
-  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   await page.locator('#detail-content .cell-value').getByText('Example',{exact:true}).waitFor();
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
@@ -208,8 +214,8 @@ async (page, artifactDir='output/playwright') => {
   await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content')?.textContent.includes(' Example '));
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
-  await page.getByRole('button',{name:'Apply change',exact:true}).click();
-  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await applyChange();
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   await page.getByText('Advanced',{exact:true}).click();
   await page.locator('[data-cleanup-form] input[name=name]').fill(prefix+' cleanup');
   if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();

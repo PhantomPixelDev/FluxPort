@@ -1,9 +1,15 @@
 async (page, artifactDir) => {
+ const applyChange=async()=>{
+  const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/changes'));
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  const result=await response;if(!result.ok())throw Error('Cleanup request failed: '+result.status());
+  await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]')&&document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+ };
  const base=new URL(page.url()).origin,name='scoped-file-'+Date.now()+'.ndjson';let id;
  const errors=[],onError=e=>errors.push(e.message);page.on('pageerror',onError);
  const input=Array.from({length:240},(_,i)=>'{"id":'+i+',"group":'+(i%80)+',"name":" Person '+i+' ","a.b/x":9007199254740993,"nested":{"city":"東京","flag":true},"empty":"","null":null}').join('\n')+'\n';
  const saved=()=>page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
- const apply=async()=>{await page.getByRole('button',{name:'Apply change',exact:true}).click();await page.locator('[data-file-job]').waitFor();await saved();};
+ const apply=async()=>{await applyChange();await saved();};
  try{
   await page.setViewportSize({width:1440,height:1000});await page.goto(base+'/collections');await page.locator('#import>summary').click();
   await page.locator('#import-file').setInputFiles({name,mimeType:'application/x-ndjson',buffer:Buffer.from(input)});await page.getByRole('button',{name:'Open selected files',exact:true}).click();

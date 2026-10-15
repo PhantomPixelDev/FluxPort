@@ -2,6 +2,12 @@
 const {chromium}=require('playwright');
 const path=require('node:path');
 (async()=>{
+ const applyChange=async()=>{
+  const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/changes'));
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  const result=await response;if(!result.ok())throw Error('Cleanup request failed: '+result.status());
+  await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]')&&document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+ };
  const target=new URL(process.argv[2]||'http://127.0.0.1:58904');
  if(!['127.0.0.1','localhost','[::1]'].includes(target.hostname))throw Error('Use an isolated local server');
  const base=target.origin;
@@ -23,12 +29,12 @@ const path=require('node:path');
   await page.waitForTimeout(350);
   await page.screenshot({path:path.join(dir,'workspace.png')});
   await page.locator('[data-workspace-target=clean]').click();
-  await page.getByLabel('Column',{exact:true}).selectOption('order_id');await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  await page.getByLabel('Column',{exact:true}).selectOption('order_id');await applyChange();
   await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true]'));
-  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
-  await page.getByLabel('Change',{exact:true}).selectOption('trim');await page.getByLabel('Column',{exact:true}).selectOption('customer');await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await page.getByLabel('Change',{exact:true}).selectOption('trim');await page.getByLabel('Column',{exact:true}).selectOption('customer');await applyChange();
   await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true]'));
-  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   await page.locator('#detail-content tbody tr').first().waitFor();
   await page.setViewportSize({width:1440,height:1100});await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:path.join(dir,'changes.png')});

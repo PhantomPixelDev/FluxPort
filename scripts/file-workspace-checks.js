@@ -1,4 +1,10 @@
 async (page, artifactDir) => {
+ const applyChange=async()=>{
+  const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/changes'));
+  await page.getByRole('button',{name:'Apply change',exact:true}).click();
+  const result=await response;if(!result.ok())throw Error('Cleanup request failed: '+result.status());
+  await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]')&&document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+ };
  const base=new URL(page.url()).origin,name='focused-workspace-'+Date.now()+'-Unicode-山田-long-file-name.json';let id;
  const pane=page.locator('#file-workspace-tool'),result=page.locator('#workspace-result');
  const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]'));
@@ -95,8 +101,8 @@ async (page, artifactDir) => {
   await page.locator('[data-file-redo]').click();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
   await page.locator('[data-file-undo]').click();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
   await open('clean');
-  await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await pane.getByRole('button',{name:'Apply change',exact:true}).click();
-  await pane.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await applyChange();
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   await checkToolbar(table,'Edited file toolbar');
   if(await result.locator('.sheet-data').count())throw Error('Cleanup duplicates the file table');
   if(!await table.isVisible())throw Error('File table missing under cleanup');
