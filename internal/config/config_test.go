@@ -46,6 +46,23 @@ func TestConfigFile(t *testing.T) {
 	}
 }
 
+func TestTrustedProxyConfiguration(t *testing.T) {
+	t.Setenv("FLUXPORT_CONFIG", "")
+	t.Setenv("FLUXPORT_ADDRESS", "127.0.0.1:8080")
+	t.Setenv("FLUXPORT_TRUSTED_PROXIES", "127.0.0.1,10.0.0.0/8")
+	c, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.TrustedProxies) != 2 {
+		t.Fatal(c.TrustedProxies)
+	}
+	t.Setenv("FLUXPORT_TRUSTED_PROXIES", "not-an-address")
+	if _, err := Load(); err == nil {
+		t.Fatal("invalid trusted proxy accepted")
+	}
+}
+
 func TestDuckDBLimitsConfiguration(t *testing.T) {
 	for _, key := range []string{"FLUXPORT_CONFIG", "FLUXPORT_ADDRESS", "FLUXPORT_DATA_DIR", "FLUXPORT_STATE_DIR", "FLUXPORT_ADMIN_PASSWORD", "FLUXPORT_API_KEY", "FLUXPORT_DUCKDB_MEMORY_BYTES", "FLUXPORT_DUCKDB_TEMP_BYTES", "FLUXPORT_DUCKDB_TIMEOUT_SECONDS", "FLUXPORT_DUCKDB_TEMP_DIR"} {
 		t.Setenv(key, "")

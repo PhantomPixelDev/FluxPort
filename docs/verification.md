@@ -55,3 +55,8 @@ Use scripts/measure.ps1 for Windows release measurements and compile/run scripts
 Docker was unavailable locally during the original measurements. On 2026-10-11, the 0.2.2 image was built and deployed successfully with Compose on an Ubuntu VPS. Container health, HTTPS login, authenticated API access and a nested conversion round-trip passed. The Linux test suite also ran under WSL2, which differs from native Linux storage. See [hosted deployment](deployment.md).
 
 The preview uses a separate directory under artifacts/preview. Production remains empty until files are imported or demo loading is explicitly selected. No Node.js or browser tooling is required to build or run FluxPort.
+
+
+## 0.3.22 API controls
+
+Adds optional process-local per-client request budgets globally and per collection, data pagination defaults/caps and CORS origin controls. Tests cover concurrent atomic budgets, bounded counters, window expiry, persisted settings, invalid configuration, proxy spoofing, CSRF, auth, preflight and both data query interfaces. Browser checks exercise native global and workspace forms, per-file isolation and responsive layouts in both themes. See [API controls](api-controls.md) for semantics and operational limits.

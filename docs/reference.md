@@ -84,6 +84,7 @@ Optional JSON configuration: set `FLUXPORT_CONFIG=examples/config.json`. Environ
 | `FLUXPORT_DATA_DIR` | `data_dir` | `data` |
 | `FLUXPORT_STATE_DIR` | `state_dir` | `.fluxport` |
 | `FLUXPORT_ADMIN_PASSWORD` | `admin_password` | Unset; local dashboard access |
+| `FLUXPORT_TRUSTED_PROXIES` | `trusted_proxies` | Unset; comma-separated proxy IPs/CIDRs in the environment, JSON array in config |
 | `FLUXPORT_API_KEY` | `api_key` | Unset; API access without bearer authentication |
 | `FLUXPORT_MAX_FILE_BYTES` | `max_file_bytes` | `16777216` (16 MiB buffered documents / CRUD) |
 | `FLUXPORT_WORKERS` | `workers` | Up to 2, limited by CPUs |
@@ -98,6 +99,10 @@ Optional JSON configuration: set `FLUXPORT_CONFIG=examples/config.json`. Environ
 Non-loopback binding requires a dashboard password unless FLUXPORT_PUBLIC_DEMO=true is explicitly configured for a public demo. Public demo mode disables API bearer authentication even if a key is configured; normal installations can set a separate API key. Use a TLS reverse proxy for remote access. Dashboard sessions are HMAC-signed, HttpOnly, SameSite=Strict cookies, expire after 12 hours, and invalidate on restart. HTTPS connections receive Secure cookies. All dashboard mutations, including login/logout, check a session-bound CSRF token. Login is rate-limited. API requests use bearer authentication independently of dashboard sessions and are not cookie-authenticated. A restrictive content security policy excludes inline scripts and third-party assets.
 
 Versioned SQLite metadata holds collection IDs, names, exclusions, processing state, jobs, index generations, counts, endpoint configuration and settings. Source data remains in ordinary files. Back up both data and state directories. Metadata follows **paths**, so renaming a source creates a new collection ID; deleting and recreating a path also creates a new ID. Updates at the same path retain configuration.
+
+## API controls
+
+Open **Settings → API controls** for per-client-IP read and other-request budgets, pagination defaults/caps, and browser origins. Open a file’s **API** tool to add collection limits and pagination overrides. Settings persist in SQLite and apply immediately; request limiting starts disabled. See [API controls](api-controls.md) for proxy setup, CORS and response headers.
 
 ## REST API
 

@@ -1,0 +1,17 @@
+<section class="api-policy"><h2>Request controls</h2>
+<p class="muted">Global limits always apply. Add a smaller budget for this file if needed.</p>
+{{if .APISettingsMessage}}<p class="notice success" role="status">API controls saved.</p>{{end}}
+<form method="post" action="/collections/{{.Collection.ID}}/api-settings" class="api-policy-form">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<label class="checkbox-setting field-label"><input class="field-check" type="checkbox" name="rate_enabled" {{if .APICollection.Rate.Enabled}}checked{{end}}><span>Add a per-client limit for this file</span></label>
+<div class="api-policy-fields">
+<label class="field-label">Read requests<input class="field-control" type="number" name="read_limit" min="1" max="1000000" value="{{.APICollection.Rate.Reads}}" required></label>
+<label class="field-label">Other requests<input class="field-control" type="number" name="write_limit" min="1" max="1000000" value="{{.APICollection.Rate.Writes}}" required></label>
+<label class="field-label">Window (seconds)<input class="field-control" type="number" name="window_seconds" min="1" max="3600" value="{{.APICollection.Rate.WindowSeconds}}" required></label>
+</div>
+<details><summary>Pagination</summary><div class="api-policy-fields">
+<label class="field-label">Default rows<input class="field-control" type="number" name="default_page_size" min="0" max="100" value="{{.APICollection.DefaultPageSize}}" required><small>0 inherits the global default.</small></label>
+<label class="field-label">Maximum rows<input class="field-control" type="number" name="max_page_size" min="0" max="100" value="{{.APICollection.MaxPageSize}}" required><small>0 inherits the global cap; cannot raise it.</small></label>
+</div></details>
+<div class="api-policy-actions"><button class="button primary" type="submit">Save request controls</button><a href="/settings#api-settings">Global API controls</a></div>
+</form></section>

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"fluxport/internal/api"
+	"fluxport/internal/apipolicy"
 	"fluxport/internal/auth"
 	"fluxport/internal/collections"
 	"fluxport/internal/config"
@@ -33,11 +34,16 @@ import (
 )
 
 type Server struct {
-	Config  config.Config
-	Service *collections.Service
-	Auth    *auth.Auth
+	APIPolicy *apipolicy.Manager
+	Config    config.Config
+	Service   *collections.Service
+	Auth      *auth.Auth
 }
 type Page struct {
+	APIOptions                                                                             apipolicy.Policy
+	APICollection                                                                          apipolicy.Collection
+	APIOrigins                                                                             string
+	APISettingsMessage                                                                     string
 	FileHistory                                                                            *collections.FileHistory
 	FileJob                                                                                *jobs.Job
 	FileEditable                                                                           bool
@@ -97,7 +103,11 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	server := &Server{cfg, s, a}
+	policy, err := apipolicy.New(s.DB, cfg.TrustedProxies...)
+	if err != nil {
+		return nil, err
+	}
+	server := &Server{Config: cfg, Service: s, Auth: a, APIPolicy: policy}
 	templates, err := fs.Sub(ui.Files, "templates")
 	if err != nil {
 		return nil, err
@@ -234,7 +244,9 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Get("/explorer", server.explorer)
 	app.Get("/settings", server.settings)
 	app.Post("/settings", server.saveSettings)
-	(&api.API{Service: s, Key: cfg.APIKey}).Register(app)
+	app.Post("/settings/api", server.saveAPISettings)
+	app.Post("/collections/:id/api-settings", server.saveCollectionAPISettings)
+	(&api.API{Service: s, Key: cfg.APIKey, Policy: policy}).Register(app)
 	app.Use(func(c fiber.Ctx) error { return fiber.NewError(404, "Page not found.") })
 	return app, nil
 }
@@ -747,7 +759,12 @@ func (s *Server) explorer(c fiber.Ctx) error {
 	return s.render(c, "explorer", "API explorer", func(p *Page) { p.Collections = items })
 }
 func (s *Server) settings(c fiber.Ctx) error {
-	return s.render(c, "settings", "Settings", func(p *Page) { p.Watch = s.Service.Setting("watch_enabled", "true") == "true" })
+	return s.render(c, "settings", "Settings", func(p *Page) {
+		p.Watch = s.Service.Setting("watch_enabled", "true") == "true"
+		p.APIOptions = s.APIPolicy.Global()
+		p.APIOrigins = strings.Join(p.APIOptions.Origins, "\n")
+		p.APISettingsMessage = c.Query("api_saved")
+	})
 }
 func (s *Server) saveSettings(c fiber.Ctx) error {
 	value := "false"

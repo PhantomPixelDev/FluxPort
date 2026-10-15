@@ -1,0 +1,18 @@
+<section id="api-settings" class="panel panel-body api-policy">
+<h2>API controls</h2><p class="muted">Set request budgets for each client IP. File editing and dashboard tools are unaffected.</p>
+{{if .APISettingsMessage}}<p class="notice success" role="status">API settings saved.</p>{{end}}
+<form method="post" action="/settings/api" class="api-policy-form">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<label class="checkbox-setting field-label"><input class="field-check" type="checkbox" name="rate_enabled" {{if .APIOptions.Rate.Enabled}}checked{{end}}><span>Enable API rate limiting</span></label>
+<div class="api-policy-fields">
+<label class="field-label">Read requests<input class="field-control" type="number" name="read_limit" min="1" max="1000000" value="{{.APIOptions.Rate.Reads}}" required></label>
+<label class="field-label">Other requests<input class="field-control" type="number" name="write_limit" min="1" max="1000000" value="{{.APIOptions.Rate.Writes}}" required></label>
+<label class="field-label">Window (seconds)<input class="field-control" type="number" name="window_seconds" min="1" max="3600" value="{{.APIOptions.Rate.WindowSeconds}}" required></label>
+</div><p class="muted small-text">Reads use GET / HEAD. All other API requests, including POST queries, use the other budget. Exceeded limits return 429 with Retry-After.</p>
+<details><summary>Pagination</summary><div class="api-policy-fields">
+<label class="field-label">Default rows<input class="field-control" type="number" name="default_page_size" min="0" max="100" value="{{.APIOptions.DefaultPageSize}}" required><small>0 keeps each endpoint’s default.</small></label>
+<label class="field-label">Maximum rows<input class="field-control" type="number" name="max_page_size" min="1" max="100" value="{{.APIOptions.MaxPageSize}}" required><small>Applies to data reads and queries.</small></label>
+</div></details>
+<details><summary>Browser access (CORS)</summary><label class="field-label">Allowed origins<textarea class="field-control mono" name="origins" rows="3" placeholder="https://example.com">{{.APIOrigins}}</textarea><small>One origin per line, without a path. Leave empty for same-origin use; * allows any origin. Cookie credentials are not supported.</small></label></details>
+<button class="button primary" type="submit">Save API controls</button>
+</form></section>

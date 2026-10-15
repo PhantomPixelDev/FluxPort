@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"fluxport/internal/apipolicy"
 	"fluxport/internal/auth"
 	"fluxport/internal/collections"
 	"fluxport/internal/conversion"
@@ -20,12 +21,13 @@ import (
 )
 
 type API struct {
+	Policy  *apipolicy.Manager
 	Service *collections.Service
 	Key     string
 }
 
 func (a *API) Register(app *fiber.App) {
-	g := app.Group("/api", auth.API(a.Key))
+	g := app.Group("/api", a.policy, auth.API(a.Key))
 	g.Get("/jobs", func(c fiber.Ctx) error {
 		jobs, err := a.Service.Jobs.List()
 		if err != nil {
@@ -215,7 +217,7 @@ func (a *API) read(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	limit, err := integer(c, "limit", 50, 1, 100)
+	limit, err := a.dataPageSize(c, 50)
 	if err != nil {
 		return err
 	}
@@ -408,6 +410,23 @@ func (a *API) openapi(c fiber.Ctx) error {
 			break
 		}
 		page++
+	}
+	for _, entry := range paths {
+		operations, ok := entry.(fiber.Map)
+		if !ok {
+			continue
+		}
+		for _, value := range operations {
+			operation, ok := value.(fiber.Map)
+			if !ok {
+				continue
+			}
+			responses, ok := operation["responses"].(fiber.Map)
+			if !ok {
+				continue
+			}
+			responses["429"] = fiber.Map{"description": "Configured per-client API request budget exceeded", "headers": fiber.Map{"Retry-After": fiber.Map{"description": "Seconds until retry", "schema": fiber.Map{"type": "integer"}}}}
+		}
 	}
 	doc := fiber.Map{"openapi": "3.0.3", "info": fiber.Map{"title": "FluxPort API", "version": "1.0.0"}, "paths": paths}
 	if a.Key != "" {

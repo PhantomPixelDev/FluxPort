@@ -3,6 +3,18 @@
   box-sizing: border-box;
 }
 
+
+/* API policies own their form layout; no global form overrides. */
+.api-policy{margin-top:24px;max-width:960px;padding:24px}
+.api-policy h2{margin:0 0 12px}
+.api-policy-form{display:grid;gap:16px;margin-top:16px}
+.api-policy-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.api-policy-fields .field-label,.api-policy-form details>.field-label{display:grid;gap:8px;align-content:start}
+.api-policy-form details>div,.api-policy-form details>.field-label{margin-top:16px}
+.api-policy-form small{font-weight:400}
+.api-policy-form>.button{justify-self:start}
+.api-policy-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+@media(max-width:600px){.api-policy{padding:16px}.api-policy-fields{grid-template-columns:1fr}}
 a {
   color: inherit;
   text-decoration: none;

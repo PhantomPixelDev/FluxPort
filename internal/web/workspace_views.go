@@ -19,6 +19,13 @@ func detailWorkspaceView(tab string) string {
 }
 func (s *Server) renderCollectionView(c fiber.Ctx, view string, p Page) error {
 	p.WorkspaceView = view
+	if view == "api" {
+		p.APIOptions = s.APIPolicy.Global()
+		p.APICollection = s.APIPolicy.Collection(p.Collection.ID)
+		if c.Query("api_saved") != "" {
+			p.APISettingsMessage = c.Query("api_saved")
+		}
+	}
 	p.Title, p.Active = p.Collection.Name, "collections"
 	if view == "advanced" && p.Pipeline != nil {
 		saved := p.Pipeline.Saved[:0]

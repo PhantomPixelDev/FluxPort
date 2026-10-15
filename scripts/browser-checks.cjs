@@ -29,6 +29,8 @@ const {chromium} = require('playwright');
     await rowControls(page,artifactDir);
     const layouts=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'view-layout-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
     await layouts(page,artifactDir);
+    const apiControls=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'api-controls-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
+    await apiControls(page,artifactDir);
     console.log('Browser workflow checks passed: imports, partial failures, pagination, quality, pipelines, undo/redo, export, exclusions, restore, themes and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.stack); process.exitCode=1; });

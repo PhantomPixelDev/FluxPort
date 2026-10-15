@@ -8,24 +8,28 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
+
+	"fluxport/internal/apipolicy"
 )
 
 type Config struct {
-	PublicDemo           bool   `json:"public_demo"`
-	Workers              int    `json:"workers"`
-	MaxRecordBytes       int64  `json:"max_record_bytes"`
-	MinFreeDiskBytes     uint64 `json:"min_free_disk_bytes"`
-	MaxStreamBytes       int64  `json:"max_stream_bytes"`
-	Address              string `json:"address"`
-	DataDir              string `json:"data_dir"`
-	StateDir             string `json:"state_dir"`
-	AdminPassword        string `json:"admin_password"`
-	APIKey               string `json:"api_key"`
-	MaxFileBytes         int64  `json:"max_file_bytes"`
-	DuckDBMemoryBytes    int64  `json:"duckdb_memory_bytes"`
-	DuckDBTempBytes      uint64 `json:"duckdb_temp_bytes"`
-	DuckDBTimeoutSeconds int    `json:"duckdb_timeout_seconds"`
-	DuckDBTempDir        string `json:"duckdb_temp_dir"`
+	TrustedProxies       []string `json:"trusted_proxies"`
+	PublicDemo           bool     `json:"public_demo"`
+	Workers              int      `json:"workers"`
+	MaxRecordBytes       int64    `json:"max_record_bytes"`
+	MinFreeDiskBytes     uint64   `json:"min_free_disk_bytes"`
+	MaxStreamBytes       int64    `json:"max_stream_bytes"`
+	Address              string   `json:"address"`
+	DataDir              string   `json:"data_dir"`
+	StateDir             string   `json:"state_dir"`
+	AdminPassword        string   `json:"admin_password"`
+	APIKey               string   `json:"api_key"`
+	MaxFileBytes         int64    `json:"max_file_bytes"`
+	DuckDBMemoryBytes    int64    `json:"duckdb_memory_bytes"`
+	DuckDBTempBytes      uint64   `json:"duckdb_temp_bytes"`
+	DuckDBTimeoutSeconds int      `json:"duckdb_timeout_seconds"`
+	DuckDBTempDir        string   `json:"duckdb_temp_dir"`
 }
 
 func Load() (Config, error) {
@@ -57,6 +61,12 @@ func Load() (Config, error) {
 			return c, fmt.Errorf("public demo: %w", err)
 		}
 		c.PublicDemo = enabled
+	}
+	if value, ok := os.LookupEnv("FLUXPORT_TRUSTED_PROXIES"); ok {
+		c.TrustedProxies = strings.Split(value, ",")
+	}
+	if _, err := apipolicy.ParseProxies(c.TrustedProxies); err != nil {
+		return c, err
 	}
 	if c.PublicDemo {
 		c.APIKey = ""

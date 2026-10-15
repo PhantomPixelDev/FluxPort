@@ -40,6 +40,10 @@ func (a *API) query(c fiber.Ctx) error {
 	if err = decodeRequest(c, &q); err != nil {
 		return err
 	}
+	q.Limit, err = a.queryPageSize(col.ID, q.Limit)
+	if err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(c.Context(), 25*time.Second)
 	defer cancel()
 	result, err := a.Service.Query(ctx, col, q)
