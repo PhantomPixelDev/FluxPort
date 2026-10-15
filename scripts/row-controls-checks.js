@@ -21,6 +21,26 @@ async (page, artifactDir) => {
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:artifactDir+'/row-controls-mobile.png'});
   const checkbox=page.locator('tbody [name=record_id]').first();await page.locator('.record-scroll').evaluate(el=>el.scrollTop=0);await checkbox.check();if(!await checkbox.isChecked())throw Error('Row selection stopped working');await checkbox.uncheck();
   await page.locator('[data-query-search]').fill('Row 2');await page.locator('[data-query-search]').press('Enter');await page.locator('.sheet-query-footer').getByText('11 matching records',{exact:true}).waitFor();await assert();
+  let injected=false;
+  await page.evaluate(()=>{
+   window.__savedPendingTable=false;
+   window.__rowObserver=new MutationObserver(()=>{if(document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content .sheet-data')?.dataset.sourceStatus!=='ready')window.__savedPendingTable=true;});
+   window.__rowObserver.observe(document.querySelector('[data-file-workspace]'),{subtree:true,childList:true,characterData:true});
+  });
+  const refreshRoute=async route=>{
+   const request=route.request();
+   if(!injected&&request.method()==='GET'&&new URL(request.url()).pathname===new URL(file).pathname){
+    injected=true;const response=await route.fetch(),html=await response.text();
+    await route.fulfill({response,body:html.replaceAll('data-source-status="ready"','data-source-status="indexing"')});
+    await page.evaluate(resource=>setTimeout(()=>window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:{resource,state:'ready'}})),200),new URL(file).pathname.split('/')[2]);
+   }else await route.continue();
+  };
+  await page.route(file+'*',refreshRoute);
+  const column=await page.locator('[data-sheet-column]').evaluateAll(es=>es.find(e=>e.value==='name').dataset.sheetColumn),cell=page.locator('tbody td[data-sheet-cell="'+column+'"]').first();
+  await cell.dblclick();await cell.locator('input').fill('Row 2 edited');await cell.locator('input').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content .sheet-data')?.dataset.sourceStatus==='ready'&&document.querySelector('#detail-content')?.textContent.includes('Row 2 edited'));
+  if(!injected||await page.evaluate(()=>window.__savedPendingTable))throw Error('Save completed with an unready table');
+  await page.evaluate(()=>window.__rowObserver.disconnect());await page.unroute(file+'*',refreshRoute);
   console.log('Row controls passed: checkbox bounds, sticky alignment, horizontal/vertical scrolling, both densities/themes, six widths, zoom, selection and table replacement.');
  }finally{if(file){await page.goto(base+'/collections');const csrf=await page.locator('meta[name=csrf-token]').getAttribute('content');await page.request.post(file+'/delete',{form:{csrf,confirm:'delete'}});}}
 }

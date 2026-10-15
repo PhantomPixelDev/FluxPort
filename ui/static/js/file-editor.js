@@ -25,7 +25,14 @@
    update(state);
    if(pending&&state.status==='ready'&&!refreshing){
     refreshing=true;
-    try{await window.FluxPortWorkspace?.refreshFile();pending=false;api.saving=false;jobID='';update(state);message('Saved');}
+    try{
+     await window.FluxPortWorkspace?.refreshFile();
+     const sheet=shell.querySelector('#detail-content .sheet-data'),generation=sheet?.querySelector('[data-sheet-edit]')?.elements.generation.value;
+     // A watcher may start another index while the table request is in flight.
+     // Keep the pending save until SSE supplies a queryable generation.
+     if(sheet?.dataset.sourceStatus!=='ready'||generation!==state.generation){message('Saved · updating table…');return;}
+     pending=false;api.saving=false;jobID='';update(state);message('Saved');
+    }
     finally{refreshing=false;}
    }else if(pending&&state.status==='failed'){api.saving=false;message('File saved; table needs refresh: '+(state.error||'Indexing failed'),true);}
    else if(!api.saving)message(state.status==='ready'?(state.editable?'Saved':'Read-only file'):'Updating table…');
