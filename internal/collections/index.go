@@ -296,7 +296,7 @@ func (s *Service) indexJob(ctx context.Context, j jobs.Job, progress func(int64,
 	s.prune(c.ID, gen)
 	return c.ID, nil
 }
-func (s *Service) ready(c Collection) (Collection, error) {
+func (s *Service) ready(c Collection, pathLocked ...bool) (Collection, error) {
 	latest, err := s.Get(c.ID)
 	if err != nil {
 		return latest, err
@@ -315,6 +315,9 @@ func (s *Service) ready(c Collection) (Collection, error) {
 		return latest, err
 	}
 	if stamp(info) != latest.Stamp {
+		if len(pathLocked) > 0 && pathLocked[0] {
+			return latest, ErrConflict
+		}
 		if err = s.SyncFile(latest.Path); err != nil {
 			return latest, err
 		}

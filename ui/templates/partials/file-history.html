@@ -1,0 +1,9 @@
+<section class="file-history-view">
+{{if .Message}}<p class="notice" role="alert">{{.Message}}</p>{{end}}
+{{if .FileHistory.Stale}}<p class="notice">The file changed outside FluxPort. Reload it before restoring a saved version.</p>{{end}}
+<div class="table-scroll"><table class="data-table file-history-table"><caption class="sr-only">Saved file changes</caption><thead><tr><th scope="col">Change</th><th scope="col">Saved</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Restore</span></th></tr></thead><tbody>
+{{range .FileHistory.Revisions}}<tr><th scope="row">{{.Label}}{{if eq .Revision $.FileHistory.Current}} <span class="status-label" data-state="ready">Current</span>{{end}}</th><td><time datetime="{{.Created}}" data-file-time>{{.Created}}</time></td><td>{{bytes .Size}}</td><td>{{if ne .Revision $.FileHistory.Current}}<form method="post" action="/collections/{{$.Collection.ID}}/file-history" data-file-history-action><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="generation" value="{{$.Collection.Generation}}"><input type="hidden" name="current_revision" value="{{$.FileHistory.Current}}"><input type="hidden" name="revision" value="{{.Revision}}"><button class="button small" name="action" value="restore" {{if not $.FileEditable}}disabled{{end}}>Restore</button></form>{{end}}</td></tr>
+{{else}}<tr><td colspan="4" class="muted">Your saved changes will appear here.</td></tr>{{end}}
+</tbody></table></div>
+<details class="insights-details"><summary>About file history</summary><p class="muted small-text">Undo and Redo restore saved file contents. The most recent versions are kept, up to 20 saves or 64 MB per file. Restoring a version saves a new change.</p></details>
+</section>

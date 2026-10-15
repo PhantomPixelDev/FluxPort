@@ -28,10 +28,37 @@ func TestVersionOnePreservesCollection(t *testing.T) {
 		t.Fatal(e)
 	}
 	db.QueryRow(`PRAGMA user_version`).Scan(&version)
-	if id != "existing-id" || rules != `{"select":["id"]}` || status != "pending" || version != 9 {
+	if id != "existing-id" || rules != `{"select":["id"]}` || status != "pending" || version != 10 {
 		t.Fatal(id, rules, status, version)
 	}
 	if e = migrate(db); e != nil {
 		t.Fatal("migration not idempotent", e)
+	}
+}
+
+func TestVersionNineFileHistoryUpgrade(t *testing.T) {
+	dir := t.TempDir()
+	db, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("DROP TABLE file_revisions;DROP TABLE file_history;PRAGMA user_version=9"); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	db, err = Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var version int
+	if err = db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 10 {
+		t.Fatal(version, err)
+	}
+	if _, err = db.Exec("INSERT INTO file_history(collection_id,current_revision) VALUES('existing-id',0)"); err != nil {
+		t.Fatal(err)
+	}
+	if err = migrate(db); err != nil {
+		t.Fatal(err)
 	}
 }

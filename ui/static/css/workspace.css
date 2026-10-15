@@ -606,42 +606,26 @@ body:has(.collection-workspace) .app-shell {
   box-shadow: none;
 }
 
-.workspace-original {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
-  padding: 12px;
-}
-
-.workspace-original>summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  padding: 4px;
-}
-
-.workspace-original[open]>summary {
-  margin-bottom: 14px;
-}
-
-.workspace-main[data-active-view=data] .workspace-original {
-  border: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.workspace-main[data-active-view=data] .workspace-original>summary {
-  display: none;
-}
-
 .workspace-main:not([data-active-view=data]):not([data-active-view=clean]):not([data-active-view=sql])>.file-workspace-data {
   display: none;
 }
 
+.workspace-file-meta {
+ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.file-edit-actions, .file-edit-actions > form, .file-change-status {
+ display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.file-edit-actions [data-file-edit-status] { margin-left: 8px; }
+.file-history-table { width: 100%; border-collapse: collapse; }
+.file-history-table th, .file-history-table td { padding: 12px 16px; text-align: left; }
+.file-history-table tbody th { font-weight: 500; background: inherit; }
+.file-history-table time { white-space: nowrap; }
+.file-history-table td:last-child { text-align: right; }
+.file-history-table .status-label { margin-left: 8px; }
+.file-change-status p { flex-basis: 100%; }
+.file-history-view .table-scroll { position: relative; }
+.file-history-view .insights-details { margin-top: 16px; }
 .workspace-output:empty {
   display: none;
 }
@@ -1376,13 +1360,6 @@ body:has(.collection-workspace) #main {
   .collection-workspace .sql-actions>label {
     flex-basis: 100%;
     max-width: none;
-  }
-
-  .workspace-original>summary>span {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .collection-workspace .cell-copy {

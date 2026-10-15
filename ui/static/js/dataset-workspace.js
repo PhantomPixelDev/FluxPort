@@ -8,7 +8,7 @@
   form.querySelectorAll('[data-cleanup-for]').forEach(el=>el.hidden=el.dataset.cleanupFor!==action.value);
   if(field.tagName==='SELECT')field.options[0].textContent=action.value==='deduplicate'?'All columns':'Choose a column';
   field.required=action.value!=='deduplicate';
-  form.querySelector('[data-cleanup-help]').textContent=action.value==='deduplicate'?'All columns compares complete rows. Your original file stays unchanged.':'Your original file stays unchanged.';
+  const editable=document.querySelector('.sheet-data')?.dataset.editable==='true';form.querySelector('[data-cleanup-help]').textContent=(action.value==='deduplicate'?'All columns compares complete rows. ':'')+(editable?'Saved to this file. Use Undo above to restore.':'This file is read-only. Download changes to save them.');
  }
  action.addEventListener('change',controls);controls();
  const key='fluxport-cleanup-'+form.dataset.collection;
@@ -45,7 +45,7 @@
   remember();
  });
  // Validation must be updated before the browser validates a non-add submit.
- form.querySelectorAll('button[name=action]').forEach(button=>button.addEventListener('click',()=>{field.required=button.value==='add'&&action.value!=='deduplicate';}));
+ form.querySelectorAll('button[name=action]').forEach(button=>button.addEventListener('click',()=>{field.required=['add','save_change'].includes(button.value)&&action.value!=='deduplicate';}));
  const joinDataset=form.querySelector('[data-join-dataset]'),joinColumn=form.querySelector('[data-join-column]');
  if(joinDataset&&joinColumn){
   const choices=[...joinColumn.options].map(o=>({dataset:o.dataset.dataset,value:o.value,label:o.textContent}));

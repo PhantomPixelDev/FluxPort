@@ -10,10 +10,10 @@ func migrate(db *sql.DB) error {
 	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
 		return err
 	}
-	if version > 9 {
-		return fmt.Errorf("metadata schema %d is newer than supported schema 9", version)
+	if version > 10 {
+		return fmt.Errorf("metadata schema %d is newer than supported schema 10", version)
 	}
-	if version == 9 {
+	if version == 10 {
 		return nil
 	}
 	tx, err := db.Begin()
@@ -61,7 +61,14 @@ func migrate(db *sql.DB) error {
 	if version < 8 {
 		queries = append(queries, `CREATE TABLE pipeline_revisions(pipeline_id TEXT NOT NULL,revision INTEGER NOT NULL,definition_json TEXT NOT NULL,created TEXT NOT NULL,PRIMARY KEY(pipeline_id,revision))`, `INSERT INTO pipeline_revisions SELECT id,1,definition_json,updated FROM pipelines`, `PRAGMA user_version=8`)
 	}
-	queries = append(queries, `CREATE TABLE pipeline_schedules(pipeline_id TEXT PRIMARY KEY,interval_seconds INTEGER NOT NULL,format TEXT NOT NULL,enabled INTEGER NOT NULL,next_run INTEGER NOT NULL,last_job TEXT NOT NULL DEFAULT '',error TEXT NOT NULL DEFAULT '')`, `PRAGMA user_version=9`)
+	if version < 9 {
+		queries = append(queries, `CREATE TABLE pipeline_schedules(pipeline_id TEXT PRIMARY KEY,interval_seconds INTEGER NOT NULL,format TEXT NOT NULL,enabled INTEGER NOT NULL,next_run INTEGER NOT NULL,last_job TEXT NOT NULL DEFAULT '',error TEXT NOT NULL DEFAULT '')`, `PRAGMA user_version=9`)
+	}
+	queries = append(queries,
+		`CREATE TABLE file_revisions(revision INTEGER PRIMARY KEY AUTOINCREMENT,collection_id TEXT NOT NULL,source_sha256 TEXT NOT NULL,format TEXT NOT NULL,snapshot TEXT NOT NULL,ids_json TEXT NOT NULL,size INTEGER NOT NULL,label TEXT NOT NULL,created TEXT NOT NULL,state TEXT NOT NULL)`,
+		`CREATE INDEX file_revisions_collection ON file_revisions(collection_id,revision)`,
+		`CREATE TABLE file_history(collection_id TEXT PRIMARY KEY,current_revision INTEGER NOT NULL,pending_revision INTEGER NOT NULL DEFAULT 0,pending_new INTEGER NOT NULL DEFAULT 0,pending_job TEXT NOT NULL DEFAULT '')`,
+		`PRAGMA user_version=10`)
 	for _, q := range queries {
 		if _, err = tx.Exec(q); err != nil {
 			return err

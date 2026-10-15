@@ -1,0 +1,9 @@
+<div class="file-edit-actions" data-file-editor data-generation="{{.Collection.Generation}}" data-current-revision="{{.FileHistory.Current}}" data-file-status="{{.Collection.Status}}">
+  <form method="post" action="/collections/{{.Collection.ID}}/file-history" data-file-history-action>
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="generation" value="{{.Collection.Generation}}"><input type="hidden" name="current_revision" value="{{.FileHistory.Current}}">
+    <button class="button small ghost" name="action" value="undo" data-file-undo {{if not (and .FileEditable .FileHistory.Previous)}}disabled{{end}} title="Undo last saved change">↶ Undo</button>
+    <button class="button small ghost" name="action" value="redo" data-file-redo {{if not (and .FileEditable .FileHistory.Next)}}disabled{{end}} title="Redo saved change">↷ Redo</button>
+  </form>
+  <a class="button small ghost" href="/collections/{{.Collection.ID}}/file-history" data-workspace-target="revisions">History</a>
+  <span class="muted small-text" data-file-edit-status role="status" aria-live="polite">{{if ne .Collection.Status "ready"}}Updating table…{{else if not .FileEditable}}Read-only file{{else}}Saved{{end}}</span>
+</div>

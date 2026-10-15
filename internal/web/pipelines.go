@@ -83,6 +83,14 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		}
 		p.Title, p.Active, p.Tab = p.Collection.Name, "collections", "changes"
 		pp.SourceGeneration = p.Collection.Generation
+		p.FileEditable = !p.Collection.ReadOnly && p.Collection.Rows <= 100000 && p.Collection.Status == "ready"
+	}
+	if workspace && c.Method() == "GET" && c.Query("file_job") != "" {
+		job, e := s.Service.Jobs.Get(c.Query("file_job"))
+		if e != nil || job.Resource != p.Collection.ID || job.Kind != "file_cleanup" {
+			return fiber.NewError(404, "File change not found")
+		}
+		p.FileJob = &job
 	}
 	pp.Saved, err = s.Service.Pipelines()
 	if err != nil {
@@ -132,7 +140,7 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		q = collections.NormalizeInputQuery(q)
 		pp.Definition.InputQuery = &q
 	}
-	if workspace && c.Method() == "GET" && pp.Definition.ID == "" && pp.Definition.InputQuery == nil {
+	if workspace && c.Method() == "GET" && pp.Definition.ID == "" && pp.Definition.InputQuery == nil && c.Query("scope") != "entire" {
 		pp.Definition.InputQuery = &collections.Query{}
 	}
 	if c.Query("collection") != "" {
@@ -210,6 +218,30 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 				pp.Cards = append(pp.Cards, PipelineCard{Op: hint.Op, Definition: string(data)})
 			}
 		}
+		if err == nil && workspace && c.FormValue("file_mode") == "1" && p.FileEditable &&
+			(c.FormValue("action") == "add" || c.FormValue("action") == "apply") {
+			label := "Applied cleanup"
+			if len(pp.Definition.Steps) == 1 {
+				label = cleanupStepName(pp.Definition.Steps[0])
+			}
+			job, e := s.Service.FileCleanupJob(pp.Definition, pp.SourceGeneration, label)
+			if e != nil {
+				err = e
+			} else {
+				if c.Get("X-Fluxport-View") != "workspace" {
+					return c.Redirect().Status(303).To("/collections/" + p.Collection.ID + "/changes?file_job=" + job.ID)
+				}
+				p.FileJob = &job
+				pp.Definition.Steps = nil
+				p.Fields, _ = s.Service.Fields(p.Collection)
+				pp.InputQueryJSON = "{}"
+				if pp.Definition.InputQuery != nil {
+					b, _ := json.Marshal(pp.Definition.InputQuery)
+					pp.InputQueryJSON = string(b)
+				}
+				return s.renderCollectionView(c, "clean", p)
+			}
+		}
 		if err == nil {
 			switch c.FormValue("action") {
 			case "import":
@@ -236,8 +268,8 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 					c.Set("Content-Disposition", `attachment; filename="pipeline.json"`)
 					return c.Send(b)
 				}
-			case "save", "run":
-				save := !workspace || c.FormValue("action") == "save" || c.FormValue("download_view") != "compact"
+			case "save", "save_change", "run":
+				save := !workspace || (c.FormValue("action") == "save" || c.FormValue("action") == "save_change") || c.FormValue("download_view") != "compact"
 				if workspace && save {
 					for _, recipe := range pp.Saved {
 						if recipe.Name == pp.Definition.Name && recipe.Source != p.Collection.ID {

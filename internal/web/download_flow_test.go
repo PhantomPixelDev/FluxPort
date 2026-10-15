@@ -67,7 +67,7 @@ func TestCurrentCleanupDownloadUsesAllRowsWithoutSaving(t *testing.T) {
 		t.Fatal("source changed")
 	}
 	_, body = call(t, app, "GET", location.String(), "", nil, page.Cookies())
-	if !strings.Contains(body, "Current cleaned data") {
+	if !strings.Contains(body, "Changes preview") {
 		t.Fatal("native download lost its data source")
 	}
 	form.Set("format", "original")

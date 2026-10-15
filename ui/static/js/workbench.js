@@ -55,33 +55,41 @@
   const sheet=root.querySelector('.sheet-data'),edit=sheet.querySelector('[data-sheet-edit]');
 	if(window.EventSource){
 		const initial=sheet.dataset.sourceGeneration||edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
-		async function check(){if(checking)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}
+		async function check(){if(checking||window.FluxPortEditor?.saving)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}
 		window.addEventListener('fluxport:progress',event=>{const message=event.detail;if(message.connected){check();return;}if((message.resource===sheet.dataset.collection||message.resource==='*')&&['ready','failed','cancelled','changed'].includes(message.state))check();},{signal:listeners.signal});
 	}
   const boxes=()=>Array.from(edit.querySelectorAll('[name=record_id]:not(:disabled)'));
   function count(){const n=boxes().filter(b=>b.checked).length;const text=edit.querySelector('[data-selection-count]');if(text)text.textContent=n+' records selected';}
   edit.addEventListener('change',event=>{if(event.target.matches('[data-select-page]'))boxes().forEach(b=>b.checked=event.target.checked);count();});
   edit.addEventListener('submit',event=>{const n=boxes().filter(b=>b.checked).length;if(!n){event.preventDefault();return;}if(edit.elements.method.value==='DELETE'&&!window.confirm('Permanently delete '+n+' selected records from the source?'))event.preventDefault();});
-  const dialog=root.querySelector('[data-record-dialog]');let activeID='';
+  const dialog=root.querySelector('[data-record-dialog]');let activeID='',activeField=null;
   const inspector=root.querySelector('[data-record-values]'),useRecord=dialog.querySelector('[data-use-record]');
   function inspect(value,title,record){inspector.value=value;inspector.readOnly=!record||sheet.dataset.editable!=='true';useRecord.hidden=!record||sheet.dataset.editable!=='true';dialog.querySelector('[data-inspector-title]').textContent=title;dialog.querySelector('[data-copy-feedback]').textContent='';dialog.showModal();}
   async function copy(value){try{await navigator.clipboard.writeText(value);const notice=document.getElementById('feedback');if(notice)notice.textContent='Value copied.';dialog.querySelector('[data-copy-feedback]').textContent='Copied';}catch{inspect(value,'Copy complete value',false);inspector.select();dialog.querySelector('[data-copy-feedback]').textContent='Press Ctrl+C or Command+C to copy.';}}
   edit.addEventListener('click',event=>{
    const cell=event.target.closest('td[data-sheet-cell]');
    if(event.target.closest('[data-copy-cell]')){copy(cell.querySelector('[data-cell-raw]').value);return;}
-   if(event.target.closest('[data-inspect-cell]')){inspect(cell.querySelector('[data-cell-raw]').value,'JSON value',false);return;}
-   const button=event.target.closest('[data-edit-record]');if(!button)return;activeID=button.dataset.editRecord;const source=Array.from(edit.querySelectorAll('[data-record-json]')).find(e=>e.dataset.recordJson===activeID);inspect(source.value,'Record values',true);
+   if(event.target.closest('[data-inspect-cell]')){activeID=cell.closest('tr').querySelector('[name=record_id]').value;activeField=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;inspect(cell.querySelector('[data-cell-raw]').value,'JSON value',sheet.dataset.editable==='true');return;}
+   const button=event.target.closest('[data-edit-record]');if(!button)return;activeField=null;activeID=button.dataset.editRecord;const source=Array.from(edit.querySelectorAll('[data-record-json]')).find(e=>e.dataset.recordJson===activeID);inspect(source.value,'Record values',true);
   });
   dialog.querySelector('[data-copy-inspector]').addEventListener('click',()=>copy(inspector.value));
-  dialog.querySelector('[data-use-record]').addEventListener('click',()=>{const box=boxes().find(b=>b.value===activeID);if(!box)return;boxes().forEach(b=>b.checked=b===box);edit.elements.method.value='PUT';edit.elements.value.value=inspector.value;dialog.close();count();edit.elements.value.focus();});
+  function submitValue(id,field,raw){
+   try{JSON.parse(raw);}catch{inspector.setCustomValidity('Enter valid JSON.');inspector.reportValidity();return false;}
+   boxes().forEach(b=>b.checked=b.value===id);
+   if(field!==null){if(!edit.elements.method.querySelector('[value=FIELD]'))edit.elements.method.add(new Option('Edit one field','FIELD'));edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify('/'+field.replaceAll('~','~0').replaceAll('/','~1'))+',"value":'+raw+'}';}
+   else{edit.elements.method.value='PUT';edit.elements.value.value=raw;}
+   count();edit.requestSubmit();return true;
+  }
+  inspector.addEventListener('input',()=>inspector.setCustomValidity(''));
+  dialog.querySelector('[data-use-record]').addEventListener('click',()=>{if(submitValue(activeID,activeField,inspector.value))dialog.close();});
   const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='compact'?'compact':'comfortable';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
   const key='fluxport-sheet-'+sheet.dataset.collection;let prefs=Object.create(null);try{Object.assign(prefs,JSON.parse(localStorage.getItem(key)||'{}')||{});}catch{}
   const columns=Array.from(queryForm.querySelectorAll('[data-sheet-column]'));
 	function inlineEdit(cell){
-		if(sheet.dataset.editable!=='true'||cell.querySelector('input'))return;
+		if(sheet.dataset.editable!=='true'||window.FluxPortEditor?.saving||cell.querySelector('input'))return;
 		const row=cell.closest('tr'),id=row.querySelector('[name=record_id]').value;
 		const original=cell.querySelector('[data-cell-raw]')?.value||'',originalHTML=cell.innerHTML;
-		if(original.length>=512||cell.dataset.displayKind==='json'||sheet.dataset.scalar==='true'){row.querySelector('[data-edit-record]').click();return;}
+		if(original.length>=512||cell.dataset.displayKind==='json'||sheet.dataset.scalar==='true'){activeID=id;activeField=sheet.dataset.scalar==='true'?null:columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(original):original;inspect(raw||'null','Edit value',true);return;}
 		const input=document.createElement('input');input.className='field-control';input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
 		input.addEventListener('keydown',event=>{if(event.key==='Escape'){cell.innerHTML=originalHTML;cell.focus();}if(event.key==='Enter'){event.preventDefault();const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;try{JSON.parse(raw);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();}});
 	}

@@ -38,6 +38,9 @@ type Server struct {
 	Auth    *auth.Auth
 }
 type Page struct {
+	FileHistory                                                                            *collections.FileHistory
+	FileJob                                                                                *jobs.Job
+	FileEditable                                                                           bool
 	InfoMessage                                                                            string
 	WorkspaceView                                                                          string
 	Original                                                                               *Page
@@ -202,6 +205,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
 	app.Post("/collections/:id/workbench/edit", server.editRecords)
+	app.Get("/collections/:id/file-history", server.fileHistory)
+	app.Post("/collections/:id/file-history", server.restoreFile)
 	app.Post("/collections/:id/workbench/export", server.exportWorkbench)
 	app.Post("/collections/:id/workbench/views", server.saveWorkbenchView)
 	app.Post("/collections/:id/workbench/views/:view/delete", server.deleteWorkbenchView)

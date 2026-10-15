@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fluxport/internal/collections"
 	"fluxport/internal/conversion"
 	"fluxport/internal/jobs"
@@ -221,7 +222,13 @@ func (s *Server) jobs(c fiber.Ctx) error {
 }
 func (s *Server) cancelJob(c fiber.Ctx) error {
 	if err := s.Service.Jobs.Cancel(c.Params("id")); err != nil {
+		if errors.Is(err, jobs.ErrFileCommitted) {
+			return fiber.NewError(409, err.Error())
+		}
 		return err
+	}
+	if job, e := s.Service.Jobs.Get(c.Params("id")); e == nil && job.Kind == "file_cleanup" {
+		return c.Redirect().Status(303).To("/collections/" + job.Resource + "/changes?file_job=" + job.ID)
 	}
 	if c.FormValue("result_view") == "fragment" {
 		j, err := s.Service.Jobs.Get(c.Params("id"))
@@ -249,6 +256,9 @@ func (s *Server) retryJob(c fiber.Ctx) error {
 	job, err := s.Service.RetryJob(c.Params("id"))
 	if err != nil {
 		return s.downloadError(c, err)
+	}
+	if job.Kind == "file_cleanup" {
+		return c.Redirect().Status(303).To("/collections/" + job.Resource + "/changes?file_job=" + job.ID)
 	}
 	if c.FormValue("download_view") == "compact" {
 		return s.compactDownload(c, job)

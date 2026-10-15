@@ -26,6 +26,7 @@ type SheetRow struct {
 }
 type SheetFilter struct{ Field, Op, Value, Label string }
 type Workbench struct {
+	FileEditable                       bool
 	ResultID                           string
 	DatasetRows                        int64
 	SourceGeneration                   string
@@ -70,6 +71,7 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		w.ResultID = v
 	}
 	w.SourceGeneration = col.Generation
+	w.FileEditable = !col.ReadOnly && col.Rows <= 100000 && col.Status == "ready"
 	p.Workbench = w
 	if col.Format == "xlsx" && w.ResultID == "" {
 		if info, e := s.Service.Workbook(col); e == nil {
@@ -214,6 +216,7 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 	if w.ResultID != "" {
 		p.Collection.CRUD = false
 		p.Collection.ReadOnly = true
+		w.FileEditable = false
 		p.Collection.Rows = w.DatasetRows
 		for i := range w.Pages {
 			if w.Pages[i].URL != "" {
@@ -269,6 +272,12 @@ func (s *Server) editRecords(c fiber.Ctx) error {
 	ids := c.Request().PostArgs().PeekMulti("record_id")
 	for _, id := range ids {
 		changes = append(changes, collections.Mutation{ID: string(id), Method: method, Value: value})
+	}
+	if c.FormValue("file_mode") == "1" {
+		if _, err := s.Service.EditFile(c.Params("id"), c.FormValue("generation"), changes); err != nil {
+			return s.fileEditError(c, err)
+		}
+		return s.renderFileEditResponse(c)
 	}
 	if _, err := s.Service.BulkMutate(c.Params("id"), c.FormValue("generation"), changes); err != nil {
 		return s.workbenchFailure(c, err)

@@ -29,6 +29,18 @@ func (s *Server) renderCollectionView(c fiber.Ctx, view string, p Page) error {
 		}
 		p.Pipeline.Saved = saved
 	}
+	if p.FileHistory == nil {
+		h, err := s.Service.FileHistory(p.Collection.ID)
+		if err != nil {
+			return err
+		}
+		p.FileHistory = &h
+	}
+	file, err := s.Service.Get(p.Collection.ID)
+	if err != nil {
+		return err
+	}
+	p.FileEditable = !file.ReadOnly && file.Rows <= 100000
 	c.Vary("X-Fluxport-View")
 	if c.Get("X-Fluxport-View") == "workspace" {
 		return c.Render("partials/workspace-view", p)
@@ -51,7 +63,7 @@ func (s *Server) renderCollectionView(c fiber.Ctx, view string, p Page) error {
 		c.Locals("result_id", previousResult)
 		c.Locals("workbench_query", previousQuery)
 		if err != nil {
-			original.Message = "The original data is not ready. Refresh when processing finishes."
+			original.Message = "The file is not ready. Refresh when processing finishes."
 		}
 	}
 	original.Original = nil

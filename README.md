@@ -4,7 +4,7 @@
 
 FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, NDJSON and TOML. Open a file, inspect its rows, remove duplicates or fix values, and download the result. Developers can reuse saved steps, query datasets with DuckDB, automate work from the CLI and publish REST endpoints.
 
-[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.19](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.19) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
+[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.20](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.20) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
 
 [![Checks](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml) · [MIT license](LICENSE)
 
@@ -16,32 +16,33 @@ Each file opens a focused workspace: **Data · Clean · SQL · Inspect**. Tables
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
-3. **Clean:** remove duplicates, trim spaces, fill empty values, rename columns or sort. Cleanup captures all matching source rows across every page, including the current sort. Controls sit above the full-width result. **Show original data** expands the source above it when needed. A quick sample appears while the complete, paginated **Cleaned** result is prepared. Later filters browse the result without changing the captured input.
-4. **Convert / Download:** choose a format and click once. Download defaults to the data you are viewing; **Dataset** lets you pick the original or saved cleanup. Downloads include all matching rows of the displayed dataset, in order; **Original file** always preserves the complete source bytes. Prepared cleanup is reused, with progress, cancellation and retry in the download view. Saving cleanup steps is optional.
+3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Escape cancels. Nested values open a larger JSON editor. **Undo**, **Redo** and **History** stay beside the file information.
+4. **Clean:** trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** saves to the same file and refreshes its table. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
+5. **Convert / Download:** choose rows and an output format. Downloads follow the current file and filters. **Original file** downloads its exact current bytes.
 
-Cleanup prepares a separate, read-only result and preserves your source. Cleanup drafts retain their input scope; the same browser tab also restores SQL text, engine choice and view state after reload, without running restored SQL. Source editing is explicitly enabled separately. Use **Clean → Advanced → Save these steps** to reuse a cleanup sequence. Downloads use meaningful names such as `orders.xlsx` or `orders-cleaned.json`. See the [dataset workspace walkthrough](docs/dataset-workspace.md).
+Small text files support direct editing without enabling REST writes. Saved versions survive restarts, with up to 20 versions or 64 MiB per file; Undo restores exact bytes. Saves may normalize the source formatting. Large files, Excel and Parquet remain read-only: cleanup prepares a working preview for download. SQL text, engine and view state restore in the same browser tab without executing SQL. See the [workspace walkthrough](docs/dataset-workspace.md).
 
 | Make changes | Download the result |
 | --- | --- |
-| ![Clean data: compact controls above a full-width result and expandable original](docs/images/changes.png) | ![Download: one ready file after automatic preparation](docs/images/downloads.png) |
+| ![Clean data: cleanup controls above the same file table](docs/images/changes.png) | ![Download: one ready file after automatic preparation](docs/images/downloads.png) |
 
 The online demo is a shared public workspace. Install your own instance for private data. Normal installations load examples only when requested.
 
 ## Get started
 
-Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/SHA256SUMS):
+Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.20/SHA256SUMS):
 
 | Platform | Download | Start |
 | --- | --- | --- |
-| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
-| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.19/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
+| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.20/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
+| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.20/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
 For Docker, clone this repository and run:
 
 ```sh
-docker compose build --build-arg VERSION=0.3.19
+docker compose build --build-arg VERSION=0.3.20
 docker compose up -d
 ```
 

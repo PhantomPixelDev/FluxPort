@@ -112,9 +112,9 @@ async (page, artifactDir='output/playwright') => {
     await nativePage.getByLabel('Change',{exact:true}).selectOption('deduplicate');
     await nativePage.getByLabel('Column',{exact:true}).selectOption('id');
     await nativePage.getByRole('button',{name:'Apply change',exact:true}).click();
-    await nativePage.getByRole('heading',{name:'Cleaned data',exact:true}).waitFor();
-    await nativePage.getByRole('button',{name:'Undo',exact:true}).click();
-    if (await nativePage.locator('.cleanup-steps textarea[name=steps]').count()) throw Error('Native cleanup undo failed');
+    await nativePage.locator('[data-file-job]').waitFor();
+    for(let attempt=0;attempt<30;attempt++){const state=await nativePage.locator('[data-file-job]').getAttribute('data-state');if(state==='ready')break;if(state==='failed')throw Error('Native cleanup failed');await nativePage.waitForTimeout(150);await nativePage.getByRole('link',{name:'Refresh status',exact:true}).click();}
+    if(await nativePage.locator('[data-file-job]').getAttribute('data-state')!=='ready')throw Error('Native cleanup did not finish');
   } finally { await nativeContext.close(); }
   await page.locator('.workspace-primary-views [data-workspace-target=insights]').click();
   await page.locator('[data-workspace-group=inspect] [data-workspace-target=quality]').click();
@@ -190,32 +190,32 @@ async (page, artifactDir='output/playwright') => {
   await page.locator('[data-workspace-target=clean]').click();
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('id');
   await page.getByRole('button',{name:'Apply change',exact:true}).click();
-  await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
-  await page.locator('#workspace-result [data-cleaned-total="2"]').waitFor();if(await page.locator('#workspace-result tbody tr').count()!==2)throw Error('Duplicate rows remained');
+  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  if(await page.locator('#detail-content tbody tr').count()!==2)throw Error('Duplicate rows remained');
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
   await page.getByRole('button',{name:'Apply change',exact:true}).click();
   await settled();
-  await page.locator('#workspace-result .cell-value').getByText('Example',{exact:true}).waitFor();
+  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await page.locator('#detail-content .cell-value').getByText('Example',{exact:true}).waitFor();
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     if (await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)) throw Error('Changes page overflow');
     await page.screenshot({path:`${artifactDir}/workspace-changes-${width}.png`,fullPage:true});
   }
   await page.setViewportSize({width:1440,height:1000});
-  await page.getByRole('button',{name:'Undo',exact:true}).click();
-  await settled();
-  if (await page.locator('.cleanup-steps textarea[name=steps]').count()!==1) throw Error('Cleanup undo failed');
+  await page.locator('[data-file-undo]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content')?.textContent.includes(' Example '));
   await page.locator('[data-cleanup-action]').selectOption('trim');
   await page.locator('[data-cleanup-form] select[name=field]').selectOption('name');
   await page.getByRole('button',{name:'Apply change',exact:true}).click();
-  await settled();
+  await page.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
   await page.getByText('Advanced',{exact:true}).click();
   await page.locator('[data-cleanup-form] input[name=name]').fill(prefix+' cleanup');
   if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();
   await page.locator('[data-workspace-target=clean]').click();
-  await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
-  await page.getByRole('button',{name:'Save these steps',exact:true}).click();
+  await page.locator('#detail-content tbody tr').first().waitFor();
+  await page.getByRole('button',{name:'Save selected change as steps',exact:true}).click();
   await page.waitForFunction(()=>!!document.querySelector('[data-cleanup-form]')?.dataset.saved);
   const savedID=await page.locator('[data-cleanup-form]').getAttribute('data-saved');
   if (!savedID) throw Error('Cleanup steps were not saved');

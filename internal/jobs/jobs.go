@@ -138,8 +138,41 @@ func (m *Manager) ListResource(resource string) ([]Job, error) {
 	}
 	return out, rows.Err()
 }
+
+var ErrFileCommitted = errors.New("Changes are already saved; use Undo to restore the file")
+
+// Serialize cancellation with the atomic publication of a file revision.
+// The callback persists the completed job inside the revision transaction.
+func (m *Manager) CommitFile(ctx context.Context, id string, publish func() error) error {
+	m.mu.Lock()
+	j, err := m.Get(id)
+	if err == nil && (j.Kind != "file_cleanup" || j.State != "running") {
+		err = fmt.Errorf("file job is no longer running")
+	}
+	if err == nil {
+		err = ctx.Err()
+	}
+	if err == nil {
+		err = publish()
+	}
+	m.mu.Unlock()
+	if err == nil {
+		m.notify(id)
+	}
+	return err
+}
+
 func (m *Manager) Cancel(id string) error {
 	m.mu.Lock()
+	job, err := m.Get(id)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
+	if job.Kind == "file_cleanup" && job.Result == "file-saved" {
+		m.mu.Unlock()
+		return ErrFileCommitted
+	}
 	if cancel := m.active[id]; cancel != nil {
 		cancel()
 	}
@@ -165,7 +198,12 @@ func (m *Manager) Cancel(id string) error {
 	return nil
 }
 func (m *Manager) CancelResource(resource string) error {
-	rows, err := m.db.Query(`SELECT id FROM jobs WHERE resource=? AND state IN ('queued','running','staged')`, resource)
+	return m.CancelResourceExcept(resource, "")
+}
+
+// Keep a file-writing job alive while its replacement index is scheduled.
+func (m *Manager) CancelResourceExcept(resource, except string) error {
+	rows, err := m.db.Query(`SELECT id FROM jobs WHERE resource=? AND id<>? AND state IN ('queued','running','staged')`, resource, except)
 	if err != nil {
 		return err
 	}

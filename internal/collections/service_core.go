@@ -60,6 +60,7 @@ type Service struct {
 	IndexDir          string
 	DownloadDir       string
 	ResultDir         string
+	HistoryDir        string
 	MaxBytes          int64
 	RecordBytes       int64
 	StreamBytes       int64
@@ -96,8 +97,9 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	s := &Service{DB: db, Root: resolved, IndexDir: filepath.Join(state, "indexes"), DownloadDir: filepath.Join(state, "downloads"), MaxBytes: max, RecordBytes: 1 << 20, Reserve: 256 << 20, DuckDBMemoryBytes: 512 << 20, DuckDBTempBytes: 4 << 30, DuckDBTimeout: 30 * time.Second, locks: map[string]*lockEntry{}, DiskCheck: resources.Check}
 	s.DuckDBTempDir = filepath.Join(state, "duckdb-tmp")
 	s.ResultDir = filepath.Join(state, "results")
+	s.HistoryDir = filepath.Join(state, "file-history")
 	s.duckSlots = make(chan struct{}, min(2, runtime.GOMAXPROCS(0)))
-	for _, dir := range []string{s.IndexDir, s.DownloadDir, s.ResultDir} {
+	for _, dir := range []string{s.IndexDir, s.DownloadDir, s.ResultDir, s.HistoryDir} {
 		if err = os.MkdirAll(dir, 0700); err != nil {
 			return nil, err
 		}
@@ -106,6 +108,7 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	s.Jobs.Register("index", s.indexJob)
 	s.Jobs.Register("convert", s.convertJob)
 	s.Jobs.Register("prepare_result", s.prepareResultJob)
+	s.Jobs.Register("file_cleanup", s.fileCleanupJob)
 	return s, nil
 }
 func (s *Service) Configure(c config.Config) {
@@ -140,6 +143,9 @@ func (s *Service) Start(ctx context.Context, workers int) error {
 		return err
 	}
 	if _, err = s.DB.Exec(`UPDATE collections SET status='unverified',error='' WHERE status='ready'`); err != nil {
+		return err
+	}
+	if err := s.recoverFileWrites(); err != nil {
 		return err
 	}
 	s.cleanup()
@@ -278,7 +284,7 @@ func (s *Service) excluded(path string) (bool, error) {
 	err := s.DB.QueryRow(`SELECT COUNT(*) FROM exclusions WHERE path=?`, path).Scan(&n)
 	return n > 0, err
 }
-func (s *Service) syncFile(path string, force bool) error {
+func (s *Service) syncFile(path string, force bool, writingJob ...string) error {
 	format := conversion.FromFilename(path)
 	if !datasetSupported(format) {
 		return nil
@@ -322,7 +328,11 @@ func (s *Service) syncFile(path string, force bool) error {
 	if !force && existing.Stamp == sourceStamp && ((existing.Status == "ready" && indexPresent) || existing.Status == "pending" || existing.Status == "indexing") {
 		return nil
 	}
-	if err = s.Jobs.CancelResource(id); err != nil {
+	except := ""
+	if len(writingJob) > 0 {
+		except = writingJob[0]
+	}
+	if err = s.Jobs.CancelResourceExcept(id, except); err != nil {
 		return err
 	}
 	_, err = s.DB.Exec(`INSERT INTO collections(id,path,name,format,size,rows,updated,status,source_stamp) VALUES(?,?,?,?,?,0,?,'pending',?) ON CONFLICT(path) DO UPDATE SET name=excluded.name,format=excluded.format,size=excluded.size,updated=excluded.updated,status='pending',source_stamp=excluded.source_stamp,error=''`, id, path, filepath.Base(path), format, info.Size(), info.ModTime().UTC().Format(time.RFC3339), sourceStamp)
@@ -649,5 +659,8 @@ func (s *Service) Delete(id string) error {
 		return err
 	}
 	_, err = s.DB.Exec(`DELETE FROM collections WHERE id=?`, id)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.deleteFileHistory(id)
 }

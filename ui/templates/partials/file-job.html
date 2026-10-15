@@ -1,0 +1,7 @@
+<section class="file-change-status notice" data-file-job="{{.FileJob.ID}}" data-state="{{.FileJob.State}}" role="status">
+{{if eq .FileJob.State "ready"}}<strong>Changes saved.</strong>{{else if eq .FileJob.State "failed"}}<strong>Change failed.</strong><p>{{.FileJob.Error}}</p>{{else if eq .FileJob.State "cancelled"}}<strong>Change cancelled. Your file was not changed.</strong>{{else}}<strong>Saving changes…</strong>{{end}}
+<a class="button small ghost" href="/collections/{{.Collection.ID}}/changes?file_job={{.FileJob.ID}}">Refresh status</a>
+{{if or (eq .FileJob.State "queued") (eq .FileJob.State "running")}}<form method="post" action="/jobs/{{.FileJob.ID}}/cancel"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button small" name="redirect" value="/collections/{{.Collection.ID}}/changes?file_job={{.FileJob.ID}}">Cancel</button></form>{{end}}
+{{if or (eq .FileJob.State "failed") (eq .FileJob.State "cancelled")}}<form method="post" action="/jobs/{{.FileJob.ID}}/retry"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button small">Retry</button></form>{{end}}
+</section>
+

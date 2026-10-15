@@ -1,7 +1,7 @@
 <div data-workspace-fragment="{{.WorkspaceView}}" class="workspace-tool-body">
 {{if eq .WorkspaceView "clean"}}{{template "partials/workspace-clean" .}}{{if .Pipeline.HasPreview}}{{template "partials/cleanup-result" .}}{{end}}{{template "partials/prepared-status" .}}
 {{else if eq .WorkspaceView "sql"}}{{template "partials/workspace-sql" .}}{{template "partials/workspace-sql-result" .}}
-{{else if eq .WorkspaceView "insights"}}{{template "partials/workspace-insights" .}}
+{{else if eq .WorkspaceView "revisions"}}{{template "partials/file-history" .}}{{else if eq .WorkspaceView "insights"}}{{template "partials/workspace-insights" .}}
 {{else if eq .WorkspaceView "quality"}}{{template "partials/workspace-quality" .}}
 {{else if eq .WorkspaceView "export"}}{{if .DownloadReview}}{{template "partials/workspace-download-review" .}}{{else}}<section class="dataset-downloads">{{template "partials/download-chooser" .}}</section>{{end}}
 {{else if eq .WorkspaceView "advanced"}}{{template "partials/workspace-advanced" .}}{{else}}{{template "partials/detail" .}}{{end}}

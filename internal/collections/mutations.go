@@ -29,6 +29,14 @@ func (s *Service) BulkMutate(id, generation string, changes []Mutation) ([]any, 
 	return s.mutateRecords(id, generation, changes, true)
 }
 
+// EditFile changes the local file without enabling REST API writes.
+func (s *Service) EditFile(id, generation string, changes []Mutation) ([]any, error) {
+	if generation == "" {
+		return nil, fmt.Errorf("generation is required")
+	}
+	return s.mutateRecords(id, generation, changes, true, true)
+}
+
 func newRecordID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -38,7 +46,7 @@ func newRecordID() string {
 }
 
 // Validate the complete batch before a single atomic source replacement.
-func (s *Service) mutateRecords(id, generation string, changes []Mutation, stable bool) ([]any, error) {
+func (s *Service) mutateRecords(id, generation string, changes []Mutation, stable bool, fileEdit ...bool) ([]any, error) {
 	if len(changes) == 0 || len(changes) > 1000 {
 		return nil, fmt.Errorf("select between 1 and 1000 records")
 	}
@@ -48,7 +56,7 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 	}
 	unlock := s.lock(c.Path)
 	defer unlock()
-	c, err = s.ready(c)
+	c, err = s.ready(c, true)
 	if err != nil {
 		return nil, err
 	}
@@ -58,10 +66,11 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 	if c.ReadOnly || c.Size > s.MaxBytes {
 		return nil, fmt.Errorf("large collections are read-only")
 	}
-	if !c.Enabled || !c.CRUD {
+	ui := len(fileEdit) > 0 && fileEdit[0]
+	if !ui && (!c.Enabled || !c.CRUD) {
 		return nil, fmt.Errorf("CRUD is disabled")
 	}
-	if c.Rules != "" && c.Rules != "{}" {
+	if !ui && c.Rules != "" && c.Rules != "{}" {
 		return nil, fmt.Errorf("remove transformations before enabling writes")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
@@ -74,13 +83,17 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 	if hex.EncodeToString(h[:]) != c.SourceSHA {
 		return nil, ErrConflict
 	}
+	before := b
 	v, err := conversion.Decode(b, c.Format)
 	if err != nil {
 		return nil, err
 	}
-	values, ok := v.([]any)
-	if !ok {
-		return nil, fmt.Errorf("CRUD requires an array at the source root")
+	values, array := v.([]any)
+	if !array {
+		if !ui {
+			return nil, fmt.Errorf("CRUD requires an array at the source root")
+		}
+		values = []any{v}
 	}
 	if len(values) > 100000 {
 		return nil, fmt.Errorf("CRUD supports at most 100000 source records")
@@ -117,6 +130,7 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 	if len(ids) != len(values) {
 		return nil, ErrConflict
 	}
+	beforeIDs := append([]string(nil), ids...)
 	deleted := map[int]bool{}
 	seen := map[int]bool{}
 	results := []any{}
@@ -163,39 +177,58 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 				}
 			}
 			results = append(results, object)
-		case "FIELD":
-			edit, ok := change.Value.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("field edit must contain field and value")
-			}
-			field, ok := edit["field"].(string)
-			if !ok {
-				return nil, fmt.Errorf("field path is required")
-			}
-			if _, err = jsonPath(field); err != nil {
-				return nil, err
-			}
-			value, exists := edit["value"]
-			if !exists {
-				return nil, fmt.Errorf("field value is required")
+		case "FIELD", "FIELDS":
+			var edits []any
+			if change.Method == "FIELDS" {
+				if !ui {
+					return nil, fmt.Errorf("unsupported mutation %q", change.Method)
+				}
+				var ok bool
+				edits, ok = change.Value.([]any)
+				if !ok || len(edits) == 0 || len(edits) > 1000 {
+					return nil, fmt.Errorf("choose between 1 and 1000 field edits")
+				}
+			} else {
+				edits = []any{change.Value}
 			}
 			object, ok := values[i].(map[string]any)
 			if !ok {
 				return nil, fmt.Errorf("field edits require an object record")
 			}
-			parts, e := fieldParts(field)
-			if e != nil {
-				return nil, e
-			}
-			target := object
-			for _, part := range parts[:len(parts)-1] {
-				nested, ok := target[part].(map[string]any)
+			for _, item := range edits {
+				edit, ok := item.(map[string]any)
 				if !ok {
-					return nil, fmt.Errorf("nested object %q does not exist", part)
+					return nil, fmt.Errorf("field edit must contain field and value")
 				}
-				target = nested
+				field, ok := edit["field"].(string)
+				if !ok {
+					return nil, fmt.Errorf("field path is required")
+				}
+				if !ui {
+					if _, err = jsonPath(field); err != nil {
+						return nil, err
+					}
+				} else if field == "" || len(field) > 4096 {
+					return nil, fmt.Errorf("invalid field path")
+				}
+				value, exists := edit["value"]
+				if !exists {
+					return nil, fmt.Errorf("field value is required")
+				}
+				parts, e := fieldParts(field)
+				if e != nil {
+					return nil, e
+				}
+				target := object
+				for _, part := range parts[:len(parts)-1] {
+					nested, ok := target[part].(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("nested object %q does not exist", part)
+					}
+					target = nested
+				}
+				target[parts[len(parts)-1]] = value
 			}
-			target[parts[len(parts)-1]] = value
 			results = append(results, object)
 		case "DELETE":
 			deleted[i] = true
@@ -212,7 +245,7 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 			kept = append(kept, ids[i])
 		}
 	}
-	b, err = conversion.Encode(rows, c.Format)
+	b, err = encodeFileRows(c, v, rows)
 	if err != nil {
 		return nil, err
 	}
@@ -228,38 +261,8 @@ func (s *Service) mutateRecords(id, generation string, changes []Mutation, stabl
 			return nil, fmt.Errorf("record exceeds size limit")
 		}
 	}
-	// The mapping is content-addressed. A crash before replacing the source cannot
-	// apply these identities to a different file; restart indexing recovers it.
-	h = sha256.Sum256(b)
-	digest := hex.EncodeToString(h[:])
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	if _, err = tx.ExecContext(ctx, `DELETE FROM record_overrides WHERE collection_id=?`, id); err != nil {
-		return nil, err
-	}
-	for i, rid := range kept {
-		if _, err = tx.ExecContext(ctx, `INSERT INTO record_overrides(collection_id,source_sha256,ordinal,record_id) VALUES(?,?,?,?)`, id, digest, i, rid); err != nil {
-			return nil, err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return nil, err
-	}
-	// Recheck immediately before publishing; external writers are not locked by us.
-	actual, err := sourceChecksum(ctx, c.Path)
-	if err != nil {
-		return nil, err
-	}
-	if actual != c.SourceSHA {
-		return nil, ErrConflict
-	}
-	if err = atomicWrite(c.Path, b); err != nil {
-		return nil, err
-	}
-	if err = s.syncFile(c.Path, true); err != nil {
+	label := fmt.Sprintf("Edited %d records", len(changes))
+	if err = s.publishFileRevision(ctx, c, before, b, beforeIDs, kept, label); err != nil {
 		return nil, err
 	}
 	return results, nil

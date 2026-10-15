@@ -149,7 +149,7 @@ func adjustCleanup(c fiber.Ctx, steps []collections.PipelineStep) ([]collections
 		return append(steps, collections.PipelineStep{Op: "join", Join: &collections.PipelineJoin{Collection: other, Left: literalColumnPath(field), Right: literalColumnPath(right), As: literalColumnPath(target), Kind: c.FormValue("join_kind", "left")}}), nil
 	}
 	switch action := c.FormValue("action"); {
-	case action == "add":
+	case action == "add" || action == "save_change":
 		if len(steps) >= 20 {
 			return steps, fmt.Errorf("A set of changes supports up to 20 steps")
 		}

@@ -75,25 +75,34 @@ async (page, artifactDir) => {
   if(await page.locator('link[rel=stylesheet]').count()!==3)throw Error('Legacy stylesheet layers still load');
   await page.locator('#detail-content .sheet-data').waitFor();
   for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});await fit('Data '+width);}
-  await checkToolbar(page.locator('#detail-content'),'Original toolbar');
-  await open('clean');if(await page.locator('#workspace-original').getAttribute('open')!==null)throw Error('Original starts expanded in Clean');
+  const table=page.locator('#detail-content');
+  await checkToolbar(table,'File toolbar');
+  if(await page.locator('[data-workspace-view],#workspace-original').count())throw Error('Competing file versions remain');
+  const fieldIndex=await table.locator('[data-sheet-columns] input').evaluateAll(es=>es.find(e=>e.value==='name')?.dataset.sheetColumn).catch(()=>null);
+  const cell=table.locator('td[data-sheet-cell="'+(fieldIndex||'1')+'"]').first();
+  const previous=await cell.locator('[data-cell-raw]').inputValue();
+  await cell.dblclick();await cell.locator('input').fill('Edited Unicode 山田');await cell.locator('input').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
+  await page.locator('[data-file-undo]').click();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
+  if((await(await page.request.get(base+'/collections/'+id+'/export?original=1')).text())!==input)throw Error('Undo did not restore exact bytes');
+  await page.locator('[data-file-redo]').click();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
+  await page.locator('[data-file-undo]').click();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('#detail-content')?.textContent.includes('Edited Unicode 山田'));
+  await open('clean');
   await pane.getByLabel('Change',{exact:true}).selectOption('trim');await pane.getByLabel('Column',{exact:true}).selectOption('name');await pane.getByRole('button',{name:'Apply change',exact:true}).click();
-  await result.locator('.sheet-data').waitFor();await result.locator('[data-cleaned-total="60"]').waitFor();
-  await checkToolbar(result,'Cleaned toolbar');
-  if(await pane.locator('[data-cleanup-preview],table').count())throw Error('Cleanup still duplicates the sample inside the controls');
-  if(await page.locator('#detail-content').isVisible())throw Error('Original table should be collapsed in Clean');
-  await page.locator('#workspace-original>summary').click();await page.locator('#detail-content').waitFor({state:'visible'});
-  const source=await page.locator('#detail-content').boundingBox(),cleaned=await result.boundingBox();if(cleaned.y<source.y+source.height)throw Error('Original is not above the cleanup result');
-  await page.locator('#workspace-original>summary').click();await result.getByRole('link',{name:'Page 2',exact:true}).click();await result.getByText('Page 2 of 3',{exact:true}).waitFor();
+  await pane.locator('[data-file-job]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
+  await checkToolbar(table,'Edited file toolbar');
+  if(await result.locator('.sheet-data').count())throw Error('Cleanup duplicates the file table');
+  if(!await table.isVisible())throw Error('File table missing under cleanup');
+  await table.getByRole('link',{name:'Page 2',exact:true}).click();await table.getByText('Page 2 of 3',{exact:true}).waitFor();
   await open('sql');await pane.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await pane.getByRole('button',{name:'Run query',exact:true}).click();
   const sqlResult=page.locator('#workspace-sql-result');await sqlResult.getByRole('cell',{name:'60',exact:true}).waitFor();if(await pane.locator('table').count())throw Error('SQL results remain inside editor controls');
-  if(await page.locator('#workspace-original').getAttribute('open')!==null)throw Error('Original starts expanded in SQL');
-  await pane.locator('#sql-editor').fill('SELECT id FROM "c_'+id+'" LIMIT 3');await open('clean');await result.getByText('Page 2 of 3',{exact:true}).waitFor();await open('sql');if(await pane.locator('#sql-editor').inputValue()!=='SELECT id FROM "c_'+id+'" LIMIT 3')throw Error('SQL draft lost on view switch');
+  if(await table.isVisible())throw Error('SQL shows an unrelated file table');
+  await pane.locator('#sql-editor').fill('SELECT id FROM "c_'+id+'" LIMIT 3');await open('clean');await table.getByText('Page 2 of 3',{exact:true}).waitFor();await open('sql');if(await pane.locator('#sql-editor').inputValue()!=='SELECT id FROM "c_'+id+'" LIMIT 3')throw Error('SQL draft lost on view switch');
   await pane.locator('#sql-editor').fill('SELECT invalid_column FROM "c_'+id+'"');await pane.getByRole('button',{name:'Run query',exact:true}).click();await pane.getByRole('alert').waitFor();if(await sqlResult.isVisible())throw Error('Failed SQL shows stale output');
   let failedRead=false;await page.route('**/collections/'+id+'/quality',async route=>{if(!failedRead){failedRead=true;await route.abort('failed');}else await route.continue();});
   for(const key of ['clean','sql','insights','quality','schema','raw','settings','export']){
    await open(key);
-   if(key==='clean')await result.locator('.sheet-data').waitFor();
+   if(key==='clean')await table.locator('.sheet-data').waitFor();
    for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await fit(key+' '+width+' '+theme);if([390,1440].includes(width)){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:artifactDir+'/focused-'+key+'-'+width+'-'+theme+'.png'});}}}
    await page.setViewportSize({width:1440,height:1000});
    await calmLayout(key+' desktop');await page.setViewportSize({width:390,height:1000});await calmLayout(key+' mobile');await page.setViewportSize({width:1440,height:1000});
@@ -119,13 +128,13 @@ async (page, artifactDir) => {
   }
   await open('clean');await pane.getByText('Advanced',{exact:true}).click();await fit('Expanded advanced cleanup');
   await page.evaluate(()=>document.documentElement.style.zoom='2');await fit('200 percent zoom');await page.evaluate(()=>document.documentElement.style.zoom='');
-  await page.getByRole('link',{name:'Data',exact:true}).click();await page.getByRole('button',{name:'Cleaned',exact:true}).click();await open('export');if(await pane.locator('[data-download-source]').inputValue()!=='current')throw Error('Download lost selected cleaned dataset');
+  await page.getByRole('link',{name:'Data',exact:true}).click();await open('export');if(await pane.locator('[data-download-source]').inputValue()!=='original')throw Error('Download lost current file');
   const download=page.waitForEvent('download');await pane.locator('[data-download-submit]').click();const file=await download,chunks=[];for await(const chunk of await file.createReadStream())chunks.push(chunk);const text=Buffer.concat(chunks).toString();if(JSON.parse(text).length!==60||!text.includes('9007199254740993'))throw Error('Cleaned export changed rows or large integers');
-  if((await(await page.request.get(base+'/collections/'+id+'/export?original=1')).text())!==input)throw Error('Original source bytes changed');
+  const savedFile=await(await page.request.get(base+'/collections/'+id+'/export?original=1')).text();if(!savedFile.includes('9007199254740993')||JSON.parse(savedFile)[0].name!=='Ada')throw Error('Cleanup did not save exact values to the file');
   await open('sql');const draft='SELECT id FROM "c_'+id+'" LIMIT 2';await pane.locator('#sql-editor').fill(draft);await page.reload();await pane.locator('#sql-editor').waitFor();if(await pane.locator('#sql-editor').inputValue()!==draft||await sqlResult.locator('table').count())throw Error('Restored SQL lost draft or executed automatically');
   await page.keyboard.press('Escape');if(await pane.isVisible())throw Error('Escape does not return to Data');
-  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id);await p.setViewportSize({width:1440,height:1000});await toolbarLayout(p.locator('#detail-content'),'Native toolbar');await p.setViewportSize({width:390,height:1000});for(const name of ['Filter and sort','Columns and table options']){const summary=p.getByLabel(name,{exact:true});await summary.click();if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Native expanded '+name+' overflows');await summary.click();}await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').getAttribute('open')!==null)throw Error('Native original starts expanded');await p.locator('#workspace-original>summary').click();await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+'/collections/'+id+'/insights');await p.locator('a[data-column-details]').first().click();await p.locator('.column-detail-row:not([hidden])').waitFor();if(await p.locator('.insights-table').count()!==1)throw Error('Native summaries are not a table');await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
-  console.log('Focused workspace passed: all full-width views, expandable original, preserved drafts/pagination, errors, exact exports, six widths, both themes, zoom and no-JavaScript views.');
+  const native=await page.context().browser().newContext({javaScriptEnabled:false});try{const p=await native.newPage();await p.goto(base+'/collections/'+id);await p.setViewportSize({width:1440,height:1000});await toolbarLayout(p.locator('#detail-content'),'Native toolbar');await p.setViewportSize({width:390,height:1000});for(const name of ['Filter and sort','Columns and table options']){const summary=p.getByLabel(name,{exact:true});await summary.click();if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Native expanded '+name+' overflows');await summary.click();}await p.goto(base+'/collections/'+id+'/changes');if(await p.locator('#workspace-original').count())throw Error('Native file view still has a comparison selector');await p.locator('#detail-content tbody tr').first().waitFor();await p.goto(base+'/collections/'+id+'/sql');await p.locator('#sql-editor').fill('SELECT COUNT(*) AS total FROM "c_'+id+'"');await p.getByRole('button',{name:'Run query',exact:true}).click();await p.locator('#workspace-sql-result').getByRole('cell',{name:'60',exact:true}).waitFor();await p.goto(base+'/collections/'+id+'/insights');await p.locator('a[data-column-details]').first().click();await p.locator('.column-detail-row:not([hidden])').waitFor();if(await p.locator('.insights-table').count()!==1)throw Error('Native summaries are not a table');await p.getByRole('link',{name:'Convert / Download',exact:true}).click();await p.locator('#collection-download-format').waitFor();}finally{await native.close();}
+  console.log('Focused workspace passed: single-file editing, Undo/Redo, saved cleanup, all full-width views, preserved drafts/pagination, errors, exact exports, six widths, both themes, zoom and no-JavaScript views.');
  }catch(error){await page.screenshot({path:artifactDir+'/focused-failure.png',fullPage:true});console.log('Focused failure: '+page.url()+' '+(await pane.textContent()).slice(-1400));throw error;}
  finally{if(id){await page.goto(base+'/collections');const csrf=await page.locator('#import input[name=csrf]').inputValue();await page.request.post(base+'/collections/'+id+'/delete',{form:{csrf,confirm:'delete'}});}}
 }

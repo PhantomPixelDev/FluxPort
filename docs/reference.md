@@ -1,5 +1,9 @@
 # FluxPort
 
+### File editing (0.3.20)
+
+Double-click a cell to edit; Enter saves and Escape cancels. Cleanup applies to editable text files directly. Undo/Redo and persistent file history restore saved bytes. Excel, Parquet and files above editing limits remain read-only with cleanup previews for download. [Workspace walkthrough](dataset-workspace.md).
+
 ### Calm workspace (0.3.19)
 
 Inspect → Summary lists columns in one statistics table. Missing, null, empty-text and distinct counts stay aligned; Details opens a full-width row with consistent statistics and common values. Native links work without JavaScript.
