@@ -2027,7 +2027,7 @@ dialog form {
   outline-offset: -2px;
 }
 
-.sheet-table td input {
+.sheet-table td > input.field-control {
   width: 100%;
   min-width: 60px;
 }

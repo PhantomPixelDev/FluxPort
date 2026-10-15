@@ -352,7 +352,7 @@
 }
 
 .collection-workspace .sheet-data[data-editable=true] .sheet-index {
-  left: 42px;
+  left: var(--sheet-select-width, auto);
 }
 
 .collection-workspace .sheet-table th.sheet-index {

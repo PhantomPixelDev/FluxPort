@@ -53,6 +53,13 @@
     queryForm.querySelector('[name=query]').value='{"search":'+JSON.stringify(queryForm.querySelector('[data-query-search]').value)+',"limit":'+Number(queryForm.querySelector('[data-query-limit]').value)+',"filters":['+filterJSON.join(',')+'],"sort":'+JSON.stringify(sort)+'}';
   });
   const sheet=root.querySelector('.sheet-data'),edit=sheet.querySelector('[data-sheet-edit]');
+  const selection=sheet.querySelector('thead .sheet-select');
+  if(selection){
+   // Tables with few columns distribute spare width; pin after the actual column.
+   const align=()=>{if(selection.getClientRects().length)sheet.style.setProperty('--sheet-select-width',getComputedStyle(selection).width);};
+   align();const observer=new ResizeObserver(align);observer.observe(selection);
+   listeners.signal.addEventListener('abort',()=>observer.disconnect(),{once:true});
+  }
 	if(window.EventSource){
 		const initial=sheet.dataset.sourceGeneration||edit.elements.generation.value,initialState=sheet.dataset.sourceStatus;let checking=false;
 		async function check(){if(checking||window.FluxPortEditor?.saving)return;checking=true;try{const response=await fetch('/collections/'+sheet.dataset.collection+'/workbench/status');if(!response.ok)return;const state=await response.json();if(state.status!==initialState&&initialState!=='ready'){location.reload();return;}if(state.status==='ready'&&state.generation!==initial){if(!initial){location.reload();return;}if(!document.querySelector('[data-source-changed]')){const notice=document.createElement('div');notice.className='notice';notice.dataset.sourceChanged='';notice.append(document.createTextNode('The source changed. Reload before editing. '));const link=document.createElement('a');link.href=location.href;link.textContent='Reload records';notice.append(link);document.querySelector('main').prepend(notice);}}}catch{}finally{checking=false;}}

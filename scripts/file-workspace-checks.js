@@ -25,6 +25,13 @@ async (page, artifactDir) => {
   });if(problems.length)throw Error(label+': '+problems.join('; '));
  };
  const toolbarLayout=async (scope,label)=>{
+  const rowProblems=await scope.locator('.sheet-table').evaluateAll(tables=>tables.flatMap(table=>{
+   if(!table.checkVisibility())return [];
+   const issues=[];
+   for(const cell of table.querySelectorAll('.sheet-select')){const box=cell.getBoundingClientRect(),input=cell.querySelector('input'),check=input?.getBoundingClientRect();if(check&&(check.width>20||check.left<box.left||check.right>box.right||check.top<box.top||check.bottom>box.bottom))issues.push('Clipped row checkbox');}
+   const first=table.tBodies[0]?.rows[0],select=first?.querySelector('.sheet-select'),index=first?.querySelector('.sheet-index');if(select&&index&&index.getBoundingClientRect().left<select.getBoundingClientRect().right-1)issues.push('Row number overlaps selection column');
+   return issues;
+  }));if(rowProblems.length)throw Error(label+': '+rowProblems.join('; '));
   const problems=await scope.locator('.sheet-query-bar').evaluateAll(groups=>{
    const issues=[];
    for(const group of groups){
