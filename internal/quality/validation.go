@@ -49,8 +49,9 @@ type compiled struct {
 	seen    map[[32]byte]bool
 }
 type Validator struct {
-	rules  []compiled
-	Report Validation
+	contract *Contract
+	rules    []compiled
+	Report   Validation
 }
 
 func Number(v any) (*big.Rat, bool) {
@@ -183,6 +184,7 @@ func NewValidator(rules []Rule) (*Validator, error) {
 func (v *Validator) Check(row any) error {
 	v.Report.Records++
 	before := v.Report.Errors
+	v.checkContract(row)
 	for i := range v.rules {
 		r := &v.rules[i]
 		value, exists := Lookup(row, r.Field)

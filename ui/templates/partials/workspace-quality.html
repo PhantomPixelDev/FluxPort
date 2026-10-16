@@ -1,4 +1,5 @@
 <div class="quality-layout">
+{{template "partials/engineering-quality" .}}
 {{if .Message}}<div class="notice">{{.Message}}</div>{{end}}
 {{with .Quality}}
 {{if .Error}}<div class="notice error" role="alert">{{.Error}}</div>{{end}}

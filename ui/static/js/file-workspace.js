@@ -22,13 +22,13 @@
  function tableQuery(view){return tableRoot(view)?.querySelector('[data-sheet-query]')?.elements.query.value||'{}';}
  function sourceGeneration(){return document.getElementById('detail-content').querySelector('.sheet-data')?.dataset.sourceGeneration||workspace.dataset.sourceGeneration||'';}
  function rememberWorkspace(captureScroll=true){
-  const sql=host.querySelector('#sql-editor');if(sql){viewState.sql=sql.value;viewState.engine=sql.form.elements.engine?.value||'auto';}
+  const sql=host.querySelector('#sql-editor');if(sql){viewState.sql=sql.value;viewState.engine=sql.form.elements.engine?.value||'auto';viewState.parameters=sql.form.elements.parameters?.value||'{}';}
   viewState.scroll ||= {};if(captureScroll)viewState.scroll[active||'data']=window.scrollY;
   Object.assign(viewState,{version:3,active,dataView:workspace.dataset.dataView||'original',originalURL,resultURL,resultID:preparedID});
   try{sessionStorage.setItem(sessionKey,JSON.stringify(viewState));}catch{}
  }
- function rememberSQL(node){const sql=node.querySelector('#sql-editor');if(!sql)return;sql.addEventListener('input',rememberWorkspace);sql.form.elements.engine?.addEventListener('change',rememberWorkspace);}
- function restoreSQL(node){const sql=node.querySelector('#sql-editor');if(!sql)return;if(!node.dataset.keepSQL&&typeof viewState.sql==='string'){sql.value=viewState.sql;if(sql.form.elements.engine&&viewState.engine)sql.form.elements.engine.value=viewState.engine;sql.dispatchEvent(new Event('input',{bubbles:true}));}rememberSQL(node);}
+ function rememberSQL(node){const sql=node.querySelector('#sql-editor');if(!sql)return;sql.addEventListener('input',rememberWorkspace);sql.form.elements.engine?.addEventListener('change',rememberWorkspace);sql.form.elements.parameters?.addEventListener('input',rememberWorkspace);}
+ function restoreSQL(node){const sql=node.querySelector('#sql-editor');if(!sql)return;if(!node.dataset.keepSQL&&typeof viewState.sql==='string'){sql.value=viewState.sql;if(sql.form.elements.engine&&viewState.engine)sql.form.elements.engine.value=viewState.engine;if(sql.form.elements.parameters&&typeof viewState.parameters==='string')sql.form.elements.parameters.value=viewState.parameters;sql.dispatchEvent(new Event('input',{bubbles:true}));}rememberSQL(node);}
  function syncCleanedColumns(){
   const field=cache.get('clean')?.node?.querySelector('[name=field]'),choices=result.querySelector('datalist');if(!field||!choices)return;
   const previous=field.value,first=field.options[0].cloneNode(true);field.replaceChildren(first);

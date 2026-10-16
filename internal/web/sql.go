@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"fluxport/internal/collections"
@@ -9,6 +10,7 @@ import (
 )
 
 type SQLPage struct {
+	Parameters           string
 	Text, Name, Engine   string
 	DuckDBTimeoutSeconds int
 	Selected             map[string]bool
@@ -88,6 +90,28 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 		sq.Name = c.FormValue("name")
 		sq.Engine = c.FormValue("engine")
 		sq.Published = c.FormValue("published") == "on"
+		sq.Parameters = c.FormValue("parameters", "{}")
+		var parameters map[string]any
+		value, e := conversion.Decode([]byte(sq.Parameters), "json")
+		if e == nil {
+			var ok bool
+			parameters, ok = value.(map[string]any)
+			if !ok {
+				e = fmt.Errorf("SQL parameters must be a JSON object")
+			}
+		}
+		queryText := ""
+		if e == nil {
+			queryText, e = collections.BindSQL(sq.Text, parameters)
+		}
+		if e != nil {
+			p.Message = e.Error()
+			c.Status(422)
+			if p.Collection.ID != "" {
+				return s.renderCollectionView(c, "sql", p)
+			}
+			return c.Render("pages/sql", p, "layouts/base")
+		}
 		ids := []string{}
 		if p.Collection.ID != "" {
 			ids = append(ids, p.Collection.ID)
@@ -101,7 +125,7 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 			sq.Selected[id] = true
 		}
 		if c.FormValue("action") == "save" {
-			_, err = s.Service.SaveSQL(collections.SavedQuery{Name: sq.Name, SQL: sq.Text, Collections: ids, Published: sq.Published})
+			_, err = s.Service.SaveSQL(collections.SavedQuery{Name: sq.Name, SQL: queryText, Collections: ids, Published: sq.Published})
 			if err != nil {
 				p.Message = err.Error()
 				c.Status(422)
@@ -112,7 +136,18 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 				return c.Redirect().Status(303).To("/sql")
 			}
 		} else {
-			result, e := s.Service.SQLWithEngine(c.Context(), ids, sq.Text, sq.Engine)
+			if c.FormValue("action") == "explain" {
+				if err = collections.ValidateSQL(queryText); err != nil {
+					return fiber.NewError(422, err.Error())
+				}
+				if sq.Engine == "native" {
+					queryText = "EXPLAIN QUERY PLAN " + queryText
+				} else {
+					sq.Engine = "duckdb"
+					queryText = "EXPLAIN " + queryText
+				}
+			}
+			result, e := s.Service.SQLWithEngine(c.Context(), ids, queryText, sq.Engine)
 			if e == nil {
 				sq.Result = &result
 			}
@@ -157,6 +192,10 @@ func (s *Server) sqlPage(c fiber.Ctx) error {
 		}
 		sq.Text = `SELECT * FROM "` + selected.Table + `" LIMIT 100`
 		sq.Selected[selected.ID] = true
+	}
+	if sq.Parameters == "" {
+		b, _ := json.Marshal(map[string]any{})
+		sq.Parameters = string(b)
 	}
 	if p.Collection.ID != "" {
 		return s.renderCollectionView(c, "sql", p)

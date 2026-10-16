@@ -28,6 +28,13 @@ func (a *API) validate(c fiber.Ctx) error {
 			return err
 		}
 	}
+	if request.Contract == nil {
+		var err error
+		request.Contract, err = a.Service.Contract(c.Params("id"))
+		if err != nil {
+			return err
+		}
+	}
 	return a.quality(c, request)
 }
 func (a *API) quality(c fiber.Ctx, request collections.QualityRequest) error {

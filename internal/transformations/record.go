@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"fluxport/internal/conversion"
 	"fluxport/internal/quality"
@@ -16,18 +17,20 @@ import (
 // Operation targets literal top-level column names; nested structures can first
 // be flattened. It is shared by pipelines and the native processing path.
 type Operation struct {
-	Kind         string   `json:"kind"`
-	Field        string   `json:"field,omitempty"`
-	As           string   `json:"as,omitempty"`
-	Value        any      `json:"value,omitempty"`
-	Find         string   `json:"find,omitempty"`
-	Replacement  string   `json:"replacement,omitempty"`
-	Start        int      `json:"start,omitempty"`
-	Length       int      `json:"length,omitempty"`
-	Delimiter    string   `json:"delimiter,omitempty"`
-	Fields       []string `json:"fields,omitempty"`
-	Layout       string   `json:"layout,omitempty"`
-	OutputLayout string   `json:"output_layout,omitempty"`
+	Timezone       string   `json:"timezone,omitempty"`
+	OutputTimezone string   `json:"output_timezone,omitempty"`
+	Kind           string   `json:"kind"`
+	Field          string   `json:"field,omitempty"`
+	As             string   `json:"as,omitempty"`
+	Value          any      `json:"value,omitempty"`
+	Find           string   `json:"find,omitempty"`
+	Replacement    string   `json:"replacement,omitempty"`
+	Start          int      `json:"start,omitempty"`
+	Length         int      `json:"length,omitempty"`
+	Delimiter      string   `json:"delimiter,omitempty"`
+	Fields         []string `json:"fields,omitempty"`
+	Layout         string   `json:"layout,omitempty"`
+	OutputLayout   string   `json:"output_layout,omitempty"`
 }
 
 func (o Operation) Validate() error {
@@ -62,6 +65,16 @@ func (o Operation) Validate() error {
 	}
 	if o.Kind == "date" && (o.Layout == "" || o.OutputLayout == "") {
 		return fmt.Errorf("date requires input and output layouts")
+	}
+	for _, zone := range []string{o.Timezone, o.OutputTimezone} {
+		if len(zone) > 128 {
+			return fmt.Errorf("timezone name exceeds 128 bytes")
+		}
+		if zone != "" {
+			if _, err := time.LoadLocation(zone); err != nil {
+				return fmt.Errorf("unknown timezone %q", zone)
+			}
+		}
 	}
 	return nil
 }
@@ -253,9 +266,17 @@ func ApplyOperation(row any, o Operation) (any, error) {
 			}
 			out[target] = values
 		case "date":
-			parsed, err := time.Parse(o.Layout, text)
+			zone := time.UTC
+			if o.Timezone != "" {
+				zone, _ = time.LoadLocation(o.Timezone)
+			}
+			parsed, err := time.ParseInLocation(o.Layout, text, zone)
 			if err != nil {
 				return nil, fmt.Errorf("column %q: %w", o.Field, err)
+			}
+			if o.OutputTimezone != "" {
+				outputZone, _ := time.LoadLocation(o.OutputTimezone)
+				parsed = parsed.In(outputZone)
 			}
 			out[target] = parsed.Format(o.OutputLayout)
 		}

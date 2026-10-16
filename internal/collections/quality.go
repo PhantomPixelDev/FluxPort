@@ -6,15 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"fluxport/internal/quality"
 )
 
 type QualityRequest struct {
-	Column string         `json:"column,omitempty"`
-	Limit  int            `json:"limit,omitempty"`
-	Rules  []quality.Rule `json:"rules,omitempty"`
+	Contract *quality.Contract `json:"contract,omitempty"`
+	Column   string            `json:"column,omitempty"`
+	Limit    int               `json:"limit,omitempty"`
+	Rules    []quality.Rule    `json:"rules,omitempty"`
 }
 type QualityReport struct {
 	DuplicateRows    int64              `json:"duplicate_rows"`
@@ -41,7 +43,7 @@ func (s *Service) Quality(ctx context.Context, c Collection, request QualityRequ
 	if request.Limit < 1 || request.Limit > 100000 {
 		return out, fmt.Errorf("scan limit must be between 1 and 100000")
 	}
-	validator, err := quality.NewValidator(request.Rules)
+	validator, err := quality.NewContractValidator(request.Rules, request.Contract)
 	if err != nil {
 		return out, err
 	}
@@ -107,6 +109,8 @@ func (s *Service) ValidationRules(id string) ([]quality.Rule, error) {
 		return nil, err
 	}
 	var rules []quality.Rule
-	err = json.Unmarshal([]byte(text), &rules)
+	d := json.NewDecoder(strings.NewReader(text))
+	d.UseNumber()
+	err = d.Decode(&rules)
 	return rules, err
 }

@@ -5,6 +5,13 @@ import "strings"
 // Empty results still retain columns whose shape is known from the recipe.
 // This is display/export metadata only; it never synthesizes data records.
 func (s *Service) emptyPipelineFields(p Pipeline) []Field {
+	if p.Parameters != nil {
+		bound, err := BindPipeline(p, nil)
+		if err != nil {
+			return nil
+		}
+		p = bound
+	}
 	c, err := s.Get(p.Source)
 	if err != nil {
 		return nil
@@ -26,6 +33,45 @@ func (s *Service) emptyPipelineFields(p Pipeline) []Field {
 	}
 	add(fields)
 	for _, step := range p.Steps {
+		if n := step.Nested; n != nil {
+			switch step.Op {
+			case "explode":
+				as := n.As
+				if as == "" {
+					as = n.Field
+				}
+				known[as] = map[string]bool{"string": true, "number": true, "boolean": true, "object": true, "array": true, "null": true}
+			case "unpivot":
+				types := map[string]bool{}
+				for _, name := range n.Columns {
+					for typ := range known[name] {
+						types[typ] = true
+					}
+					delete(known, name)
+				}
+				name, value := n.As, n.ValueAs
+				if name == "" {
+					name = "column"
+				}
+				if value == "" {
+					value = "value"
+				}
+				known[name] = map[string]bool{"string": true}
+				known[value] = types
+			case "pivot":
+				next := map[string]map[string]bool{}
+				for _, key := range step.Keys {
+					next[key] = known[key]
+				}
+				for _, name := range n.Columns {
+					next[name] = map[string]bool{"null": true}
+					for typ := range known[n.Value] {
+						next[name][typ] = true
+					}
+				}
+				known = next
+			}
+		}
 		if len(step.Rules.Select) > 0 {
 			next := map[string]map[string]bool{}
 			for _, name := range step.Rules.Select {

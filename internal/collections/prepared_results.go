@@ -37,6 +37,13 @@ type PreparedResult struct {
 }
 
 func (s *Service) PrepareResult(p Pipeline) (jobs.Job, error) {
+	if p.InputContract == nil {
+		var err error
+		p.InputContract, err = s.Contract(p.Source)
+		if err != nil {
+			return jobs.Job{}, err
+		}
+	}
 	if p.InputQuery != nil {
 		q := NormalizeInputQuery(*p.InputQuery)
 		p.InputQuery = &q

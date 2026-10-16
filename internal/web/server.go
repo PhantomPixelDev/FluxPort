@@ -211,6 +211,7 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/workbench/enable", server.enableDatasetEditing)
 	app.Post("/collections/:id/sheet", server.selectWorkbookSheet)
 	app.Get("/collections/:id/quality", server.qualityPage)
+	app.Post("/pipelines/:pipeline/audit", server.pipelineAudit)
 	app.Get("/collections/:id/insights", server.datasetInsights)
 	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)

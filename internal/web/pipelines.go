@@ -21,6 +21,7 @@ type PipelineCard struct {
 	Parameters         PipelineParameters
 }
 type PipelinePage struct {
+	ParametersJSON   string
 	InputQueryJSON   string
 	SourceGeneration string
 	ViewCells        [][]CleanupCell
@@ -152,6 +153,16 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		}
 		pp.ValidationJSON = c.FormValue("validation", "[]")
 		pp.ImportText = c.FormValue("definition")
+		if text := c.FormValue("parameters"); text != "" {
+			value, e := conversion.Decode([]byte(text), "json")
+			if e != nil {
+				err = e
+			} else if params, ok := value.(map[string]any); ok {
+				pp.Definition.Parameters = params
+			} else {
+				err = fmt.Errorf("recipe parameters must be a JSON object")
+			}
+		}
 		pp.Definition.Name = strings.TrimSpace(c.FormValue("name"))
 		pp.Definition.Source = c.FormValue("source")
 		if workspace {
@@ -418,6 +429,11 @@ func (s *Server) pipelines(c fiber.Ctx) error {
 		}
 	}
 	p.Collections, pp.AvailableCount, err = s.Service.List(pp.SourceQuery, 1, 100)
+	pp.ParametersJSON = "{}"
+	if pp.Definition.Parameters != nil {
+		b, _ := json.MarshalIndent(pp.Definition.Parameters, "", "  ")
+		pp.ParametersJSON = string(b)
+	}
 	if err != nil {
 		return err
 	}

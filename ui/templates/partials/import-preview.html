@@ -1,0 +1,1 @@
+<section class="panel"><h2>Import preview</h2><p class="muted small-text">Sample only, up to 20 records per file. No files were imported. Uncheck Preview only to import with these options.</p>{{range .UploadResults}}<h3>{{.Name}}</h3>{{if .Error}}<p class="notice error">{{.Error}}</p>{{else}}<pre class="code-block">{{.Preview}}</pre>{{end}}{{end}}</section>

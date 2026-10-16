@@ -35,7 +35,7 @@ Rules are a JSON array:
 
 Fields accept dotted paths or JSON pointers (including array indexes). Rules support required, non-null, non-empty, type, numeric range, Unicode length, RE2 regex, enum, date layout and uniqueness. `min_length` and `max_length` apply to strings. Up to 64 rules are allowed. Unique checks retain bounded hashes for at most 10,000 distinct values per rule and fail explicitly if that bound is exceeded. Reports retain the first 200 issues and count all failures in the checked records. Source rows are one-based. Validation never silently discards records.
 
-Save rules per collection or include `validation` in a pipeline definition. Pipeline validation checks transformed output and rejects the entire export on the first failing record; no partial download is published. Final previews validate only their first 20 records. Intermediate previews do not check final-output rules. Skip/quarantine policies, SQL validation and schema-drift rules remain future work.
+Save rules and a schema contract per collection, or include `validation` and `input_contract` in a pipeline definition. Pipeline validation checks transformed output and rejects the entire export on the first failing record; no partial download is published. Final previews validate only their first 20 records. Intermediate previews do not check final-output rules. The Checks view can also prepare a full-file ZIP with accepted and rejected NDJSON plus reasons. SQL-specific validation and automated skip/quarantine inside pipeline exports remain future work. See [data engineering workflows](data-engineering.md) for dataset comparisons, contracts and rejected-row downloads.
 
 API routes, protected by the existing configured API key:
 
@@ -104,7 +104,7 @@ Import returns a collection ID as JSON. Inspection and validation currently acce
 
 ## Remaining platform work
 
-The broader platform roadmap is not complete. Remaining items include general ZIP/gzip and encoding controls; array expansion and pivot/unpivot; fully visual cleanup controls; primary DuckDB pipeline execution; validation quarantine/skip policies; cron and remote imports; dataset versions/diffs/restoration; custom API paths and endpoint-specific keys/ACLs; signed outgoing webhooks; and large analytical engine comparisons. Existing per-collection APIs, bearer-key protection, optional CRUD, query publishing and OpenAPI remain available.
+The broader platform roadmap is not complete. Remaining items include ZIP archive import, full DuckDB pipeline execution, cron and remote imports, durable dataset snapshots and restoration, custom API paths and endpoint-specific keys/ACLs, signed outgoing webhooks, and large analytical engine comparisons. Existing per-collection APIs, bearer-key protection, optional CRUD, query publishing and OpenAPI remain available. Gzip text import, encoding/delimiter selection, named SQL parameters, query explanation, pipeline parameters and nested explode/pivot/unpivot are available now; see [data engineering workflows](data-engineering.md).
 
 ## Verification
 

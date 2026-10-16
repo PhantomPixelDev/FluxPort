@@ -402,7 +402,7 @@ func (s *Service) RetryJob(id string) (jobs.Job, error) {
 		}
 		return s.Jobs.Get(c.JobID)
 	}
-	if j.Kind == "convert" && j.State == "ready" {
+	if (j.Kind == "convert" || j.Kind == "quality_export" || j.Kind == "pipeline_audit") && j.State == "ready" {
 		return s.Jobs.Submit(j.Kind, j.Resource, j.Name, j.Payload, j.Total)
 	}
 	return s.Jobs.Retry(id)

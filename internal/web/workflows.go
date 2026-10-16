@@ -64,6 +64,7 @@ func (s *Server) boundForms(c fiber.Ctx) error {
 
 type UploadResult struct {
 	Name, State, Error string
+	Preview            string
 }
 
 func (s *Server) importFile(c fiber.Ctx) error {
@@ -73,6 +74,8 @@ func (s *Server) importFile(c fiber.Ctx) error {
 	}
 	count := 0
 	results := []UploadResult{}
+	options := collections.InputOptions{}
+	previewOnly := false
 	for parts := 0; parts < 200; parts++ {
 		p, e := r.NextPart()
 		if e == io.EOF {
@@ -91,13 +94,35 @@ func (s *Server) importFile(c fiber.Ctx) error {
 			if len(field) > 65536 {
 				return fiber.NewError(413, "Upload form field exceeds 64 KiB.")
 			}
+			switch p.FormName() {
+			case "encoding":
+				options.Encoding = string(field)
+			case "csv_delimiter":
+				options.CSVDelimiter = string(field)
+			case "preview_only":
+				previewOnly = string(field) == "on"
+			}
 			continue
 		}
 		count++
 		if count > 100 {
 			return fiber.NewError(400, "Import at most 100 files per batch.")
 		}
-		col, e := s.Service.Import(p.FileName(), p)
+		if previewOnly {
+			preview, e := s.Service.PreviewInput(c.Context(), p.FileName(), p, options)
+			result := UploadResult{Name: p.FileName(), State: "preview"}
+			if e != nil {
+				result.Error = e.Error()
+				result.State = "rejected"
+			} else {
+				b, _ := conversion.MarshalJSONIndent(preview)
+				result.Preview = string(b)
+			}
+			results = append(results, result)
+			p.Close()
+			continue
+		}
+		col, e := s.Service.ImportInput(c.Context(), p.FileName(), p, options)
 		result := UploadResult{Name: p.FileName(), State: "processing"}
 		if e != nil {
 			result.State, result.Error = "rejected", e.Error()
@@ -112,6 +137,14 @@ func (s *Server) importFile(c fiber.Ctx) error {
 	}
 	if count == 0 {
 		return fiber.NewError(400, "Choose files to import.")
+	}
+	if previewOnly {
+		page := s.base(c, "Import preview", "collections")
+		page.UploadResults = results
+		if c.Get("HX-Request") == "true" {
+			return c.Render("partials/import-preview", page)
+		}
+		return c.Render("pages/import-preview", page, "layouts/base")
 	}
 	c.Set("HX-Trigger", "collectionsChanged")
 	if c.Get("HX-Request") == "true" {

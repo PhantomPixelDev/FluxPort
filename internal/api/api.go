@@ -82,11 +82,17 @@ func (a *API) Register(app *fiber.App) {
 		return c.JSON(fiber.Map{"collections": items, "total": total, "page": p, "limit": limit})
 	})
 	g.Get("/openapi.json", a.openapi)
+	g.Post("/pipelines/:pipeline/audit", a.auditPipeline)
 	g.Post("/sql", a.sql)
 	g.Get("/queries/:query", a.savedSQL)
 	g.Get("/collections/:id/schema", a.schema)
 	g.Get("/collections/:id/profile", a.profile)
 	g.Post("/collections/:id/validate", a.validate)
+	g.Post("/collections/:id/compare", a.compareDatasets)
+	g.Get("/collections/:id/contract", a.contract)
+	g.Put("/collections/:id/contract", a.contract)
+	g.Delete("/collections/:id/contract", a.contract)
+	g.Post("/collections/:id/validation-export", a.qualityExport)
 	g.Get("/collections/:id/validation-rules", a.validationRules)
 	g.Put("/collections/:id/validation-rules", a.saveValidationRules)
 	g.Post("/collections/:id/query", a.query)
@@ -356,6 +362,7 @@ func (a *API) mutate(c fiber.Ctx) error {
 }
 func (a *API) openapi(c fiber.Ctx) error {
 	paths := map[string]any{}
+	paths["/api/pipelines/{pipeline}/audit"] = fiber.Map{"post": fiber.Map{"summary": "Prepare a saved-recipe execution report with complete per-step counts", "parameters": []any{fiber.Map{"name": "pipeline", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}, "responses": fiber.Map{"202": fiber.Map{"description": "Report job queued"}}}}
 	parameter := []any{fiber.Map{"name": "pipeline", "in": "path", "required": true, "schema": fiber.Map{"type": "string"}}}
 	for _, action := range []string{"revisions", "runs", "schedule"} {
 		paths["/api/pipelines/{pipeline}/"+action] = fiber.Map{"get": fiber.Map{"summary": "Read pipeline " + action, "parameters": parameter, "responses": fiber.Map{"200": fiber.Map{"description": "Pipeline " + action}, "404": fiber.Map{"description": "Recipe not found"}}}}
@@ -382,6 +389,7 @@ func (a *API) openapi(c fiber.Ctx) error {
 				continue
 			}
 			base := "/api/collections/" + col.ID
+			engineeringPaths(paths, base)
 			paths[base+"/profile"] = fiber.Map{"get": fiber.Map{"summary": "Profile indexed source records with bounded statistics", "parameters": []any{fiber.Map{"name": "limit", "in": "query", "schema": fiber.Map{"type": "integer", "default": 10000, "minimum": 1, "maximum": 100000}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Coverage, precise bounds, rounded means and capped distinct counts"}, "503": fiber.Map{"description": "Indexing pending"}}}}
 			paths[base+"/validate"] = fiber.Map{"post": fiber.Map{"summary": "Check source records; omitted rules use saved rules", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "properties": fiber.Map{"limit": fiber.Map{"type": "integer", "minimum": 1, "maximum": 100000}, "rules": fiber.Map{"type": "array", "maxItems": 64, "items": fiber.Map{"type": "object"}}}}}}}, "responses": fiber.Map{"200": fiber.Map{"description": "Validation report with explicit scan coverage; no records modified"}, "422": fiber.Map{"description": "Invalid rules or resource bound exceeded"}}}}
 			paths[base+"/validation-rules"] = fiber.Map{"get": fiber.Map{"summary": "Read saved validation rules", "responses": fiber.Map{"200": fiber.Map{"description": "Rule array"}}}, "put": fiber.Map{"summary": "Save validation rules", "requestBody": fiber.Map{"required": true, "content": fiber.Map{"application/json": fiber.Map{"schema": fiber.Map{"type": "object", "required": []string{"rules"}, "properties": fiber.Map{"rules": fiber.Map{"type": "array", "maxItems": 64, "items": fiber.Map{"type": "object"}}}}}}}, "responses": fiber.Map{"204": fiber.Map{"description": "Rules saved"}}}}

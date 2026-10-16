@@ -60,9 +60,10 @@ func (a *API) runPipeline(c fiber.Ctx) error {
 		return fiber.NewError(404, "Pipeline not found.")
 	}
 	var body struct {
-		Source  string `json:"source,omitempty"`
-		Format  string `json:"format,omitempty"`
-		Through *int   `json:"through,omitempty"`
+		Parameters map[string]any `json:"parameters,omitempty"`
+		Source     string         `json:"source,omitempty"`
+		Format     string         `json:"format,omitempty"`
+		Through    *int           `json:"through,omitempty"`
 	}
 	if len(c.Body()) > 0 {
 		if err = decodeRequest(c, &body); err != nil {
@@ -71,6 +72,12 @@ func (a *API) runPipeline(c fiber.Ctx) error {
 	}
 	if body.Source != "" {
 		p.Source = body.Source
+	}
+	if body.Parameters != nil {
+		p, err = collections.BindPipeline(p, body.Parameters)
+		if err != nil {
+			return fiber.NewError(422, err.Error())
+		}
 	}
 	if err = a.pipelineAccess(p); err != nil {
 		return err

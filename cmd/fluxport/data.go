@@ -60,13 +60,38 @@ func dataCommand(command string, args []string) error {
 		sql := f.String("sql", "", "read-only SQL")
 		ids := f.String("collections", "", "comma-separated collection IDs")
 		engine := f.String("engine", "auto", "auto|native|duckdb")
+		params := f.String("params", "{}", "named SQL parameters as a JSON object")
+		explain := f.Bool("explain", false, "show the query plan")
 		if err = f.Parse(args); err != nil {
 			return err
 		}
 		if f.NArg() != 0 || *sql == "" || *ids == "" {
 			return fmt.Errorf("query requires --sql and --collections")
 		}
-		result, e := s.SQLWithEngine(ctx, strings.Split(*ids, ","), *sql, *engine)
+		value, e := conversion.Decode([]byte(*params), "json")
+		if e != nil {
+			return e
+		}
+		values, ok := value.(map[string]any)
+		if !ok {
+			return fmt.Errorf("parameters must be an object")
+		}
+		query, e := collections.BindSQL(*sql, values)
+		if e != nil {
+			return e
+		}
+		if *explain {
+			if e = collections.ValidateSQL(query); e != nil {
+				return e
+			}
+			if *engine == "native" {
+				query = "EXPLAIN QUERY PLAN " + query
+			} else {
+				*engine = "duckdb"
+				query = "EXPLAIN " + query
+			}
+		}
+		result, e := s.SQLWithEngine(ctx, strings.Split(*ids, ","), query, *engine)
 		if e != nil {
 			return e
 		}
@@ -79,7 +104,22 @@ func dataCommand(command string, args []string) error {
 		}
 		p, e := s.GetPipeline(args[1])
 		if e != nil {
-			return e
+			file, openErr := os.Open(args[1])
+			if openErr != nil {
+				return e
+			}
+			b, readErr := io.ReadAll(io.LimitReader(file, 65537))
+			file.Close()
+			if readErr != nil {
+				return readErr
+			}
+			if len(b) > 65536 {
+				return fmt.Errorf("recipe exceeds 64 KiB")
+			}
+			p, e = collections.DecodePipeline(b)
+			if e != nil {
+				return e
+			}
 		}
 		pipeline = &p
 		args = append([]string{p.Source}, args[2:]...)
@@ -90,7 +130,13 @@ func dataCommand(command string, args []string) error {
 	}
 	input := args[0]
 	if command == "import" {
-		if len(args) != 1 {
+		flags := flag.NewFlagSet("import", flag.ContinueOnError)
+		encoding := flags.String("encoding", "utf-8", "utf-8|windows-1252|utf-16le|utf-16be")
+		delimiter := flags.String("delimiter", "comma", "comma|tab|semicolon|pipe|auto")
+		if err = flags.Parse(args[1:]); err != nil {
+			return err
+		}
+		if flags.NArg() != 0 {
 			return fmt.Errorf("import takes one file path")
 		}
 		f, e := os.Open(input)
@@ -98,7 +144,7 @@ func dataCommand(command string, args []string) error {
 			return e
 		}
 		defer f.Close()
-		col, e := s.Import(filepath.Base(input), f)
+		col, e := s.ImportInput(ctx, filepath.Base(input), f, collections.InputOptions{Encoding: *encoding, CSVDelimiter: *delimiter})
 		if e != nil {
 			return e
 		}
@@ -109,11 +155,32 @@ func dataCommand(command string, args []string) error {
 	rulesFile := f.String("rules", "", "validation rule JSON array")
 	format := f.String("format", "json", "export format")
 	output := f.String("output", "", "export destination")
+	parameters := f.String("params", "{}", "recipe parameter overrides as JSON")
+	sourceID := f.String("source", "", "override the recipe source collection")
 	if err = f.Parse(args[1:]); err != nil {
 		return err
 	}
 	if f.NArg() != 0 {
 		return fmt.Errorf("unexpected arguments")
+	}
+	if pipeline != nil {
+		if *sourceID != "" {
+			pipeline.Source = *sourceID
+			input = *sourceID
+		}
+		value, e := conversion.Decode([]byte(*parameters), "json")
+		if e != nil {
+			return e
+		}
+		values, ok := value.(map[string]any)
+		if !ok {
+			return fmt.Errorf("recipe parameters must be an object")
+		}
+		bound, e := collections.BindPipeline(*pipeline, values)
+		if e != nil {
+			return e
+		}
+		pipeline = &bound
 	}
 	col, err := s.Get(input)
 	if err != nil {
@@ -151,7 +218,14 @@ func dataCommand(command string, args []string) error {
 				}
 			}
 		}
-		report, e := s.Quality(ctx, col, collections.QualityRequest{Limit: *limit, Rules: rules})
+		var contract *quality.Contract
+		if command == "validate" {
+			contract, err = s.Contract(input)
+			if err != nil {
+				return err
+			}
+		}
+		report, e := s.Quality(ctx, col, collections.QualityRequest{Limit: *limit, Rules: rules, Contract: contract})
 		if e != nil {
 			return e
 		}

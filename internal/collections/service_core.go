@@ -110,6 +110,8 @@ func New(db *sql.DB, root string, max int64) (*Service, error) {
 	s.Jobs.Register("prepare_result", s.prepareResultJob)
 	s.Jobs.Register("file_cleanup", s.fileCleanupJob)
 	s.Jobs.Register("editable_copy", s.editableCopyJob)
+	s.Jobs.Register("quality_export", s.qualityExportJob)
+	s.Jobs.Register("pipeline_audit", s.pipelineAuditJob)
 	return s, nil
 }
 func (s *Service) Configure(c config.Config) {

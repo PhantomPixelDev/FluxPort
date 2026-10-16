@@ -172,6 +172,15 @@ func downloadFilename(displayName, format, suffix string) string {
 }
 
 func (s *Server) jobDownloadFilename(job jobs.Job) string {
+	if job.Kind == "pipeline_audit" {
+		return "pipeline-execution-report.json"
+	}
+	if job.Kind == "quality_export" {
+		if col, err := s.Service.Get(job.Resource); err == nil {
+			return downloadFilename(col.Name, "zip", "-checked")
+		}
+		return "checked-records.zip"
+	}
 	var payload struct {
 		Path, CollectionID, To string
 		ResultID               string `json:"result_id"`

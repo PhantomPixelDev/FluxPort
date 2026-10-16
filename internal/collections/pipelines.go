@@ -166,6 +166,13 @@ func (s *Service) PreviewPipeline(ctx context.Context, p Pipeline, through int) 
 	return rows, err
 }
 func (s *Service) PipelineJob(p Pipeline, format string) (jobs.Job, error) {
+	if p.InputContract == nil {
+		var err error
+		p.InputContract, err = s.Contract(p.Source)
+		if err != nil {
+			return jobs.Job{}, err
+		}
+	}
 	_, ids, err := CompilePipeline(p)
 	if err != nil {
 		return jobs.Job{}, err
@@ -198,6 +205,16 @@ func (s *Service) PipelineJob(p Pipeline, format string) (jobs.Job, error) {
 }
 
 func (s *Service) eachPipeline(ctx context.Context, p Pipeline, generations map[string]string, emit func(any) error) error {
+	if err := s.checkPipelineContract(ctx, p, generations); err != nil {
+		return err
+	}
+	if p.Parameters != nil {
+		bound, err := BindPipeline(p, nil)
+		if err != nil {
+			return err
+		}
+		p = bound
+	}
 	validator, err := quality.NewValidator(p.Validation)
 	if err != nil {
 		return err
@@ -275,7 +292,7 @@ func (s *Service) PipelineRuns(id string) ([]jobs.Job, error) {
 	if _, err := s.GetPipeline(id); err != nil {
 		return nil, err
 	}
-	rows, err := s.DB.Query(`SELECT id FROM jobs WHERE kind='convert' AND json_extract(payload,'$.Pipeline.id')=? ORDER BY created DESC LIMIT 50`, id)
+	rows, err := s.DB.Query(`SELECT id FROM jobs WHERE kind IN ('convert','pipeline_audit') AND json_extract(payload,'$.Pipeline.id')=? ORDER BY created DESC LIMIT 50`, id)
 	if err != nil {
 		return nil, err
 	}

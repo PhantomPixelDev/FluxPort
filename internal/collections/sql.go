@@ -165,6 +165,12 @@ func ValidateSQL(text string) error {
 		}
 		i++
 	}
+	if len(words) > 1 && words[0] == "EXPLAIN" {
+		words = words[1:]
+		if len(words) > 2 && words[0] == "QUERY" && words[1] == "PLAN" {
+			words = words[2:]
+		}
+	}
 	if len(words) == 0 || (words[0] != "SELECT" && words[0] != "WITH") {
 		return fmt.Errorf("only read-only SELECT and WITH queries are supported")
 	}

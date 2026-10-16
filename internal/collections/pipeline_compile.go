@@ -25,6 +25,7 @@ type PipelineJoin struct {
 	Kind       string `json:"kind,omitempty"`
 }
 type PipelineStep struct {
+	Nested     *NestedStep                `json:"nested,omitempty"`
 	Transform  *transformations.Operation `json:"transform,omitempty"`
 	Limit      int                        `json:"limit,omitempty"`
 	Append     string                     `json:"append,omitempty"`
@@ -39,15 +40,17 @@ type PipelineStep struct {
 	Join       *PipelineJoin              `json:"join,omitempty"`
 }
 type Pipeline struct {
-	InputQuery *Query         `json:"input_query,omitempty"`
-	Revision   int            `json:"revision,omitempty"`
-	Validation []quality.Rule `json:"validation,omitempty"`
-	ID         string         `json:"id"`
-	Name       string         `json:"name"`
-	Source     string         `json:"source"`
-	Steps      []PipelineStep `json:"steps"`
-	Updated    string         `json:"updated,omitempty"`
-	Version    int            `json:"version"`
+	InputContract *quality.Contract `json:"input_contract,omitempty"`
+	Parameters    map[string]any    `json:"parameters,omitempty"`
+	InputQuery    *Query            `json:"input_query,omitempty"`
+	Revision      int               `json:"revision,omitempty"`
+	Validation    []quality.Rule    `json:"validation,omitempty"`
+	ID            string            `json:"id"`
+	Name          string            `json:"name"`
+	Source        string            `json:"source"`
+	Steps         []PipelineStep    `json:"steps"`
+	Updated       string            `json:"updated,omitempty"`
+	Version       int               `json:"version"`
 }
 
 func sqlLiteral(v any) (string, error) {
@@ -206,6 +209,18 @@ func pipelineRuleExpression(r transformations.Rules) (string, error) {
 // CompilePipeline produces SELECT-only CTEs over disposable source indexes.
 // Global operations use SQLite's disk-backed sorting and grouping.
 func CompilePipeline(p Pipeline) (string, []string, error) {
+	if p.InputContract != nil {
+		if err := p.InputContract.Validate(); err != nil {
+			return "", nil, err
+		}
+	}
+	if p.Parameters != nil {
+		bound, err := BindPipeline(p, nil)
+		if err != nil {
+			return "", nil, err
+		}
+		p = bound
+	}
 	if p.InputQuery != nil {
 		q := NormalizeInputQuery(*p.InputQuery)
 		p.InputQuery = nil
@@ -237,6 +252,8 @@ func CompilePipeline(p Pipeline) (string, []string, error) {
 		body := ""
 		var err error
 		switch step.Op {
+		case "explode", "unpivot", "pivot":
+			body, err = nestedPipelineSQL(previous, step)
 		case "transform":
 			if step.Transform == nil {
 				return "", nil, fmt.Errorf("step %d requires transform configuration", i+1)

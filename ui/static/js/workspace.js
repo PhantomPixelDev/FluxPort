@@ -44,6 +44,7 @@
     if (event.target.matches('[data-column-index]')) applyColumns(true);
   });
   document.addEventListener('click', event => {
+	if(event.target.closest('[data-sql-insert]')){const form=event.target.closest('form'),input=form?.querySelector('[data-sql-identifier]'),editor=form?.querySelector('textarea[name="sql"]');if(input?.value&&editor){const name='"'+input.value.replaceAll('"','""')+'"';editor.setRangeText(name,editor.selectionStart,editor.selectionEnd,'end');editor.focus();editor.dispatchEvent(new Event('input',{bubbles:true}));}return;}
     const button = event.target.closest('[data-columns]');
     if (!button) return;
     document.querySelectorAll('[data-column-index]').forEach((box, i) => { box.checked = button.dataset.columns === 'all' || i < 12; });
