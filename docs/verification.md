@@ -60,3 +60,8 @@ The preview uses a separate directory under artifacts/preview. Production remain
 ## 0.3.22 API controls
 
 Adds optional process-local per-client request budgets globally and per collection, data pagination defaults/caps and CORS origin controls. Tests cover concurrent atomic budgets, bounded counters, window expiry, persisted settings, invalid configuration, proxy spoofing, CSRF, auth, preflight and both data query interfaces. Browser checks exercise native global and workspace forms, per-file isolation and responsive layouts in both themes. See [API controls](api-controls.md) for semantics and operational limits.
+
+
+## 0.3.23 everyday file editing
+
+Adds bounded rectangular selection/paste, exact record copying, atomic row/column commands, fill-down, literal find/replace, recent-file shortcuts and export preferences. Read-only sources support streamed editable JSON copies within existing edit limits. Coverage includes six text formats, quoted/multiline/CRLF clipboard data, Unicode, huge numbers, missing/null/empty values, stale generations, partial failures, exact Undo, cancellation, changed sources, the 100,000-record cap and low-disk cleanup. Browser scenarios cover native forms, per-action Undo, editable Excel copies, six viewport widths, both themes and existing workflows.

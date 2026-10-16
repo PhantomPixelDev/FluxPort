@@ -260,6 +260,9 @@ func (s *Server) retryJob(c fiber.Ctx) error {
 	if job.Kind == "file_cleanup" {
 		return c.Redirect().Status(303).To("/collections/" + job.Resource + "/changes?file_job=" + job.ID)
 	}
+	if job.Kind == "editable_copy" {
+		return c.Redirect().Status(303).To("/collections/" + job.Resource + "?copy_job=" + job.ID)
+	}
 	if c.FormValue("download_view") == "compact" {
 		return s.compactDownload(c, job)
 	}

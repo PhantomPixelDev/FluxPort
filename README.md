@@ -4,7 +4,7 @@
 
 FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, NDJSON and TOML. Open a file, inspect its rows, remove duplicates or fix values, and download the result. Developers can reuse saved steps, query datasets with DuckDB, automate work from the CLI and publish REST endpoints.
 
-[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.22](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.22) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
+[Try the demo](https://fluxport.ppxl.dev) · [Download 0.3.23](https://github.com/PhantomPixelDev/FluxPort/releases/tag/v0.3.23) · [Documentation](docs/reference.md) · [Report a bug](https://github.com/PhantomPixelDev/FluxPort/issues/new/choose)
 
 [![Checks](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/PhantomPixelDev/FluxPort/actions/workflows/checks.yml) · [MIT license](LICENSE)
 
@@ -16,8 +16,8 @@ Each file opens a focused workspace: **Data · Clean · SQL · Inspect**. Tables
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
-3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Escape cancels. Nested values open a larger JSON editor. **Undo**, **Redo** and **History** stay beside the file information.
-4. **Clean:** trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** saves to the same file and refreshes its table. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
+3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Escape cancels. Nested values open a larger JSON editor. Select cells with the keyboard or pointer, copy TSV or exact JSON records, and use **Edit** for bounded spreadsheet paste, rows, columns and fill-down. Each action has a preview and one Undo step. **Undo**, **Redo** and **History** stay beside the file information.
+4. **Clean:** find and replace text, trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** saves to the same file and refreshes its table. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
 5. **Convert / Download:** choose rows and an output format. Downloads follow the current file and filters. **Original file** downloads its exact current bytes.
 
 Small text files support direct editing without enabling REST writes. Saved versions survive restarts, with up to 20 versions or 64 MiB per file; Undo restores exact bytes. Saves may normalize the source formatting. Large files, Excel and Parquet remain read-only: cleanup prepares a working preview for download. SQL text, engine and view state restore in the same browser tab without executing SQL. See the [workspace walkthrough](docs/dataset-workspace.md).
@@ -30,23 +30,25 @@ The online demo is a shared public workspace. Install your own instance for priv
 
 ## Get started
 
-Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.22/SHA256SUMS):
+Download a verified executable and [checksums](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.23/SHA256SUMS):
 
 | Platform | Download | Start |
 | --- | --- | --- |
-| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.22/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
-| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.22/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
+| Windows amd64 | [fluxport-windows-amd64.exe](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.23/fluxport-windows-amd64.exe) | `./fluxport-windows-amd64.exe serve` |
+| Linux amd64 | [fluxport-linux-amd64](https://github.com/PhantomPixelDev/FluxPort/releases/download/v0.3.23/fluxport-linux-amd64) | `chmod +x fluxport-linux-amd64 && ./fluxport-linux-amd64 serve` |
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
 For Docker, clone this repository and run:
 
 ```sh
-docker compose build --build-arg VERSION=0.3.22
+docker compose build --build-arg VERSION=0.3.23
 docker compose up -d
 ```
 
 Back up both `data/` and `.fluxport/`. Configure dashboard authentication and API access for your own deployment using the [configuration reference](docs/reference.md).
+
+Read-only Excel, Parquet and large sources offer **Create editable copy**. It creates a separate JSON file from matching rows within the current editing limits; the original stays intact. Pasted values remain text unless you explicitly choose conversion.
 
 ## Supported formats and fidelity
 

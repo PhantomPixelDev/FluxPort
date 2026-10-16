@@ -1,0 +1,34 @@
+/* Main-area file editing and bounded grid selection. */
+.editor-menu{position:relative;align-self:center;flex:0 0 auto;min-width:64px}
+.editor-menu>details>summary{display:flex;min-width:64px;align-items:center;justify-content:center;padding:0 12px;min-height:40px}
+.editor-menu>details{margin:0}
+.editor-command-form{max-width:960px}
+[data-command-preview][hidden]{display:none!important}
+.editor-panel{scroll-margin-top:180px}
+.editor-preview form{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.editor-preview .checkbox-setting{display:flex;align-items:center;gap:8px}
+.editor-fields [hidden],.editor-paste-fields[hidden]{display:none!important}
+.editor-paste-fields>.checkbox-setting{display:flex;align-items:center;gap:8px;min-height:40px}
+.editor-paste-fields>.checkbox-setting input{flex:0 0 16px;width:16px;height:16px;margin:0}
+.editor-menu-items{display:flex;flex-direction:column;gap:4px;position:absolute;z-index:40;right:0;min-width:220px;padding:12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px #0003}
+.editor-menu-items a,.editor-menu-items button{padding:8px 12px;text-align:left;color:inherit;background:none;border:0;font:inherit;text-decoration:none;border-radius:4px;cursor:pointer}
+.editor-menu-items a:hover,.editor-menu-items button:hover{background:var(--hover)}
+.editor-panel,.editor-copy-panel{padding:16px;margin-bottom:16px;border:1px solid var(--border);border-radius:8px}
+.editor-panel>summary,.editor-copy-panel>summary{font-weight:600}
+.editor-command-form,.editor-paste-fields,.editor-preview{display:grid;gap:16px;margin-top:16px}
+.editor-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.editor-fields .field-label,.editor-paste-fields>.field-label:not(.checkbox-setting){display:grid;gap:8px;align-content:start}
+.editor-fields select[multiple]{height:120px}
+.editor-command-form>.button{justify-self:start}
+.editor-preview .table-scroll{max-height:400px}
+.editor-preview td{white-space:pre-wrap;max-width:360px;overflow-wrap:anywhere}
+.sheet-column-heading:has(.editor-column-menu){position:relative;min-height:24px;padding-right:40px;justify-content:center}
+.editor-column-menu{position:absolute;right:0;top:50%;transform:translateY(-50%);padding:0 6px;min-width:32px}
+.sheet-table td[data-grid-selected]{background:color-mix(in srgb,var(--accent) 16%,var(--panel));user-select:none}
+.sheet-table td[data-grid-active]{outline:2px solid var(--accent);outline-offset:-2px}
+.editor-copy-panel form>button{align-self:end;justify-self:start}
+.recent-files{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
+.recent-files a{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:767px){.editor-fields{grid-template-columns:1fr}.editor-menu-items{right:0;max-width:calc(100vw - 32px)}.editor-menu-items a,.editor-menu-items button{min-height:44px}.sheet-column-heading:has(.editor-column-menu){min-height:44px;padding-right:44px}.editor-column-menu{min-width:44px;min-height:44px}}
+
+

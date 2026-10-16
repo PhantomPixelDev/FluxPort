@@ -215,6 +215,8 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	app.Post("/collections/:id/quality", server.qualityPage)
 	app.Get("/collections/:id/workbench/status", server.workbenchStatus)
 	app.Post("/collections/:id/workbench/edit", server.editRecords)
+	app.Post("/collections/:id/editable-copy", server.editableCopy)
+	app.Get("/collections/:id/editable-copy/:job", server.editableCopyStatus)
 	app.Get("/collections/:id/file-history", server.fileHistory)
 	app.Post("/collections/:id/file-history", server.restoreFile)
 	app.Post("/collections/:id/workbench/export", server.exportWorkbench)

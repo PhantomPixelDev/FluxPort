@@ -490,7 +490,10 @@ func (s *Service) RestoreFile(id, generation, direction string, revision int64, 
 			return err
 		}
 	}
-	if generation == "" || generation != c.Generation {
+	// A native form can outlive a harmless index refresh. A supplied history
+	// cursor plus the exact current snapshot checksum is an equally strong
+	// precondition; actual source changes still conflict below.
+	if (generation == "" || generation != c.Generation) && len(expectedCursor) == 0 {
 		return ErrConflict
 	}
 	if c.ReadOnly || c.Size > s.MaxBytes {
@@ -545,6 +548,16 @@ func (s *Service) RestoreFile(id, generation, direction string, revision int64, 
 		current, e := s.fileRevision(id, h.Current)
 		if e != nil {
 			return e
+		}
+		expected = current.Checksum
+	}
+	if len(expectedCursor) > 0 {
+		current, e := s.fileRevision(id, h.Current)
+		if e != nil {
+			return e
+		}
+		if actual != current.Checksum {
+			return ErrConflict
 		}
 		expected = current.Checksum
 	}

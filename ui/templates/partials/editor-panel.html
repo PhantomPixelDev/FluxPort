@@ -1,0 +1,51 @@
+{{if .Workbench.FileEditable}}
+<details class="editor-panel" data-editor-panel {{if .Workbench.EditorAction}}open{{end}}>
+<summary>Edit file</summary>
+<form method="post" action="/collections/{{.Collection.ID}}/workbench/edit" class="editor-command-form" data-command-preview {{if .Workbench.EditorPreview}}hidden{{end}}>
+<input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="generation" value="{{.Workbench.Generation}}"><input type="hidden" name="query" value="{{.Workbench.QueryJSON}}">
+<div class="editor-fields">
+<label class="field-label">Action<select name="command_action" class="field-control" data-command-action>
+<option value="add_row" {{if eq .Workbench.EditorAction "add_row"}}selected{{end}}>Add row</option>
+<option value="paste" {{if eq .Workbench.EditorAction "paste"}}selected{{end}}>Paste data</option>
+<option value="add_column" {{if eq .Workbench.EditorAction "add_column"}}selected{{end}}>Add column</option>
+<option value="rename_column" {{if eq .Workbench.EditorAction "rename_column"}}selected{{end}}>Rename column</option>
+<option value="delete_columns" {{if eq .Workbench.EditorAction "delete_columns"}}selected{{end}}>Delete columns</option>
+<option value="delete_rows" {{if eq .Workbench.EditorAction "delete_rows"}}selected{{end}}>Delete selected rows</option>
+<option value="fill_down" {{if eq .Workbench.EditorAction "fill_down"}}selected{{end}}>Fill down</option>
+<option value="find_replace" {{if eq .Workbench.EditorAction "find_replace"}}selected{{end}}>Find and replace</option>
+</select></label>
+<label class="field-label" data-editor-for="paste fill_down rename_column delete_columns find_replace">Columns<select class="field-control" name="field" multiple size="4" aria-label="Destination columns">{{range .Workbench.Columns}}<option value="{{.Name}}">{{.Name}}</option>{{end}}</select><small>Paste follows the displayed column order.</small></label>
+<label class="field-label" data-editor-for="add_column rename_column">Column name<input name="column_name" class="field-control" maxlength="4096"></label>
+<label class="field-label" data-editor-for="add_row add_column">Value as JSON<textarea name="command_value" rows="3" class="field-control mono" placeholder='{"name":"New row"}'></textarea><small>Leave empty for an empty row or empty text column.</small></label>
+<label class="field-label" data-editor-for="paste fill_down delete_rows find_replace">Rows<select class="field-control" name="record_id" multiple size="4" aria-label="Destination rows">{{range .Workbench.Rows}}<option value="{{.ID}}">Row {{rowNumber .Ordinal}}</option>{{end}}</select><small>Use a table selection, or choose rows here. Actions use stable row identities.</small></label>
+<label class="field-label" data-editor-for="find_replace">Rows to search<select class="field-control" name="scope"><option value="matching">All matching rows, across every page</option><option value="selected">Selected rows</option></select></label>
+<label class="field-label" data-editor-for="find_replace">Find<input name="find" class="field-control"><small>Literal, case-sensitive text.</small></label>
+<label class="field-label" data-editor-for="find_replace">Replace with<input name="replacement" class="field-control"></label>
+</div>
+<div data-editor-for="paste" class="editor-paste-fields">
+<label class="field-label">Spreadsheet data<textarea class="field-control mono" name="paste_text" rows="6" placeholder="Paste tab-separated cells here"></textarea></label>
+<label class="checkbox-setting field-label"><input class="field-check" type="checkbox" name="convert">Convert valid numbers, booleans and null explicitly</label>
+<label class="checkbox-setting field-label"><input class="field-check" type="checkbox" name="append">Append as new rows instead of overwriting</label>
+{{if not .Workbench.Columns}}<label class="field-label">New columns, one per line<textarea name="new_columns" rows="3" class="field-control"></textarea><small>For an empty array, explicitly name columns and select Append.</small></label>{{end}}
+<p class="muted small-text">Text is preserved by default. Maximum 1,000 rows / 5,000 cells. No columns or rows are added unless explicitly requested.</p>
+</div>
+<button class="button primary" name="preview" value="1">Preview change</button><span class="editor-command-error notice error" hidden role="alert"></span>
+</form>
+<div data-command-result>
+{{if .Workbench.EditorPreview}}<section class="editor-preview"><h3>Preview: {{.Workbench.EditorPreview.Label}}</h3><p>{{.Workbench.EditorPreview.Rows}} affected rows{{if .Workbench.EditorPreview.Cells}} · {{.Workbench.EditorPreview.Cells}} affected cells{{end}}</p><p class="muted small-text">Sample only · first 20 affected rows</p>
+<div class="table-scroll"><table class="data-table"><thead><tr>{{range .Workbench.EditorPreview.Columns}}<th>{{.}}</th>{{end}}</tr></thead><tbody>{{range .Workbench.EditorPreview.Sample}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{end}}</tbody></table></div>
+<form method="post" action="/collections/{{.Collection.ID}}/workbench/edit" data-file-command><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="command" value="{{.Workbench.EditorCommand}}"><input type="hidden" name="confirm" value="delete">
+<label class="checkbox-setting field-label"><input type="checkbox" class="field-check" required>Apply this change to the file. Undo is available.</label><button class="button primary">Apply change</button><a class="button" data-command-back href="/collections/{{.Collection.ID}}?edit={{.Workbench.EditorAction}}">Edit change</a></form></section>{{end}}
+</div></details>
+{{else if not .Workbench.ResultID}}<details class="editor-copy-panel" {{if .Workbench.CopyJob}}open{{end}}><summary>Create editable copy</summary>
+<p class="muted">This file is read-only because of its format or size. Create a JSON copy within the editing limits; the original stays intact.</p>
+<form method="post" action="/collections/{{.Collection.ID}}/editable-copy" data-editable-copy class="editor-fields">
+<input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="generation" value="{{.Workbench.SourceGeneration}}"><input type="hidden" name="query" value="{{.Workbench.QueryJSON}}">
+<label class="field-label">Rows<select class="field-control" name="scope"><option value="matching">All matching rows, current order</option><option value="entire">Entire file</option></select></label><button class="button primary">Create editable copy</button>
+</form>
+<div data-copy-status>{{if .Workbench.CopyJob}}<section class="notice" data-editable-copy-job="{{.Workbench.CopyJob.ID}}" data-state="{{.Workbench.CopyJob.State}}" role="status">
+{{if eq .Workbench.CopyJob.State "ready"}}<strong>Editable copy ready.</strong><a class="button primary" data-open-editable-copy href="/collections/{{.Workbench.CopyJob.Result}}">Open editable copy</a>
+{{else if or (eq .Workbench.CopyJob.State "failed") (eq .Workbench.CopyJob.State "cancelled") (eq .Workbench.CopyJob.State "interrupted")}}<strong>Copy {{.Workbench.CopyJob.State}}.</strong><p>{{.Workbench.CopyJob.Error}} Try narrower filters or use cleanup and download.</p><form method="post" action="/jobs/{{.Workbench.CopyJob.ID}}/retry"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button">Retry</button></form>
+{{else}}<strong>Preparing editable copy…</strong><form method="post" action="/jobs/{{.Workbench.CopyJob.ID}}/cancel"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="button" name="redirect" value="/collections/{{.Collection.ID}}?copy_job={{.Workbench.CopyJob.ID}}">Cancel</button></form>{{end}}
+<a href="/collections/{{.Collection.ID}}?copy_job={{.Workbench.CopyJob.ID}}">Refresh status</a></section>{{end}}</div>
+</details>{{end}}

@@ -26,6 +26,10 @@ type SheetRow struct {
 }
 type SheetFilter struct{ Field, Op, Value, Label string }
 type Workbench struct {
+	EditorAction                       string
+	EditorCommand                      string
+	EditorPreview                      *collections.FileCommandPreview
+	CopyJob                            *jobs.Job
 	FileEditable                       bool
 	ResultID                           string
 	DatasetRows                        int64
@@ -73,6 +77,19 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 	w.SourceGeneration = col.Generation
 	w.FileEditable = !col.ReadOnly && col.Rows <= 100000 && col.Status == "ready"
 	p.Workbench = w
+	w.EditorAction = c.Query("edit")
+	if v, ok := c.Locals("editor_action").(string); ok {
+		w.EditorAction = v
+	}
+	w.EditorCommand, _ = c.Locals("editor_command").(string)
+	w.EditorPreview, _ = c.Locals("editor_preview").(*collections.FileCommandPreview)
+	if jobID := c.Query("copy_job"); jobID != "" {
+		j, e := s.Service.Jobs.Get(jobID)
+		if e != nil || j.Kind != "editable_copy" || j.Resource != col.ID {
+			return fiber.NewError(404, "Editable copy job not found")
+		}
+		w.CopyJob = &j
+	}
 	if col.Format == "xlsx" && w.ResultID == "" {
 		if info, e := s.Service.Workbook(col); e == nil {
 			w.Workbook = &info
@@ -253,6 +270,9 @@ func (s *Server) workbenchFailure(c fiber.Ctx, err error) error {
 	return s.workbench(c)
 }
 func (s *Server) editRecords(c fiber.Ctx) error {
+	if c.FormValue("command") != "" || c.FormValue("command_action") != "" {
+		return s.fileCommand(c)
+	}
 	if err := rejectResultMutation(c); err != nil {
 		return err
 	}

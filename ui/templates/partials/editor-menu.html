@@ -1,0 +1,13 @@
+<div class="editor-menu">
+{{if .Workbench.FileEditable}}<details data-editor-menu><summary class="button">Edit</summary><div class="editor-menu-items">
+<a href="/collections/{{.Collection.ID}}?edit=add_row" data-editor-open="add_row">Add row</a>
+<a href="/collections/{{.Collection.ID}}?edit=paste" data-editor-open="paste">Paste data</a>
+<a href="/collections/{{.Collection.ID}}?edit=add_column" data-editor-open="add_column">Add column</a>
+<a href="/collections/{{.Collection.ID}}?edit=rename_column" data-editor-open="rename_column">Rename column</a>
+<a href="/collections/{{.Collection.ID}}?edit=delete_columns" data-editor-open="delete_columns">Delete columns</a>
+<a href="/collections/{{.Collection.ID}}?edit=delete_rows" data-editor-open="delete_rows">Delete selected rows</a>
+<a href="/collections/{{.Collection.ID}}?edit=fill_down" data-editor-open="fill_down">Fill down</a>
+<a href="/collections/{{.Collection.ID}}?edit=find_replace" data-editor-open="find_replace">Find and replace</a>
+<button type="button" data-grid-copy="tsv">Copy selection as TSV</button><button type="button" data-grid-copy="json">Copy records as JSON</button>
+</div></details>{{else}}<details><summary class="button">Copy</summary><div class="editor-menu-items"><button type="button" data-grid-copy="tsv">Copy selection as TSV</button><button type="button" data-grid-copy="json">Copy records as JSON</button></div></details>{{end}}
+</div>

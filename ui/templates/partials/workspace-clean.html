@@ -2,6 +2,7 @@
 {{if .Message}}<div class="notice error" role="alert">{{.Message}}</div>{{end}}
 {{if .FileJob}}{{template "partials/file-job" .}}{{end}}
 <div data-draft-notice role="status"></div>
+{{if .FileEditable}}<a class="button small" href="/collections/{{.Collection.ID}}?edit=find_replace" data-editor-open="find_replace">Find and replace in file</a>{{end}}
 <div class="workspace-shortcuts"><a href="/collections/{{.Collection.ID}}/insights">Find cleanup suggestions</a>{{if .Pipeline.Reusable}} · <details class="reuse-steps"><summary>Reuse steps from another dataset</summary><div class="panel-toolbar">{{range .Pipeline.Reusable}}<a class="button small" href="/collections/{{$.Collection.ID}}/changes?reuse={{.ID}}">{{.Name}}</a>{{end}}</div></details>{{end}}</div>
 {{if .Pipeline.Saved}}<details class="panel saved-changes"><summary>Use saved steps</summary><div class="panel-toolbar">{{range .Pipeline.Saved}}<a class="button small" href="/collections/{{$.Collection.ID}}/changes?saved={{.ID}}">{{.Name}}</a>{{end}}<a class="button small ghost" href="/collections/{{.Collection.ID}}/changes?new=1">Start fresh</a></div></details>{{end}}
 <form class="cleanup-form" method="post" action="/collections/{{.Collection.ID}}/changes{{if .Pipeline.Definition.ID}}?saved={{.Pipeline.Definition.ID}}{{end}}" data-cleanup-form data-collection="{{.Collection.ID}}" data-saved="{{.Pipeline.Definition.ID}}" data-posted="{{if .Pipeline.HasPreview}}true{{end}}">

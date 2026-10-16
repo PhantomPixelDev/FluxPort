@@ -10,6 +10,20 @@ Double-click a cell, or focus it and press Enter, to edit. Enter saves; Escape c
 
 Direct editing supports text formats within the configured buffered-file limit (16 MiB by default) and 100,000 rows. Excel, Parquet and larger files stay read-only. Editing the dashboard file does not enable the public REST API or its CRUD flag.
 
+## Select, paste and change the table
+
+Click a cell and use arrow keys or Tab to move. Shift-click, Shift-arrow or drag selects a rectangle on the current page. Copy selections as TSV or copy complete records as JSON from **Edit**; JSON retains exact numbers, missing properties and nulls. A different filter or page clears the selection.
+
+**Edit** provides Add row, Add column, Rename column, Delete selected rows/columns and Fill down. Column names are literal, so dots and slashes do not address nested objects. Fill down copies the first selected row's values to later selected rows. Nested edits retain their existing JSON editor.
+
+Paste spreadsheet cells directly onto a focused cell or choose **Edit → Paste data**. Review the destination and sample, then Apply change. Values remain text by default. Explicit conversion recognizes valid JSON numbers, booleans and null; identifiers with leading zeros remain text. CSV saves text cells regardless. Quoted tabs, embedded newlines, CRLF within quoted values, Unicode and large numeric text are retained.
+
+A paste supports at most **1,000 rows, 5,000 cells and the 1 MiB encoded request limit**. It never silently creates columns or overwrites extra rows. Choose Append explicitly to add rows; for an empty array, name the new columns explicitly. The server validates the entire action before saving. Each paste or structural action is one Undo step. Source changes require reload/review instead of overwriting newer data.
+
+New rows append to the file; a current filter can hide them. Native forms provide the same preview/apply flow when JavaScript is disabled.
+
+![Paste preview in the file workspace](images/editor.png)
+
 ## Undo and history
 
 **Undo** and **Redo** restore saved file contents. Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z work outside text inputs; inputs retain native editing shortcuts. **History** lists saved versions and lets you restore one as a new change. The newest versions are retained, up to 20 saves or 64 MiB per file. The baseline counts as one version.
@@ -26,6 +40,16 @@ Saved recipes and advanced joins remain available. Loading a recipe previews its
 
 For read-only files, cleanup prepares a separate working preview for download. The preview replaces the visible table rather than introducing Original/Cleaned tabs. Full prepared results provide filtering, sorting and pagination after the quick sample. They expire after 24 hours and never appear as extra collections. A changed source requires preparing again.
 
+### Find and replace
+
+Open **Find and replace in file** from Clean, or choose it under Edit. Select text columns and use selected rows or all matching rows across every page. Matching is literal and case-sensitive. Review the exact affected count and the first 20 affected rows; applying creates one undoable save. Non-text values remain untouched.
+
+### Create an editable copy
+
+Excel, Parquet and large sources remain read-only. **Create editable copy** generates a separate JSON file from matching rows in their displayed order, or the entire file. It includes every column. Copies must fit **100,000 rows and the configured buffered-file ceiling**, including encoded output bytes.
+
+The cancellable background job streams into private staging storage. Only a complete copy becomes a collection, with a readable source-based name and independent history. The original source is unchanged. Narrow filters if the result exceeds editing limits. Progress uses SSE; native forms offer manual status refresh, cancellation, retry and a link to the ready copy.
+
 ## SQL and inspection
 
 SQL queries the current source file. The editor is followed by Run, engine selection and results. Saved queries/history remain collapsed; restoring SQL text never executes it. SQL exports use **Run and download** and retain the existing result limits.
@@ -39,6 +63,8 @@ Choose **Data**, **Rows** and **Format**, then Download. File data uses current 
 Read-only cleanup previews and saved steps remain available as download sources. Background exports show preparation, failure/retry and the ready file. SSE updates progress without polling. Without JavaScript, native links/forms work and provide manual status refresh.
 
 Excel saves text cells; Parquet offers lossless JSON records or typed analytical columns. **Format details** explains mappings; incompatible conversions fail explicitly. Public filenames use the display name rather than disposable job IDs.
+
+The last export format is remembered per file in this browser. Files also offers browser-local Recently opened shortcuts that restore existing workspace state. Neither feature executes SQL or starts a download automatically.
 
 ## Compatibility and recovery
 

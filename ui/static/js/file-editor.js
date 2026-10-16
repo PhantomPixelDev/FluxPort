@@ -56,11 +56,12 @@
  document.addEventListener('submit',e=>{
   const form=e.target;
   if(api.saving&&form.matches('[data-cleanup-form]')){e.preventDefault();e.stopImmediatePropagation();return;}
-  if(!form.matches('[data-file-history-action]')&&!(form.matches('[data-sheet-edit]')&&form.elements.file_mode?.value==='1'))return;
+  if(!form.matches('[data-file-history-action],[data-file-command]')&&!(form.matches('[data-sheet-edit]')&&form.elements.file_mode?.value==='1'))return;
   if(form.matches('[data-sheet-edit]')&&!form.querySelector('[name=record_id]:checked'))return;
   if(form.elements.method?.value==='DELETE'&&!confirm('Delete selected rows from this file? You can Undo this change.')){e.preventDefault();e.stopImmediatePropagation();return;}
   e.preventDefault();e.stopImmediatePropagation();submit(form,e.submitter);
  },true);
+ api.submit=submit;
  function job(marker){
   if(!marker)return;
   epoch++;jobID=marker.dataset.fileJob;

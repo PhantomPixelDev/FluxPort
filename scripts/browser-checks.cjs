@@ -31,6 +31,8 @@ const {chromium} = require('playwright');
     await layouts(page,artifactDir);
     const apiControls=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'api-controls-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
     await apiControls(page,artifactDir);
+    const gridEditor=vm.runInNewContext('('+fs.readFileSync(path.join(__dirname,'grid-editor-checks.js'),'utf8')+')',{Buffer,URL,Date,Error,console});
+    await gridEditor(page,artifactDir,fs.readFileSync(path.join(artifactDir,'multi-sheet.xlsx')));
     console.log('Browser workflow checks passed: imports, partial failures, pagination, quality, pipelines, undo/redo, export, exclusions, restore, themes and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.stack); process.exitCode=1; });

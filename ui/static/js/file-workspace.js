@@ -111,7 +111,13 @@
   const sheet=tableRoot(current?'result':'original')?.querySelector('.sheet-data'),count=form.querySelector('[data-download-count]');
   if(count)count.textContent=sheet?(sheet.dataset.matchRows+' matching rows · '+sheet.dataset.datasetRows+' total'):(current?'Preparing changes preview':'File data');
   source.closest('.download-source-options').hidden=form.elements.format.value==='original';
-  if(!form.dataset.workspaceSynced){form.dataset.workspaceSynced='true';form.elements.format.value=current?'json':workspace.querySelector('.format-tag')?.dataset.format||'json';}
+  if(!form.dataset.workspaceSynced){
+   form.dataset.workspaceSynced='true';
+   let format=current?'json':workspace.querySelector('.format-tag')?.dataset.format||'json';
+   try{const saved=localStorage.getItem('fluxport-export-format-'+id);if(saved&&Array.from(form.elements.format.options).some(o=>o.value===saved&&!o.disabled))format=saved;}catch{}
+   form.elements.format.value=format;
+   form.elements.format.addEventListener('change',()=>{try{localStorage.setItem('fluxport-export-format-'+id,form.elements.format.value);}catch{}});
+  }
   updateFormats();
  }
  const more=workspace.querySelector('.workspace-more'),moreSummary=more.querySelector('summary');
@@ -176,7 +182,7 @@
   rememberWorkspace(false);
   document.dispatchEvent(new CustomEvent('fluxport:file-reloaded'));
  }
- window.FluxPortWorkspace={refreshFile,query:()=>tableQuery('original')};
+ window.FluxPortWorkspace={refreshFile,query:()=>tableQuery('original'),showFile:()=>{showData('original');close();}};
  function toolFor(url){
   if(url.origin!==location.origin)return '';
   if(url.pathname===base){return {downloads:'export',raw:'raw',schema:'schema',configuration:'api'}[url.searchParams.get('tab')]||'';}

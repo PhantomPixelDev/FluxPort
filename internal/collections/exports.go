@@ -297,8 +297,27 @@ func (s *Service) Download(id string) (string, error) {
 	return j.Result, nil
 }
 func (s *Service) cleanupDownloads() {
+	activeCopies := map[string]bool{}
+	copyRows, copyErr := s.DB.Query("SELECT id FROM jobs WHERE kind='editable_copy' AND state IN ('queued','running')")
+	if copyErr == nil {
+		for copyRows.Next() {
+			var id string
+			if copyRows.Scan(&id) == nil {
+				activeCopies[id] = true
+			}
+		}
+		copyRows.Close()
+	}
 	files, _ := os.ReadDir(s.DownloadDir)
 	for _, f := range files {
+		if copyErr == nil && strings.HasPrefix(f.Name(), ".editable-copy-") {
+			rest := strings.TrimPrefix(f.Name(), ".editable-copy-")
+			id, _, _ := strings.Cut(rest, "-")
+			if !activeCopies[id] {
+				os.Remove(filepath.Join(s.DownloadDir, f.Name()))
+				continue
+			}
+		}
 		if info, err := f.Info(); err == nil && time.Since(info.ModTime()) > 24*time.Hour {
 			os.Remove(filepath.Join(s.DownloadDir, f.Name()))
 		}
