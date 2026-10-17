@@ -92,6 +92,18 @@
   const density=queryForm.querySelector('[data-sheet-density]');try{density.value=localStorage.getItem('fluxport-table-density')==='compact'?'compact':'comfortable';}catch{}sheet.dataset.density=density.value;density.addEventListener('change',()=>{sheet.dataset.density=density.value;try{localStorage.setItem('fluxport-table-density',density.value);}catch{}});
   const key='fluxport-sheet-'+sheet.dataset.collection;let prefs=Object.create(null);try{Object.assign(prefs,JSON.parse(localStorage.getItem(key)||'{}')||{});}catch{}
   const columns=Array.from(queryForm.querySelectorAll('[data-sheet-column]'));
+if(sheet.dataset.editable==='true'){
+  const mark=()=>{for(const cell of sheet.querySelectorAll('td[data-sheet-cell]:not([data-cell-editable])')){cell.dataset.cellEditable='';cell.title='Double-click or press Enter to edit';}};
+  mark();
+  const hintKey='fluxport-hint-cell-edit';let shown=false;try{shown=!!sessionStorage.getItem(hintKey);}catch{}
+  if(!shown&&!sheet.querySelector('.edit-hint')){
+   const hint=document.createElement('div');hint.className='edit-hint';
+   hint.append(document.createTextNode('Tip: double-click a cell to edit. Enter confirms, Escape cancels.'));
+   const close=document.createElement('button');close.type='button';close.className='edit-hint-close';close.textContent='\u00d7';close.setAttribute('aria-label','Dismiss editing hint');
+   close.addEventListener('click',()=>{hint.remove();try{sessionStorage.setItem(hintKey,'1');}catch{}});
+   hint.append(close);sheet.before(hint);
+  }
+ }
 	function inlineEdit(cell){
 		if(sheet.dataset.editable!=='true'||window.FluxPortEditor?.saving||cell.querySelector('input'))return;
 		const row=cell.closest('tr'),id=row.querySelector('[name=record_id]').value;

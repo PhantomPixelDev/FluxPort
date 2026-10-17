@@ -137,6 +137,19 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 	engine.AddFunc("stepName", cleanupStepName)
 	engine.AddFunc("stepJSON", cleanupStepJSON)
 	engine.AddFunc("rowNumber", func(n int64) int64 { return n + 1 })
+
+	engine.AddFunc("fieldType", func(t string) string {
+		switch t {
+		case "Boolean":
+			return "checkbox"
+		case "Number":
+			return "number"
+		case "JSON":
+			return "json"
+		default:
+			return "text"
+		}
+	})
 	engine.AddFunc("has", func(s string) bool { return s != "" })
 	if err = engine.Load(); err != nil {
 		return nil, err

@@ -91,9 +91,26 @@
   const copier=e.target.closest('[data-grid-copy]');if(copier&&root()?.contains(copier)){e.preventDefault();copy(copier.dataset.gridCopy);}
  },true);
  document.addEventListener('change',e=>{if(e.target.matches('[data-command-action]')){previewEpoch++;groups(e.target.form);root()?.querySelector('[data-command-result]')?.replaceChildren();}if(e.target.matches('[data-sheet-column]')){state=null;paint();}if(e.target.matches('[name=append]')&&e.target.form?.matches('[data-command-preview]')&&e.target.checked)Array.from(e.target.form.elements.record_id.options).forEach(o=>o.selected=false);});
- document.addEventListener('submit',async e=>{
+ function buildAddRow(form){
+ if(form.elements.command_action.value!=='add_row')return true;
+ const fields=Array.from(form.querySelectorAll('[data-add-fields] [data-field-name]')).filter(c=>!c.disabled&&!c.hidden);
+ const filled=fields.filter(c=>c.type==='checkbox'?c.checked:c.value.trim()!=='');
+ if(!filled.length)return true;
+ const row=Object.create(null);
+ for(const control of fields){
+  const name=control.dataset.fieldName;
+  if(control.type==='checkbox'){if(control.checked)row[name]=true;continue;}
+  const text=control.value.trim();if(text==='')continue;
+  if(control.tagName==='TEXTAREA'){try{row[name]=JSON.parse(text);}catch(e){error('"'+name+'" needs valid JSON for nested values.');control.focus();return false;}continue;}
+  if(control.type==='number'){const n=Number(text);if(!Number.isFinite(n)){error('"'+name+'" needs a number, or leave it blank.');control.focus();return false;}row[name]=n;continue;}
+  row[name]=text;
+ }
+ const raw=form.elements.command_value;raw.dataset.plainAdd='1';raw.value=JSON.stringify(row);
+ return true;
+}
+document.addEventListener('submit',async e=>{
   const form=e.target;if(!form.matches('[data-command-preview]'))return;e.preventDefault();e.stopImmediatePropagation();if(window.FluxPortEditor?.saving){error('Wait for the current save to finish.');return;}
-  if(form.elements.command_action.value==='paste')targetPaste(form);
+  if(!buildAddRow(form))return;if(form.elements.command_action.value==='paste')targetPaste(form);
   const values=new URLSearchParams(new FormData(form));values.set('preview','1');
   if(new TextEncoder().encode(values.toString()).length>1<<20){error('Edit exceeds the 1 MiB request limit. Use a smaller block.');return;}
   const requestEpoch=++previewEpoch;form.setAttribute('aria-busy','true');error('');

@@ -4473,3 +4473,14 @@ textarea.field-control {
   }
 }
 
+
+/* Editable sheet cells and the first-run editing hint (ux task 5). */
+td[data-cell-editable]{cursor:text;}
+td[data-cell-editable]:hover{box-shadow:inset 0 0 0 1px var(--accent);}
+td[data-cell-editable]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.edit-hint{display:flex;align-items:center;gap:8px;margin:8px 0;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--muted);font-size:12px;}
+.edit-hint-close{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;}
+.edit-hint-close:hover{color:var(--text);}
+fieldset.editor-add-fields{display:flex;flex-wrap:wrap;gap:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin:0 0 12px;}
+fieldset.editor-add-fields legend{font-size:13px;color:var(--muted);padding:0 4px;}
+fieldset.editor-add-fields .field-label{flex:1 1 180px;min-width:160px;}
