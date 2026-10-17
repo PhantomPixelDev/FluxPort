@@ -3090,11 +3090,11 @@ dialog form {
 }
 
 .cleanup-result-table tbody tr:nth-child(even) {
-  background: var(--panel-raised);
+  background: color-mix(in srgb, var(--stripe) 50%, transparent);
 }
 
 .cleanup-result-table tbody tr:hover {
-  background: var(--accent-bg);
+  background: var(--surface-veil);
 }
 
 .cleanup-result-table .sheet-index {

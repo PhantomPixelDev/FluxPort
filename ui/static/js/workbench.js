@@ -96,8 +96,8 @@ if(sheet.dataset.editable==='true'){
   const mark=()=>{for(const cell of sheet.querySelectorAll('td[data-sheet-cell]:not([data-cell-editable])')){cell.dataset.cellEditable='';cell.title='Double-click or press Enter to edit';}};
   mark();
   const hintKey='fluxport-hint-cell-edit';let shown=false;try{shown=!!sessionStorage.getItem(hintKey);}catch{}
-  if(!shown&&!sheet.querySelector('.edit-hint')){
-   const hint=document.createElement('div');hint.className='edit-hint';
+  if(!shown&&!sheet.parentElement.querySelector('.edit-hint')){
+   const hint=document.createElement('div');hint.className='edit-hint';hint.setAttribute('role','status');
    hint.append(document.createTextNode('Tip: double-click a cell to edit. Enter confirms, Escape cancels.'));
    const close=document.createElement('button');close.type='button';close.className='edit-hint-close';close.textContent='\u00d7';close.setAttribute('aria-label','Dismiss editing hint');
    close.addEventListener('click',()=>{hint.remove();try{sessionStorage.setItem(hintKey,'1');}catch{}});

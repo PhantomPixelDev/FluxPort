@@ -155,7 +155,7 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 		switch state {
 		case "staged":
 			return "Uploaded"
-		case "queued", "running":
+		case "queued", "running", "processing":
 			return "Working"
 		case "ready":
 			return "Done"

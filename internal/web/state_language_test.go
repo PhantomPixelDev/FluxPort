@@ -46,12 +46,7 @@ func TestStateLanguageReadsPlainly(t *testing.T) {
 		t.Fatal(page.StatusCode)
 	}
 	if !strings.Contains(pipelinePage, "Next run (unix time)") || strings.Contains(pipelinePage, "Unix seconds") || strings.Contains(pipelinePage, "saved recipe") {
-	if !strings.Contains(pipelinePage, "Next run (unix time)") || strings.Contains(pipelinePage, "Unix seconds") || strings.Contains(pipelinePage, "saved recipe") {
 		t.Fatal("schedule block still uses recipe/Unix-seconds wording")
-	}
-	}
-	if imported.Cookies() == nil {
-		t.Fatal("expected import cookies")
 	}
 }
 

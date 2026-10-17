@@ -102,10 +102,10 @@
   if(control.type==='checkbox'){if(control.checked)row[name]=true;continue;}
   const text=control.value.trim();if(text==='')continue;
   if(control.tagName==='TEXTAREA'){try{row[name]=JSON.parse(text);}catch(e){error('"'+name+'" needs valid JSON for nested values.');control.focus();return false;}continue;}
-  if(control.type==='number'){const n=Number(text);if(!Number.isFinite(n)){error('"'+name+'" needs a number, or leave it blank.');control.focus();return false;}row[name]=n;continue;}
+  if(control.type==='number'){const n=Number(text);if(!Number.isFinite(n)){error('"'+name+'" needs a number, or leave it blank.');control.focus();return false;}if(/^\d+$/.test(text)&&!Number.isSafeInteger(n)){error('"'+name+'" is too large to store exactly. Use a quoted value in the Advanced raw JSON field.');control.focus();return false;}row[name]=n;continue;}
   row[name]=text;
  }
- const raw=form.elements.command_value;raw.dataset.plainAdd='1';raw.value=JSON.stringify(row);
+ const raw=form.elements.command_value;raw.value=JSON.stringify(row);
  return true;
 }
 document.addEventListener('submit',async e=>{
