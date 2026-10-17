@@ -5,7 +5,7 @@
  const id=workspace.dataset.fileWorkspace,base='/collections/'+id;
  const pane=document.getElementById('file-workspace-tool'),host=document.getElementById('workspace-tool-content');
  const heading=document.getElementById('workspace-tool-title'),notice=document.getElementById('workspace-tool-notice');
- const labels={clean:'Clean',sql:'SQL query',export:'Convert / Download',insights:'Column summaries',quality:'Validate data',raw:'Inspect JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes',settings:'File settings',views:'Saved views',history:'Processing history',revisions:'File history'};
+ const labels={clean:'Clean',sql:'SQL query',export:'Convert / Download',insights:'Summary',quality:'Checks',raw:'File data (JSON)',schema:'Schema',api:'API settings',advanced:'Saved steps',settings:'File settings',views:'Saved views',history:'Processing history',revisions:'File history'};
  const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id,settings:base+'#file-settings',views:base+'#saved-views',history:base+'#activity',revisions:base+'/file-history'};
  const cache=new Map();let active='',lastTrigger=null;
  const sourceArea=workspace.querySelector('.file-workspace-data'),main=workspace.querySelector('.workspace-main');
