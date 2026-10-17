@@ -21,35 +21,12 @@
         : 'Choose a collection. Your original source stays unchanged.';
     }
   }
-  function applyColumns(save = false) {
-    const detail = document.querySelector('[data-collection]');
-    if (!detail) return;
-    const boxes = [...detail.querySelectorAll('[data-column-index]')];
-    for (const box of boxes) for (const cell of detail.querySelectorAll('[data-column="' + box.dataset.columnIndex + '"]')) cell.hidden = !box.checked;
-    if (save && boxes.length) {
-      try { localStorage.setItem('fluxport-columns-' + detail.dataset.collection, JSON.stringify(boxes.filter(b => b.checked).map(b => b.dataset.columnName))); } catch (_) {}
-    }
-  }
-  function restoreColumns() {
-    const detail = document.querySelector('[data-collection]');
-    if (!detail) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('fluxport-columns-' + detail.dataset.collection));
-      if (Array.isArray(saved)) detail.querySelectorAll('[data-column-index]').forEach(box => { box.checked = saved.includes(box.dataset.columnName); });
-    } catch (_) {}
-    applyColumns();
-  }
   document.addEventListener('change', event => {
     if (event.target.matches('#input-mode,#converter-collection')) syncConverter();
-    if (event.target.matches('[data-column-index]')) applyColumns(true);
   });
   document.addEventListener('click', event => {
 	if(event.target.closest('[data-sql-insert]')){const form=event.target.closest('form'),input=form?.querySelector('[data-sql-identifier]'),editor=form?.querySelector('textarea[name="sql"]');if(input?.value&&editor){const name='"'+input.value.replaceAll('"','""')+'"';editor.setRangeText(name,editor.selectionStart,editor.selectionEnd,'end');editor.focus();editor.dispatchEvent(new Event('input',{bubbles:true}));}return;}
-    const button = event.target.closest('[data-columns]');
-    if (!button) return;
-    document.querySelectorAll('[data-column-index]').forEach((box, i) => { box.checked = button.dataset.columns === 'all' || i < 12; });
-    applyColumns(true);
   });
-  document.body.addEventListener('htmx:afterSwap', () => { syncConverter(); restoreColumns(); });
-  syncConverter(); restoreColumns();
+  document.body.addEventListener('htmx:afterSwap', () => { syncConverter(); });
+  syncConverter();
 })();

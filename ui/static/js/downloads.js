@@ -50,8 +50,6 @@
  document.body.addEventListener('htmx:afterSwap',e=>{
   availability();
   if(e.detail.target===status){if(chooser)chooser.open=true;deliver();if(e.detail.requestConfig?.verb?.toLowerCase()==='post')refresh();}
-  const tab=document.querySelector('#detail-content [data-active-tab]')?.dataset.activeTab;
-  if(tab==='preview'||tab==='raw')document.querySelectorAll('.collection-preview .tabs>span').forEach(el=>el.remove());
  });
  document.body.addEventListener('htmx:afterRequest',e=>{
   if(e.detail.elt===form&&!e.detail.successful){status.textContent='Unable to prepare download. Please try again.';chooser.open=true;}

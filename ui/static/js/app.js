@@ -25,7 +25,6 @@
   document.body.addEventListener('htmx:sendError', () => toast('Connection failed. Check that FluxPort is running.'));
   document.body.addEventListener('htmx:afterSwap', event => {
  if(event.detail.target?.id==='conversion-result'&&event.detail.xhr?.status<400)$('feedback').replaceChildren();
-    const body=document.querySelector('[data-active-tab]');if(body)document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('selected',new URL(a.href).searchParams.get('tab')===body.dataset.activeTab));
   });
   document.body.addEventListener('htmx:xhr:progress', event => {const el=$('upload-progress');if(el&&event.detail.total){el.hidden=false;el.value=event.detail.loaded/event.detail.total*100;}});
   document.body.addEventListener('htmx:afterRequest', () => {const el=$('upload-progress');if(el)el.hidden=true;});
