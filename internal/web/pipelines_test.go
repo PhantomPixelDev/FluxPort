@@ -10,7 +10,7 @@ import (
 func TestPipelineEditorPreviewSaveExportAndAPI(t *testing.T) {
 	app, s, col := setup(t, "", "")
 	resp, body := call(t, app, "GET", "/pipelines?collection="+col.ID, "", nil, nil)
-	if resp.StatusCode != 200 || !strings.Contains(body, "Data pipelines") {
+	if resp.StatusCode != 200 || !strings.Contains(body, "Saved steps</h1>") {
 		t.Fatal(resp.StatusCode, body)
 	}
 	token := csrf(t, body)
