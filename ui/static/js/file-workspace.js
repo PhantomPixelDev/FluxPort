@@ -364,7 +364,7 @@
    if(button){button.textContent=original?'Download original file':'Download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}
    const rowScope=form.querySelector('.download-row-scope');if(rowScope)rowScope.hidden=original;
    const sourceOptions=form.querySelector('.download-source-options');if(sourceOptions)sourceOptions.hidden=original;
-   const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=original?'Exact source bytes.':form.elements.scope.value==='entire'?'All rows in this dataset.':'Matching rows, in table order.';
+   const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=original?'Exact source bytes, every row.':form.elements.scope.value==='entire'?'Every row in the file.':'Rows matching the current search and filters, in table order.';
    const context=form.querySelector('[data-download-context]');if(context)context.textContent=(source.value==='original'?'File data':source.value==='current'?'Changes preview':source.selectedOptions[0].textContent)+' · Change';
   }
   const target=form?.querySelector('[data-download-note]');if(target){target.textContent=select.value==='original'?'Exact source file · all rows':select.selectedOptions[0]?.dataset.formatNote||'';target.hidden=!target.textContent;}
