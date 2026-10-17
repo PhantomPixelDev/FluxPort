@@ -321,3 +321,7 @@ git commit -m "ux: record follow-up work"
 - Type consistency: template funcs `fieldType` only added in T5 funcmap; JS hooks list in Global Constraints is the single source attr names checked against per task.
 - Review Focus coverage: (1) T2 Step 2 grep; (2) T4 conditional option test via `download_flow_test.go`; (3) T3 Step 4 + test grep; (4) T7 Step 3; (5) T5 renders with read-only collection via existing tests.
 - Proportion: plan ~3× spec length; bodies only where behavior must change (T4 Step 3 rule, T5 mini-form construction), rest are exact-value edits.
+
+## Post-review record (2026-10-17)
+
+Review verdict was "with fixes"; the findings were fixed in commit c05e93e (completed vocabulary sweep with extended assertion table, dead column controls removed from the live preview partial plus its stale usability-check steps, review polish). One deliberate deviation stands and is sanctioned: Task 4 Step 3 said the download form must not gain options at runtime, but `ui/static/js/file-workspace.js` still inserts a single "Changes preview" option when the browser holds an unsaved Clean draft — the draft lives in localStorage, which the server cannot see, so no server-rendered form can cover that case. The inserted option copies the server-rendered option text byte-for-byte; the exception needs the owner's decision only if the local-draft download path itself is ever changed.
