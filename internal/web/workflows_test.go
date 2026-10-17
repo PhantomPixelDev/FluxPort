@@ -29,7 +29,7 @@ func TestUnsupportedBatchFileReportsRejectionAndKeepsValidFile(t *testing.T) {
 	}
 	w.Close()
 	resp, body = call(t, app, "POST", "/collections/import", buf.String(), map[string]string{"Content-Type": w.FormDataContentType(), "HX-Request": "true", "X-CSRF-Token": token}, cookies)
-	if resp.StatusCode != 200 || !strings.Contains(body, "nstalls.ini · rejected") || !strings.Contains(body, "accepted.JSON · ready") || !strings.Contains(body, `hx-swap-oob="innerHTML"`) {
+	if resp.StatusCode != 200 || !strings.Contains(body, "nstalls.ini · rejected") || !strings.Contains(body, "accepted.JSON · Done") || !strings.Contains(body, `hx-swap-oob="innerHTML"`) {
 		t.Fatalf("missing actual per-file results: %d %s", resp.StatusCode, body)
 	}
 	files, err := os.ReadDir(s.Root)

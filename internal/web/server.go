@@ -150,6 +150,23 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 			return "text"
 		}
 	})
+
+	engine.AddFunc("jobState", func(state string) string {
+		switch state {
+		case "staged":
+			return "Uploaded"
+		case "queued", "running":
+			return "Working"
+		case "ready":
+			return "Done"
+		case "failed":
+			return "Failed"
+		case "cancelled", "interrupted":
+			return "Cancelled"
+		default:
+			return state
+		}
+	})
 	engine.AddFunc("has", func(s string) bool { return s != "" })
 	if err = engine.Load(); err != nil {
 		return nil, err
