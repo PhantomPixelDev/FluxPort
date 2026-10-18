@@ -84,8 +84,10 @@
       if(event.key==='Enter'){event.preventDefault();run(selected);}
     });
     document.addEventListener('keydown',event=>{
-      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();palette.open?(palette.close()):palette.showModal();return;}
-      if(event.key==='?'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();sheet?.showModal();}
+      // An input inside a closed dialog (the palette) is not a typing context.
+      const typing=target=>{const field=target.closest&&target.closest('input,textarea,select,[contenteditable]');return !!field&&!field.closest('dialog:not([open])');};
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&!event.altKey&&!typing(event.target)){event.preventDefault();palette.open?(palette.close()):palette.showModal();return;}
+      if(event.key==='?'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!typing(event.target)){event.preventDefault();sheet?.showModal();}
     });
   }
   $('copy-curl')?.addEventListener('click',()=>{try{const r=request();let cmd='curl -X '+r.method+' '+shellQuote(r.url.href);r.headers.forEach((v,k)=>{cmd+=' -H '+shellQuote(k+': '+v)});if(r.body)cmd+=' --data-raw '+shellQuote(r.body);copy(cmd)}catch(error){toast(error.message)}});

@@ -156,6 +156,7 @@ async (page, artifactDir) => {
   for(const want of ['Clean','SQL','Summary','File settings','Add row','Paste data'])if(!all.some(text=>text.includes(want)))throw Error('Command palette is missing '+want);
   await palette.locator('[data-command-search]').fill('settings');const filtered=await commands.allInnerTexts();if(!filtered.every(text=>text.toLowerCase().includes('settings')))throw Error('Command palette filter is wrong');
   await page.keyboard.press('Escape');if(await palette.evaluate(el=>el.open))throw Error('Escape did not close the command palette');
+  await page.evaluate(()=>{if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur();});
   await page.keyboard.press('Shift+Slash');const sheet=page.locator('#shortcut-sheet');if(!await sheet.evaluate(el=>el.open))throw Error('? did not open the shortcut sheet');
   const shortcuts=await sheet.innerText();for(const want of ['Double-click','Enter','Escape','Undo'])if(!shortcuts.includes(want))throw Error('Shortcut sheet is missing '+want);
   await page.keyboard.press('Escape');
