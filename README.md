@@ -12,15 +12,15 @@ FluxPort is a self-hosted workspace for CSV, JSON, Excel, Parquet, YAML, XML, ND
 
 ## Work with files
 
-Each file opens a focused workspace: **Data · Clean · SQL · Inspect**. Tables and editors use the main page, with **Convert / Download** and **File settings** always easy to find. On mobile, secondary actions stay in **⋯ More**.
+Each file opens a focused workspace: **Data · Clean · SQL · Summary**. Tables and editors use the main page, always with **Convert / Download** in the header, and the **⋯ More file options** menu holding File settings, File history, API settings, Saved views and Processing history.
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
 3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Escape cancels. Nested values open a larger JSON editor. Select cells with the keyboard or pointer, copy TSV or exact JSON records, and use **Edit** for bounded spreadsheet paste, rows, columns and fill-down. Each action has a preview and one Undo step. **Undo**, **Redo** and **History** stay beside the file information.
-4. **Clean:** find and replace text, trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** saves to the same file and refreshes its table. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
+4. **Clean:** find and replace text, trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** updates editable text files; read-only files get a prepared result to review and download. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
 5. **Convert / Download:** choose rows and an output format. Downloads follow the current file and filters. **Original file** downloads its exact current bytes.
 
-Small text files support direct editing without enabling REST writes. Saved versions survive restarts, with up to 20 versions or 64 MiB per file; Undo restores exact bytes. Saves may normalize the source formatting. Large files, Excel and Parquet remain read-only: cleanup prepares a working preview for download. SQL text, engine and view state restore in the same browser tab without executing SQL. See the [workspace walkthrough](docs/dataset-workspace.md).
+Small text files support direct editing without enabling REST writes. Saved versions survive restarts, with up to 20 versions or 64 MiB per file; Undo restores exact bytes. Saves may normalize source formatting. Excel, Parquet and large files stay source-read-only; **Create editable copy** makes a separate JSON file when it fits the editing limits, and cleanup can prepare a result for download. SQL text, engine and view state restore in the same browser tab without executing SQL. See the [workspace walkthrough](docs/dataset-workspace.md).
 
 | Make changes | Download the result |
 | --- | --- |
@@ -72,6 +72,8 @@ Original downloads preserve the exact source bytes. Use Check format changes for
 - **Saved steps:** reusable cleanup, joins, calculations, output validation, revisions and scheduled runs through the full step editor.
 - **SQL:** query, join, aggregate, filter and sort collection records. Automatic selection uses SQLite for small/simple work and DuckDB for suitable analytical queries; manual engine selection is available.
 - **REST APIs:** pagination, search, schema, response transformations and optional size-bounded writes. Authentication is configurable; the public demo requires no bearer token.
+- **Data engineering:** compare file versions by key, validate contracts, download valid and rejected rows, reuse parameterized recipes, and reshape nested records. See [repeatable file workflows](docs/data-engineering.md).
+- **Controlled imports:** preview text files, select supported encodings and CSV delimiters, and import gzip text files with explicit normalization behavior.
 - **Large datasets:** streaming JSON arrays, CSV and NDJSON, disk-backed indexes, background jobs and bounded record sizes. DuckDB analytical queries support disk spilling within configured limits.
 
 Simple conversions remain native Go. Explorer and pipeline processing retain their established Go/SQLite paths; DuckDB does not replace SQLite metadata or every operation. [DuckDB guide](docs/duckdb.md) · [Explorer and SQL](docs/explorer-sql.md) · [Architecture](docs/architecture.md)
