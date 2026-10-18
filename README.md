@@ -39,7 +39,7 @@ Download a verified executable and [checksums](https://github.com/PhantomPixelDe
 
 Open **http://127.0.0.1:8080**. The executable includes the UI and DuckDB; it needs no Go compiler, Node.js runtime or external database. Linux binaries are built on Debian 12 and require the system C/C++ runtime (`libstdc++6`); release smoke checks run on Ubuntu 24.04. Windows binaries use the standard Windows runtime.
 
-For Docker, clone this repository and run:
+For Docker, clone this repository, set `FLUXPORT_ADMIN_PASSWORD` and `FLUXPORT_API_KEY` in a `.env` file next to `compose.yaml`, then run:
 
 ```sh
 docker compose build --build-arg VERSION=0.3.24
