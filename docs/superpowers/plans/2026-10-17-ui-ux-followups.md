@@ -39,3 +39,4 @@ Every column header now carries one `<details class="column-menu">` with Sort as
 - `eecbadd` ux: add a command palette and keyboard shortcut sheet
 - `1c03ba2` ux: split the component stylesheet and drop rules nothing renders
 - `7390daa` ux: list recent files and import in the palette; record follow-up status
+- `8011f2d` ux: gather file context in a right rail
