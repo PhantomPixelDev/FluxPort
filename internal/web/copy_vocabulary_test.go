@@ -31,6 +31,9 @@ func TestUserVocabularyUsesFilesTerms(t *testing.T) {
 		{name: "saved steps search button", path: "/pipelines?collection=" + col.ID, want: "Find files", avoid: "Find collections"},
 		{name: "saved steps append option", path: "/pipelines?collection=" + col.ID, want: "Append another file", avoid: "Append another collection"},
 		{name: "saved steps run button", path: "/pipelines?collection=" + col.ID, want: "Save and run steps", avoid: "Save and run pipeline"},
+		{name: "saved steps export button", path: "/pipelines?collection=" + col.ID, want: ">Export steps<", avoid: "Export definition"},
+		{name: "saved steps import label", path: "/pipelines?collection=" + col.ID, want: ">Steps file<", avoid: "Definition file"},
+		{name: "saved steps import button", path: "/pipelines?collection=" + col.ID, want: ">Load steps into editor<", avoid: "Load definition into editor"},
 		{name: "join builder option", path: "/collections/" + col.ID + "/changes", want: "All rows from this file", avoid: "from this dataset"},
 		{name: "join builder summary", path: "/collections/" + col.ID + "/changes", want: "Combine with another file", avoid: "another dataset"},
 		{name: "join builder search button", path: "/collections/" + col.ID + "/changes", want: ">Find a file<", avoid: "Find dataset"},
@@ -65,5 +68,12 @@ func TestSavedStepsDeleteButtonReadsSteps(t *testing.T) {
 	_, html := call(t, app, "GET", "/pipelines?saved="+saved[0].ID, "", nil, nil)
 	if !strings.Contains(html, ">Delete steps<") || strings.Contains(html, ">Delete recipe<") {
 		t.Fatal("delete button does not read Delete steps")
+	}
+	if !strings.Contains(html, ">Download saved steps<") || strings.Contains(html, "Download saved definition") {
+		t.Fatal("saved steps download does not read Download saved steps")
+	}
+	_, library := call(t, app, "GET", "/pipelines", "", nil, nil)
+	if !strings.Contains(library, ">Download steps<") || strings.Contains(library, "Download definition") {
+		t.Fatal("saved steps library download does not read Download steps")
 	}
 }
