@@ -11,6 +11,9 @@ async (page,artifactDir,workbook)=>{
  try{
   await page.goto(base+'/collections');await page.locator('#import>summary').click();await page.locator('#import-file').setInputFiles({name:filename,mimeType:'application/json',buffer:Buffer.from(data)});await page.getByRole('button',{name:'Open selected files',exact:true}).click();
   const row=page.locator('#collection-table tr').filter({hasText:filename});await row.filter({hasText:'ready'}).waitFor();file=base+await row.getByRole('link',{name:filename,exact:true}).getAttribute('href');await page.goto(file);
+  if(await page.locator('.workspace-primary-views [aria-current="page"]').count()!==1)throw Error('The file page must mark exactly one primary tab as current');
+  const opener=page.locator('[data-edit-record]').first();await opener.click();await page.locator('[data-record-dialog][open]').waitFor();await page.keyboard.press('Escape');
+  if(!await page.evaluate(()=>document.activeElement?.matches('[data-edit-record]')))throw Error('Closing the record dialog did not return focus to its opener');
   const cell=name=>page.locator('tbody td[data-sheet-cell]').filter({has:page.locator('[data-cell-raw]')}); // select through actual column indices below
   const index=async name=>page.locator('[data-sheet-column]').evaluateAll((es,name)=>es.find(e=>e.value===name).dataset.sheetColumn,name);
   const nameIndex=await index('name'),literalIndex=await index('a.b/x');

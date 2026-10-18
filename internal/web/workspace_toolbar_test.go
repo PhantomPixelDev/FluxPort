@@ -1,6 +1,8 @@
 package web
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"os"
 	"strings"
 	"testing"
@@ -14,7 +16,7 @@ import (
 func TestWorkspaceToolbarFourTabsAndFileMenu(t *testing.T) {
 	app, _, col := setup(t, "", "")
 	base := "/collections/" + col.ID
- resp, html := call(t, app, "GET", base, "", nil, nil)
+	resp, html := call(t, app, "GET", base, "", nil, nil)
 	if resp.StatusCode != 200 {
 		t.Fatal(resp.StatusCode)
 	}
@@ -37,7 +39,7 @@ func TestWorkspaceToolbarFourTabsAndFileMenu(t *testing.T) {
 	if menuStart < 0 || menuEnd < 0 {
 		t.Fatal("workspace-more menu missing")
 	}
-	menu := html[menuStart:strings.Index(html[menuStart:], "</details>")+menuStart]
+	menu := html[menuStart : strings.Index(html[menuStart:], "</details>")+menuStart]
 	if !strings.Contains(menu, `<div data-workspace-theme>`) {
 		t.Fatal("menu lost the data-workspace-theme mountpoint")
 	}
@@ -52,6 +54,78 @@ func TestWorkspaceToolbarFourTabsAndFileMenu(t *testing.T) {
 			t.Fatalf("menu item %q out of order", want)
 		}
 		last = at
+	}
+}
+
+// Exactly one primary tab marks the current view with aria-current="page", so
+// screen readers announce position in the workspace. The Summary tab covers its
+// whole view group (Summary, Checks, Schema, JSON); overlays such as File
+// settings or Convert / Download mark no tab.
+func TestWorkspaceTabMarksActiveView(t *testing.T) {
+	app, _, col := setup(t, "", "")
+	base := "/collections/" + col.ID
+	for _, view := range []struct {
+		path   string
+		target string
+	}{
+		{base, `data-workspace-data`},
+		{base + "/changes", `data-workspace-target="clean"`},
+		{base + "/sql", `data-workspace-target="sql"`},
+		{base + "/insights", `data-workspace-target="insights"`},
+		{base + "/quality", `data-workspace-target="insights"`},
+		{base + "?tab=schema", `data-workspace-target="insights"`},
+	} {
+		resp, html := call(t, app, "GET", view.path, "", nil, nil)
+		if resp.StatusCode != 200 {
+			t.Fatalf("%s: %d", view.path, resp.StatusCode)
+		}
+		start := strings.Index(html, `aria-label="Views for this file"`)
+		if start < 0 {
+			t.Fatalf("%s: workspace navigation missing", view.path)
+		}
+		toolbar := html[start:]
+		if end := strings.Index(toolbar, "</nav>"); end > 0 {
+			toolbar = toolbar[:end]
+		}
+		if n := strings.Count(toolbar, `aria-current="page"`); n != 1 {
+			t.Fatalf("%s: %d primary tabs marked current, want 1", view.path, n)
+		}
+		marked := false
+		for _, link := range strings.Split(toolbar, "<a ") {
+			if strings.Contains(link, view.target) && strings.Contains(link, `aria-current="page"`) {
+				marked = true
+			}
+		}
+		if !marked {
+			t.Fatalf("%s: %s does not carry aria-current", view.path, view.target)
+		}
+	}
+}
+
+// The theme is applied before first paint by one inline script in the head,
+// which strict CSP only allows through its sha256 source. This test hashes the
+// script exactly as served and requires the Content-Security-Policy header to
+// carry it, so editing the script without updating the header fails here.
+func TestInlineThemeScriptAllowedByCSP(t *testing.T) {
+	app, _, _ := setup(t, "", "")
+	resp, html := call(t, app, "GET", "/collections", "", nil, nil)
+	if resp.StatusCode != 200 {
+		t.Fatal(resp.StatusCode)
+	}
+	start := strings.Index(html, "<script>try{var t=localStorage.getItem('fluxport-theme')")
+	if start < 0 {
+		t.Fatal("inline theme script missing from the head")
+	}
+	end := strings.Index(html[start:], "</script>")
+	if end < 0 {
+		t.Fatal("inline theme script is not closed")
+	}
+	script := html[start+len("<script>") : start+end]
+	sum := sha256.Sum256([]byte(script))
+	hash := "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
+	csp := resp.Header.Get("Content-Security-Policy")
+	if !strings.Contains(csp, hash) {
+		t.Fatalf("script-src does not allow the inline theme script: add %s to the header, got %s", hash, csp)
 	}
 }
 

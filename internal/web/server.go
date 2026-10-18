@@ -180,7 +180,9 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 		c.Set("X-Content-Type-Options", "nosniff")
 		c.Set("Referrer-Policy", "same-origin")
 		c.Set("X-Frame-Options", "DENY")
-		c.Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")
+		// The sha256 source allows the single inline theme script in the head;
+		// TestInlineThemeScriptAllowedByCSP keeps the hash in sync with it.
+		c.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'sha256-1kAe5bhGb3IyiCRrMCHDG+GY7ReIF3v0FebN2nIbv4I='; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")
 		if !strings.HasPrefix(c.Path(), "/static/") {
 			c.Set("Cache-Control", "no-store")
 		}

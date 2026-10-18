@@ -3,7 +3,10 @@
   'use strict';
   if (window.htmx) Object.assign(htmx.config, {allowEval:false, allowScriptTags:false, includeIndicatorStyles:false});
   const $ = id => document.getElementById(id);
-  try { const theme=localStorage.getItem('fluxport-theme'); if(theme==='light'||theme==='dark') document.documentElement.dataset.theme=theme; } catch (_) {}
+  // The stored theme is applied before first paint (inline script in base.html);
+  // here we keep following the system preference until the user picks a theme.
+  const prefersLight=matchMedia('(prefers-color-scheme: light)');
+  prefersLight.addEventListener('change',event=>{let stored=null;try{stored=localStorage.getItem('fluxport-theme')}catch(_){}if(stored==='light'||stored==='dark')return;document.documentElement.dataset.theme=event.matches?'light':'dark';});
   let toastTimer;
   function closeMenu() { $('sidebar').classList.remove('is-open'); $('menu-toggle').setAttribute('aria-expanded','false'); }
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('sidebar').classList.contains('is-open')){closeMenu();$('menu-toggle').focus();}});

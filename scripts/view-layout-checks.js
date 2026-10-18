@@ -23,6 +23,20 @@ async (page, artifactDir) => {
     await page.evaluate(()=>document.documentElement.style.zoom='2');if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Zoom overflow '+path+' '+width+' '+JSON.stringify(await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,items:[...document.querySelectorAll('body *')].filter(e=>!e.closest('.table-scroll')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,5).map(e=>({class:e.className,text:e.textContent.trim().slice(0,30),right:e.getBoundingClientRect().right}))}))));await page.evaluate(()=>document.documentElement.style.zoom='');
    }}
   }
+  const themeContext=await page.context().browser().newContext({viewport:{width:1440,height:1000},colorScheme:'light'});
+  try{
+   const themed=await themeContext.newPage();
+   await themed.goto(base+'/collections');
+   if(await themed.evaluate(()=>document.documentElement.dataset.theme)!=='light')throw Error('A light system preference was ignored');
+   await themed.emulateMedia({colorScheme:'dark'});
+   await themed.waitForFunction(()=>document.documentElement.dataset.theme==='dark');
+   await themed.evaluate(()=>localStorage.setItem('fluxport-theme','light'));
+   await themed.reload();
+   if(await themed.evaluate(()=>document.documentElement.dataset.theme)!=='light')throw Error('A stored theme did not beat the system preference');
+   await themed.evaluate(()=>{localStorage.removeItem('fluxport-theme');});
+   await themed.reload();
+   if(await themed.evaluate(()=>document.documentElement.dataset.theme)!=='dark')throw Error('Removing the stored theme did not return to the system preference');
+  }finally{await themeContext.close();}
   if(errors.length)throw Error('App page errors: '+errors.join('; '));
   console.log('App-wide layouts passed: library, overview, converter, SQL, pipelines, API, workflow, settings, exclusions and errors; desktop/mobile, themes, text contrast and single-border search.');
  }finally{page.off('pageerror',onError);await page.setViewportSize({width:1440,height:1000});}
