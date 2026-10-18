@@ -1,0 +1,517 @@
+  .mobile-menu {
+    display: inline-flex!important;
+  }
+
+  .mobile-close {
+    display: inline-flex;
+  }
+
+  .sidebar .brand {
+    padding-right: 27px;
+  }
+
+  .topbar {
+    padding: 0 18px;
+    height: 57px;
+  }
+
+  .footer {
+    padding: 15px 18px;
+    flex-wrap: wrap;
+  }
+
+  .footer span:last-child {
+    display: none;
+  }
+
+  .panel-toolbar>.small-text {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .converter-toolbar label {
+    gap: 6px;
+  }
+
+  .converter-toolbar select {
+    min-width: 88px;
+  }
+
+  .converter-toolbar .button {
+    margin-left: auto;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+
+  .data-textarea {
+    min-height: 300px;
+  }
+
+  .editor-footer {
+    flex-wrap: wrap;
+  }
+
+  .explorer-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .request-line>.button {
+    width: 100%;
+  }
+
+  .response-panel .panel-heading {
+    flex-wrap: wrap;
+  }
+
+  .endpoint-bar code {
+    flex-basis: 80%;
+  }
+
+  .section-caption {
+    flex-wrap: wrap;
+  }
+
+  .topbar-actions {
+    gap: 5px;
+  }
+
+  .breadcrumbs {
+    gap: 9px;
+  }
+
+  .breadcrumbs strong {
+    max-width: 180px;
+  }
+
+  .lower-grid {
+    margin-top: 18px;
+  }
+
+  .settings-list>div {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .notice {
+    font-size: 12px;
+  }
+
+  .workflow-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .browse-controls label {
+    margin: 0;
+    flex: 1 1 200px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .quick-actions {
+    padding: 18px;
+  }
+
+  .workflow-source {
+    padding: 18px;
+  }
+
+  .workflow-step {
+    padding: 18px;
+  }
+
+  .heading-actions {
+    flex-wrap: wrap;
+  }
+
+  .metadata-grid strong {
+    font-size: 20px;
+  }
+
+  .metadata-grid>div {
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .workspace {
+    margin-top: 22px;
+  }
+
+  .preview-table td {
+    font-size: 14px;
+  }
+}
+
+@media(prefers-reduced-motion:no-preference) {
+  .sidebar nav a {
+    transition: none;
+  }
+
+  .toast {
+    transition: opacity .12s ease;
+  }
+}
+
+@media(max-width:650px) {
+  .job-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media(max-width:600px) {
+  .filter-row {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .sort-row {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .sheet-query {
+    padding: 16px;
+  }
+
+  .sheet-data {
+    padding: 16px;
+  }
+
+  .sheet-data .pagination {
+    flex-wrap: wrap;
+  }
+
+  .sheet-tools {
+    padding: 16px;
+  }
+
+  .sql-panel {
+    padding: 16px;
+  }
+
+  .sheet-query-bar {
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+  }
+
+  .sheet-query-bar>label:first-child {
+    grid-column: 1/-1;
+  }
+
+  .sheet-query-bar>.button {
+    width: 100%;
+  }
+
+  .sheet-query-footer {
+    align-items: start;
+    flex-wrap: wrap;
+  }
+
+  .tool-section .inline-form {
+    align-items: stretch;
+  }
+
+  .tool-section .inline-form>label {
+    flex: 1;
+  }
+
+  .pipeline-source {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .pipeline-panel .panel-toolbar>label {
+    flex: 1 1 240px;
+    width: auto;
+    max-width: 320px;
+  }
+
+  .quality-layout .toolbar .button {
+    flex: 1;
+  }
+
+  .quality-layout .table-wrap table {
+    min-width: 620px;
+  }
+
+  .collection-actions {
+    margin-top: 16px;
+    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .collection-actions>.button {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .collection-actions>details>summary {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .collection-actions>.download-control[open] {
+    grid-column: 1/-1;
+    grid-row: 2;
+  }
+
+  .collection-actions>.download-control[open]>summary {
+    width: auto;
+  }
+
+  .download-chooser {
+    position: static;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin-top: 10px;
+  }
+
+  .collection-page .collection-tools {
+    padding: 16px;
+  }
+}
+
+@media(max-width:700px) {
+  .sheet-toolbar .sheet-search {
+    min-width: 100%;
+    flex: 1;
+  }
+
+  .sheet-toolbar .sheet-query-bar {
+    position: relative;
+  }
+
+  .sheet-toolbar .sheet-density {
+    flex: 1 1 130px;
+    min-width: 130px;
+  }
+
+  .sheet-toolbar .column-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,200px),1fr));
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .cell-copy {
+    opacity: 1;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .cleanup-controls {
+    display: flex;
+    gap: 16px;
+    align-items: end;
+    flex-wrap: wrap;
+    margin: 0;
+  }
+
+  .cleanup-save {
+    align-items: stretch;
+  }
+
+  .cleanup-save>* {
+    width: 100%;
+  }
+
+  .cleanup-form>.panel {
+    padding: 18px;
+  }
+
+  .dataset-downloads {
+    padding: 18px;
+  }
+}
+
+@media(pointer:coarse) {
+  .cell-copy {
+    opacity: 1;
+    min-width: 32px;
+    height: 32px;
+  }
+}
+
+@media(max-width:1000px) {
+  .cleanup-preview .record-scroll {
+    max-height: 360px;
+  }
+}
+
+@media(max-width:767px) {
+  .two-column {
+    grid-template-columns: minmax(0,1fr);
+    gap: 16px;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .breadcrumbs {
+    min-width: 0;
+  }
+
+  .breadcrumbs > span {
+    display: none;
+  }
+
+  .breadcrumbs > strong {
+    display: none;
+  }
+
+  .file-list-table {
+    table-layout: fixed;
+  }
+
+  .file-list-table th:nth-child(3) {
+    display: none;
+  }
+
+  .file-list-table td:nth-child(3) {
+    display: none;
+  }
+
+  .file-list-table th:nth-child(4) {
+    display: none;
+  }
+
+  .file-list-table td:nth-child(4) {
+    display: none;
+  }
+
+  .file-list-table .file-open-action {
+    display: none;
+  }
+
+  .file-list-table th:nth-child(2) {
+    width: 72px;
+  }
+
+  .file-list-table td:nth-child(2) {
+    width: 72px;
+  }
+
+  .file-list-table th:last-child {
+    width: 88px;
+  }
+
+  .file-list-table td:last-child {
+    width: 88px;
+  }
+
+  .file-list-table td {
+    padding: 12px 8px;
+  }
+
+  .file-list-table .file-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    align-items: start;
+  }
+
+  .file-list-table .inline-form {
+    justify-content: end;
+  }
+
+  .sql-actions>label {
+    flex-basis: 100%;
+  }
+
+  .code-block {
+    white-space: pre;
+    overflow: auto;
+  }
+
+  .app-shell #main {
+    padding: 24px 16px;
+  }
+
+  .content-section {
+    padding: 16px;
+  }
+
+  .panel-heading {
+    padding: 16px;
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+
+  .panel-toolbar {
+    padding: 16px;
+  }
+
+  .inline-form>label {
+    flex-basis: 100%;
+  }
+
+  .tools-disclosure {
+    padding: 16px;
+  }
+
+  .import-panel {
+    padding: 16px;
+  }
+
+  .activity-panel {
+    padding: 16px;
+  }
+
+  .pipeline-panel {
+    padding: 16px;
+  }
+
+  .quality-layout .panel {
+    padding: 16px;
+  }
+
+  .explorer-request {
+    padding: 16px;
+  }
+
+  .collection-tools {
+    padding: 16px;
+  }
+}
+
+/* Editable sheet cells and the first-run editing hint (ux task 5). */
+td[data-cell-editable]{cursor:text;}
+td[data-cell-editable]:hover{box-shadow:inset 0 0 0 1px var(--accent);}
+td[data-cell-editable]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.edit-hint{display:flex;align-items:center;gap:8px;margin:8px 0;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--muted);font-size:12px;}
+.edit-hint-close{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;}
+.edit-hint-close:hover{color:var(--text);}
+fieldset.editor-add-fields{display:flex;flex-wrap:wrap;gap:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin:0 0 12px;}
+fieldset.editor-add-fields legend{font-size:13px;color:var(--muted);padding:0 4px;}
+fieldset.editor-add-fields .field-label{flex:1 1 180px;min-width:160px;}
+
+/* Calm chrome (ux task 7): softer stripes, accent-tinted row hover, quieter badges. */
+tbody tr:nth-child(even),
+.preview-table tbody tr:nth-child(even),
+.job-row:nth-child(even) {
+  background: color-mix(in srgb, var(--stripe) 50%, transparent);
+}
+
+tbody tr:hover,
+.preview-table tbody tr:hover {
+  background: var(--surface-veil);
+}
+
+.format-tag {
+  opacity: 0.85;
+  border-radius: var(--radius-sm);
+}
+

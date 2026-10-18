@@ -85,7 +85,7 @@ async (page, artifactDir) => {
   const input=JSON.stringify(Array.from({length:60},(_,i)=>({id:i+1,name:i===0?' Ada ':'Person '+i,'a.b/x':'山田 '+i,nested:{enabled:true},empty:'',nil:null}))).replace('"id":1,','"id":1,"large":9007199254740993,');
   await page.locator('#import-file').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(input)});await page.getByRole('button',{name:'Open selected files',exact:true}).click();
   const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor({timeout:120000});id=(await row.getByRole('link',{name,exact:true}).getAttribute('href')).split('/')[2];await page.goto(base+'/collections/'+id);
-  const styles=await page.locator('link[rel=stylesheet]').evaluateAll(nodes=>nodes.map(n=>new URL(n.href).pathname.split('/').pop()));if(JSON.stringify(styles)!==JSON.stringify(['tokens.css','components.css','workspace.css','editor.css']))throw Error('Unexpected stylesheet layers: '+styles.join(', '));
+  const styles=await page.locator('link[rel=stylesheet]').evaluateAll(nodes=>nodes.map(n=>new URL(n.href).pathname.split('/').pop()));if(JSON.stringify(styles)!==JSON.stringify(['tokens.css','components.css','content.css','tables.css','pages.css','workspace.css','editor.css']))throw Error('Unexpected stylesheet layers: '+styles.join(', '));
   await page.locator('#detail-content .sheet-data').waitFor();
   for(const width of [320,390,768,1024,1440,2560]){await page.setViewportSize({width,height:1000});await fit('Data '+width);}
   const table=page.locator('#detail-content');

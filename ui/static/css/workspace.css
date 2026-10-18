@@ -710,15 +710,6 @@ body:has(.collection-workspace) .app-shell {
   gap: 12px;
 }
 
-.workspace-view-switch {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--panel-raised);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
 .workspace-view-switch .button {
   border: 0;
   background: transparent;
@@ -1143,8 +1134,6 @@ body:has(.collection-workspace) #main {
   width: auto;
   max-width: 100%;
 }
-
-
 
 .collection-workspace .cleanup-form>.cleanup-steps {
   padding: 16px;
