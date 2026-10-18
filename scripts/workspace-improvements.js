@@ -1,6 +1,6 @@
 async (page,artifactDir,workbook) => {
  const errors=[];const onError=error=>errors.push(error.message);page.on('pageerror',onError);
- const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
+ const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await page.locator('.workspace-more').evaluate(el=>el.open))return;if(await summary.isVisible())await summary.click();};
  const base=new URL(page.url()).origin,prefix='workspace-'+Date.now();
  const sources=[{name:prefix+'-left.json',rows:[{'key.x':1,name:' Ada ',nested:{n:'9007199254740993'}},{'key.x':1,name:' Ada ',nested:{n:'9007199254740993'}},{'key.x':2,name:'Grace'}]},{name:prefix+'-right.json',rows:[{'key/y':1,value:'a'},{'key/y':1,value:'b'}]},{name:prefix+'-next.json',rows:[{name:' Alan '}]}];
  const imported=[],recipes=[];
@@ -15,7 +15,7 @@ async (page,artifactDir,workbook) => {
   }
   const [left,right,next,xlsx]=imported;
   await page.goto(base+'/collections/'+left);await page.getByLabel('Columns and table options',{exact:true}).click();await page.locator('[data-show-types]').check();await page.keyboard.press('Escape');await page.getByRole('link',{name:'Summary of name',exact:true}).click();
-  await page.getByRole('heading',{name:'Column summaries',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'Summary',exact:true}).waitFor();
   await page.getByText('1 duplicate rows found in checked data',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Preview trimming spaces',exact:true}).click();
   await page.locator('#workspace-result:not([hidden]) tbody tr').first().waitFor();
@@ -27,9 +27,9 @@ async (page,artifactDir,workbook) => {
   await page.locator('#workspace-result .sheet-data').waitFor();
   await page.locator('#workspace-result .cell-value').getByText('Alan',{exact:true}).waitFor();
   await page.goto(base+'/collections/'+left+'/changes?new=1');await page.getByText('Advanced',{exact:true}).click();await page.locator('.join-builder>summary').click();
-  await page.getByLabel('Match this column',{exact:true}).fill('key.x');await page.getByLabel('Other dataset',{exact:true}).selectOption(right);await page.getByLabel('Match their column',{exact:true}).selectOption('key/y');
+  await page.getByLabel('Match this column',{exact:true}).fill('key.x');await page.getByLabel('Other file',{exact:true}).selectOption(right);await page.getByLabel('Match their column',{exact:true}).selectOption('key/y');
   await page.getByRole('button',{name:'Preview join',exact:true}).click();
-  await page.getByText('Sample of 3 input rows: 2 matched, 1 unmatched; 2 have multiple matches. These are sample counts, not dataset totals.',{exact:true}).waitFor();
+  await page.getByText('Sample of 3 input rows: 2 matched, 1 unmatched; 2 have multiple matches. These are sample counts, not file totals.',{exact:true}).waitFor();
   await page.screenshot({path:artifactDir+'/join-preview.png'});
   await page.setViewportSize({width:390,height:844});if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)){await page.screenshot({path:artifactDir+'/join-mobile-overflow.png'});console.log(await page.evaluate(()=>[...document.querySelectorAll('main *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&r.right>innerWidth+2&&!e.closest('.record-scroll');}).slice(0,12).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right}))));throw Error('Mobile join overflow');}
   await openMore();await page.getByRole('button',{name:'Switch color theme',exact:true}).click();await page.screenshot({path:artifactDir+'/join-mobile.png'});await page.setViewportSize({width:1440,height:1000});

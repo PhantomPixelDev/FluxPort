@@ -420,6 +420,7 @@ pre {
   display: flex;
   align-items: center;
   gap: 9px;
+  flex-wrap: wrap;
 }
 
 .two-column {

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -51,5 +52,30 @@ func TestWorkspaceToolbarFourTabsAndFileMenu(t *testing.T) {
 			t.Fatalf("menu item %q out of order", want)
 		}
 		last = at
+	}
+}
+
+// The ⋯ menu is the only carrier of file controls after Task 2 removed the
+// standalone toolbar link, so hiding it at desktop width strands File
+// settings, File history and API settings (CI browser check May 2026 hit
+// exactly this: settings link resolved but never visible). The workspace CSS
+// must keep .workspace-more rendered at desktop and must not keep selectors
+// for the removed .workspace-file-action element.
+func TestWorkspaceMenuVisibleOnDesktop(t *testing.T) {
+	css, err := os.ReadFile("../../ui/static/css/workspace.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := strings.Index(string(css), ".workspace-more {")
+	if start < 0 {
+		t.Fatal("base .workspace-more rule missing")
+	}
+	rest := string(css[start:])
+	baseRule := rest[:strings.IndexAny(rest, "}")+1]
+	if strings.Contains(baseRule, "display: none") {
+		t.Fatal("⋯ menu hidden at desktop; File settings unreachable")
+	}
+	if strings.Contains(string(css), ".workspace-file-action") {
+		t.Fatal("dead .workspace-file-action CSS remains")
 	}
 }

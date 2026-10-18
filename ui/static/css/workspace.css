@@ -518,7 +518,7 @@ body:has(.collection-workspace) .app-shell {
 }
 
 .workspace-more {
-  display: none;
+  display: block;
   position: relative;
 }
 
@@ -1316,16 +1316,8 @@ body:has(.collection-workspace) #main {
     flex: 1;
   }
 
-  .workspace-file-action {
-    display: none;
-  }
-
   [data-workspace-theme-desktop] {
     display: none;
-  }
-
-  .workspace-more {
-    display: block;
   }
 
   .workspace-toolbar {
@@ -1373,10 +1365,6 @@ body:has(.collection-workspace) #main {
 
   .collection-workspace .record-scroll {
     max-height: 500px;
-  }
-
-  .workspace-toolbar .workspace-file-action {
-    display: none;
   }
 
   .workspace-primary-views .workspace-action-icon {
