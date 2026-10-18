@@ -15,6 +15,9 @@ type SheetCell struct{ Kind, Text, Raw string }
 type SheetColumn struct {
 	Name, Type, SortURL, Direction string
 	Rank                           int
+	// One menu per column (followups 5): explicit sort direction and a
+	// filter-this-column query, both built from the same state as SortURL.
+	SortAscURL, SortDescURL, FilterURL string
 }
 
 type SheetPage struct {
@@ -160,5 +163,20 @@ func sheetColumn(name, types, id string, q collections.Query) SheetColumn {
 	}
 	b, _ := json.Marshal(next)
 	column.SortURL = "/collections/" + id + "?query=" + url.QueryEscape(string(b))
+	// Explicit directions for the per-column menu: this column becomes the only
+	// sort, so the direction the user picks is the direction they get.
+	asc := q
+	asc.Sort = []collections.Sort{{Field: path}}
+	desc := asc
+	desc.Sort = []collections.Sort{{Field: path, Desc: true}}
+	ascJSON, _ := json.Marshal(asc)
+	descJSON, _ := json.Marshal(desc)
+	column.SortAscURL = "/collections/" + id + "?query=" + url.QueryEscape(string(ascJSON))
+	column.SortDescURL = "/collections/" + id + "?query=" + url.QueryEscape(string(descJSON))
+	filtered := q
+	filtered.Page = 1
+	filtered.Filters = []collections.Filter{{Field: path, Op: "eq"}}
+	filteredJSON, _ := json.Marshal(filtered)
+	column.FilterURL = "/collections/" + id + "?query=" + url.QueryEscape(string(filteredJSON))
 	return column
 }

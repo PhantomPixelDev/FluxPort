@@ -193,11 +193,23 @@ func (s *Server) fillWorkbench(c fiber.Ctx, p *Page, col collections.Collection)
 		}
 		for _, name := range p.Headers {
 			column := sheetColumn(name, types[name], col.ID, w.Query)
-			if column.SortURL != "" && w.ResultID != "" {
-				column.SortURL += "&result_id=" + url.QueryEscape(w.ResultID)
+			if w.ResultID != "" {
+				if column.SortURL != "" {
+					column.SortURL += "&result_id=" + url.QueryEscape(w.ResultID)
+				}
+				if column.SortAscURL != "" {
+					column.SortAscURL += "&result_id=" + url.QueryEscape(w.ResultID)
+					column.SortDescURL += "&result_id=" + url.QueryEscape(w.ResultID)
+				}
+				if column.FilterURL != "" {
+					column.FilterURL += "&result_id=" + url.QueryEscape(w.ResultID)
+				}
 			}
 			if w.Scalar {
 				column.SortURL = ""
+				column.SortAscURL = ""
+				column.SortDescURL = ""
+				column.FilterURL = ""
 			}
 			w.Columns = append(w.Columns, column)
 		}

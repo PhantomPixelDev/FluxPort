@@ -130,6 +130,34 @@ if(sheet.dataset.editable==='true'){
 	}
 	sheet.addEventListener('dblclick',event=>{const cell=event.target.closest('td[data-sheet-cell]');if(cell)inlineEdit(cell);});
 	sheet.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('td[data-sheet-cell]')){event.preventDefault();inlineEdit(event.target);}});
+	sheet.addEventListener('click',event=>{
+		const menu=event.target.closest('.column-menu');
+		if(!event.target.closest('[data-column-hide],[data-column-copy]')){if(!event.target.closest('.column-menu-items'))sheet.querySelectorAll('.column-menu[open]').forEach(d=>{if(d!==menu)d.open=false;});return;}
+		event.preventDefault();
+		const index=menu?.dataset.columnMenu;
+		if(menu)menu.open=false;
+		if(event.target.closest('[data-column-hide]')){
+			const box=columns.find(b=>b.dataset.sheetColumn===index);
+			if(box){box.checked=false;box.dispatchEvent(new Event('change',{bubbles:true}));}
+		}else{
+			const values=[...sheet.querySelectorAll('tbody tr')].map(row=>row.querySelector('td[data-sheet-cell="'+index+'"]')?.textContent?.trim()??'').join('\n');
+			navigator.clipboard?.writeText(values).catch(()=>{});
+		}
+	});
+	// The panel is position:fixed so the th's overflow and the table's scroll
+	// container cannot clip it; place it under its trigger on open.
+	sheet.querySelectorAll('.column-menu').forEach(details=>details.addEventListener('toggle',()=>{
+		if(!details.open){return;}
+		sheet.querySelectorAll('.column-menu[open]').forEach(other=>{if(other!==details)other.open=false;});
+		const trigger=details.querySelector('summary'),panel=details.querySelector('.column-menu-items');
+		const anchor=trigger.getBoundingClientRect();
+		panel.style.left='0px';panel.style.top='0px';
+		const panelBox=panel.getBoundingClientRect();
+		const left=Math.max(8,Math.min(anchor.right-panelBox.width,document.documentElement.clientWidth-panelBox.width-8));
+		const below=anchor.bottom+6;
+		const top=below+panelBox.height<=document.documentElement.clientHeight-8?below:Math.max(8,anchor.top-panelBox.height-6);
+		panel.style.left=left+'px';panel.style.top=top+'px';
+	}));
   function store(){try{localStorage.setItem(key,JSON.stringify(prefs));}catch{}}
   function setColumn(box){const index=box.dataset.sheetColumn;sheet.querySelectorAll('[data-sheet-cell="'+index+'"]').forEach(e=>e.hidden=!box.checked);}
   let savedColumns=null;try{savedColumns=JSON.parse(sheet.dataset.savedColumns);}catch{}

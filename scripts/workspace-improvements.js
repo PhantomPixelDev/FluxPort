@@ -10,7 +10,9 @@ async (page,artifactDir,workbook) => {
   await page.locator('#import-file').setInputFiles([...sources.map(s=>({name:s.name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(s.rows))})),{name:prefix+'.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:workbook}]);
   await page.getByRole('button',{name:'Open selected files',exact:true}).click();
   for(const name of [...sources.map(s=>s.name),prefix+'.xlsx']){
-   await page.locator('#collection-table tr').filter({hasText:name}).filter({hasText:'ready'}).waitFor();
+   // First-run Excel indexing loads DuckDB's excel extension and can outlast the
+   // default wait; the job itself completes.
+   await page.locator('#collection-table tr').filter({hasText:name}).filter({hasText:'ready'}).waitFor({timeout:180000});
    const href=await page.getByRole('link',{name,exact:true}).getAttribute('href');imported.push(href.split('/')[2]);
   }
   const [left,right,next,xlsx]=imported;

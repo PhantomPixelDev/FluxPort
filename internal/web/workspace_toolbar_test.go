@@ -102,7 +102,44 @@ func TestWorkspaceTabMarksActiveView(t *testing.T) {
 	}
 }
 
-// The theme is applied before first paint by one inline script in the head,
+// Followups section 5: every column header carries one menu offering explicit
+// sort directions, Filter, Hide, Copy values (and Rename on editable files),
+// so per-column actions no longer live in three separate toolbars.
+func TestColumnHeaderMenu(t *testing.T) {
+	app, _, col := setup(t, "", "")
+	resp, html := call(t, app, "GET", "/collections/"+col.ID, "", nil, nil)
+	if resp.StatusCode != 200 {
+		t.Fatal(resp.StatusCode)
+	}
+	headStart := strings.Index(html, "<thead")
+	if headStart < 0 {
+		t.Fatal("table head missing")
+	}
+	head := html[headStart:]
+	if end := strings.Index(head, "</thead>"); end > 0 {
+		head = head[:end]
+	}
+	menus := strings.Count(head, `class="column-menu"`)
+	columns := strings.Count(head, "<th data-sheet-cell=")
+	if menus != columns || columns == 0 {
+		t.Fatalf("%d column menus for %d columns", menus, columns)
+	}
+	for _, want := range []string{"Sort ascending", "Sort descending", "Filter", "Hide column", "Copy values"} {
+		if !strings.Contains(head, ">"+want) && !strings.Contains(head, `aria-label="`+want+`"`) {
+			t.Fatalf("column menu is missing %q", want)
+		}
+	}
+	menu := head[strings.Index(head, `class="column-menu"`):]
+	menu = menu[:strings.Index(menu, "</details>")]
+	for _, want := range []string{"data-column-hide", "data-column-copy"} {
+		if !strings.Contains(menu, want) {
+			t.Fatalf("column menu missing %s action", want)
+		}
+	}
+	if strings.Contains(html, "editor-column-menu") {
+		t.Fatal("old standalone per-column edit button remains")
+	}
+}
 // which strict CSP only allows through its sha256 source. This test hashes the
 // script exactly as served and requires the Content-Security-Policy header to
 // carry it, so editing the script without updating the header fails here.

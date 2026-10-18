@@ -18,6 +18,15 @@ async (page,artifactDir,workbook)=>{
   const index=async name=>page.locator('[data-sheet-column]').evaluateAll((es,name)=>es.find(e=>e.value===name).dataset.sheetColumn,name);
   const nameIndex=await index('name'),literalIndex=await index('a.b/x');
   const first=page.locator('tbody td[data-sheet-cell="'+literalIndex+'"]').first();
+  await page.evaluate(()=>{navigator.clipboard.writeText=async text=>{window.__copied=text;};});
+  const menu=page.locator('th[data-sheet-cell="'+literalIndex+'"] .column-menu>summary');await menu.click();
+  await page.getByRole('button',{name:'Copy values',exact:true}).click();
+  if(!await page.evaluate(()=>window.__copied.includes('old')&&window.__copied.includes('next')))throw Error('Copy values missed column cells');
+  await menu.click();await page.getByRole('button',{name:'Hide column',exact:true}).click();
+  if(!await page.locator('th[data-sheet-cell="'+literalIndex+'"]').evaluate(el=>el.hidden))throw Error('Hide column left the header visible');
+  await page.locator('.column-controls>summary').click();const box=page.locator('[data-sheet-column]').nth(Number(literalIndex));if(await box.isChecked())throw Error('Hide column left the column checkbox checked');
+  await box.check();if(await page.locator('th[data-sheet-cell="'+literalIndex+'"]').evaluate(el=>el.hidden))throw Error('Re-showing the column did not restore the header');
+  await page.locator('.column-controls>summary').click();
   const nameCell=page.locator('tbody td[data-sheet-cell="'+nameIndex+'"]').first();
   await nameCell.dblclick();await page.locator('tbody input[aria-label="New field value"]').waitFor();
   await page.mouse.click(400,860);if(await page.locator('tbody input[aria-label="New field value"]').count())throw Error('Clicking away left the cell in edit mode');

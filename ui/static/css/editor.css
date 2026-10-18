@@ -22,13 +22,17 @@
 .editor-command-form>.button{justify-self:start}
 .editor-preview .table-scroll{max-height:400px}
 .editor-preview td{white-space:pre-wrap;max-width:360px;overflow-wrap:anywhere}
-.sheet-column-heading:has(.editor-column-menu){position:relative;min-height:24px;padding-right:40px;justify-content:center}
-.editor-column-menu{position:absolute;right:0;top:50%;transform:translateY(-50%);padding:0 6px;min-width:32px}
+.sheet-column-heading:has(.column-menu){position:relative;min-height:24px;padding-right:40px;justify-content:center}
+.column-menu{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center}
+.column-menu>summary{list-style:none;padding:0 6px;min-width:32px}
+.column-menu-items{display:flex;flex-direction:column;gap:4px;position:fixed;z-index:60;min-width:200px;padding:12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px #0003}
+.column-menu-items a,.column-menu-items button{padding:8px 12px;text-align:left;color:inherit;background:none;border:0;font:inherit;text-decoration:none;border-radius:4px;cursor:pointer;white-space:nowrap}
+.column-menu-items a:hover,.column-menu-items button:hover{background:var(--hover)}
 .sheet-table td[data-grid-selected]{background:color-mix(in srgb,var(--accent) 16%,var(--panel));user-select:none}
 .sheet-table td[data-grid-active]{outline:2px solid var(--accent);outline-offset:-2px}
 .editor-copy-panel form>button{align-self:end;justify-self:start}
 .recent-files{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
 .recent-files a{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media(max-width:767px){.editor-fields{grid-template-columns:1fr}.editor-menu-items{right:0;max-width:calc(100vw - 32px)}.editor-menu-items a,.editor-menu-items button{min-height:44px}.sheet-column-heading:has(.editor-column-menu){min-height:44px;padding-right:44px}.editor-column-menu{min-width:44px;min-height:44px}}
+@media(max-width:767px){.editor-fields{grid-template-columns:1fr}.editor-menu-items{right:0;max-width:calc(100vw - 32px)}.editor-menu-items a,.editor-menu-items button{min-height:44px}.sheet-column-heading:has(.column-menu){min-height:44px;padding-right:44px}.column-menu>summary{min-width:44px;min-height:44px}.column-menu-items{max-width:calc(100vw - 32px)}.column-menu-items a,.column-menu-items button{min-height:44px}}
 
 
