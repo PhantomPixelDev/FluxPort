@@ -1,23 +1,41 @@
 # UI/UX follow-ups after the 2026-10-17 simplification branch
 
-These items were explicitly deferred from docs/superpowers/plans/2026-10-17-ui-ux-simplification.md to keep that branch reviewable. Each paragraph below is standalone: if you pick one up, nothing else here is a prerequisite. Work happens on the branch this plan produced (currently `ui-ux-simplification`), never directly on the owner's dirty main checkout.
+These items were explicitly deferred from docs/superpowers/plans/2026-10-17-ui-ux-simplification.md to keep that branch reviewable. Each paragraph below is standalone: if you pick one up, nothing else here is a prerequisite.
 
-## 1. Sync the docs after the branch merges (blocked on the owner's uncommitted edits)
+Status as of 2026-10-18: items 1, 2, 4 and 5 shipped (see the "What shipped" record at the end); item 3 (right-rail File panel) is still open and needs its own design pass. Two vocabulary rulings in item 1 remain the owner's call.
 
-`README.md`, `docs/dataset-workspace.md`, and `docs/reference.md` currently hold uncommitted owner edits in the main checkout — they must not be touched until the branch lands and the owner commits their own changes, otherwise their work gets staged or overwritten by accident. After the merge: update all three to the new vocabulary and flows — four workspace tabs (Data · Clean · SQL · Summary), the single ⋯ menu (File history / File settings / API settings / Saved views / Processing history), Clean copy ("Change your file", "Apply to file", "Filtered rows"/"All rows"), download labels (File data / Current file (as stored) / Saved steps / "Check format changes" / "Format details"), draft restore being opt-in (Restore/Discard notice instead of silent restore), job state words (Uploaded/Working/Done/Failed/Cancelled), and the plain add-record form ("New row values" + Advanced raw JSON). Screenshot captions should match the calm skin (radius 10px, calmer stripes). Two vocabulary rulings remain the owner's call: whether the upload-status words ("preview"/"rejected") and file-status words shown in File settings should join the Uploaded/Working/Done map, and whether "Saved steps" buttons that POST to `/pipelines/…` routes should advertise a friendlier phrase. If the owner's rewritten sections moved content, prefer their structure and only repair instructions that became factually wrong.
+## 1. Sync the docs after the branch merges (shipped in 0ac00db)
 
-## 2. Command palette and a `?` shortcuts sheet
+`README.md`, `docs/dataset-workspace.md`, and `docs/reference.md` were updated to the shipped vocabulary and flows after the owner committed their own edits: four workspace tabs (Data · Clean · SQL · Summary), the single ⋯ menu (File history / File settings / API settings / Saved views / Processing history), Clean copy, download labels, draft restore, job state words, and the plain add-record form. Historical changelog sections (0.3.14–0.3.20 in `docs/reference.md`) were deliberately left as written history, and the data-engineering guide keeps its own "recipes" vocabulary because its CLI/API domain language is unchanged.
 
-The plan deferred both. Add a global command palette (Ctrl/Cmd-K, works on every page) with the frequent verbs: open a recent file (reuse the data used by `data-recent-files`), start an import, jump to a file's Summary/Clean/SQL views, run the file's saved steps, and open the download chooser. Keep the implementation in one new small module wired from `ui/static/js/app.js` so htmx fragment swaps that replace `#detail-content` keep working (re-scan targets on `htmx:afterSwap`). Pair it with a `?` shortcuts sheet: a dismissible modal (or right-side panel) listing the editing keys that already exist — double-click or Enter edits a cell, Escape cancels, Ctrl+Enter runs SQL, plus navigation hints — and mention the one-time "Tip: double-click a cell to edit" hint that `workbench.js` shows on first visit. No new vocabulary: actions use the words already on screen.
+Still the owner's call: whether the upload-status words ("preview"/"rejected") and the file-status words in File settings should join the Uploaded/Working/Done map, and whether "Saved steps" buttons that POST to `/pipelines/…` routes should advertise a friendlier phrase.
 
-## 3. Right-rail File panel
+## 2. Command palette and a `?` shortcuts sheet (shipped in eecbadd)
+
+Both exist as native `<dialog>`s in `ui/templates/layouts/base.html`, wired from `ui/static/js/app.js`: `Ctrl`/`⌘`+`K` opens the palette and `?` opens the shortcut sheet (Escape closes both; focus returns to the opener because native `dialog` restores it). Commands are read from the page's own links at open time — every `[data-workspace-target]` view link, `[data-editor-open]` editor action, `[data-recent-files]` recent file, the `#import` picker, plus a static list of global pages — so the palette cannot drift from the rendered UI and htmx fragment swaps need no re-scan. Actions use the words already on screen; no new vocabulary. The `?` sheet lists only shortcuts that already exist (double-click edits, Enter confirms, clicking away saves, Escape cancels, arrows and Shift-select, copy, Undo/Redo).
+
+Note: `<input type="search">` swallows Escape for its clear-field behavior, so the palette closes Escape explicitly.
+
+## 3. Right-rail File panel (still open — needs a design pass)
 
 Deferred in the spec's non-goals; revisit once the four-tab layout has settled. Idea: a collapsible rail (right side) holding file context that today sits above or inside the sheet — source format, row count, generation/status, the applied Saved steps chain, recent File history entries — plus quick Download. It lets the Data sheet keep its full width and turns the top toolbar back into pure navigation. Constraints from the original plan still apply: no route URL changes, existing `data-*` hooks are load-bearing (list in the plan's Global Constraints), and server logic must not move into the client.
 
-## 4. Split `components.css` (and decide what `workspace.css` keeps for itself)
+## 4. Split `components.css` (shipped in 1c03ba2, with a deliberate deviation)
 
-`ui/static/css/components.css` is a ~4.3k-line catch-all (this branch appended the task-5/7 rules at the end, append-first). After Task 8's deletions the dead `.tabs`/`.dataset-tabs` rules are gone, so the split is now cheap: carve it into `layout.css` (shell/sidebar/topbar), `tables.css` (sheet/preview/jobs rows, stripes, cell states), `forms.css` (labels, fields, chooser, cleanup form), `overlays.css` (dialogs, popovers, toasts — keep their shadows), and leave `workspace.css` for the workspace spine only. Keep every selector byte-identical; only the file locations move, so nothing depends on the split order except load order in the templates. Verify with `go test ./...` (template asset versioning) and a visual pass in both themes; do it after item 1 so new screenshots are taken against the final files.
+`ui/static/css/components.css` was split into four contiguous slices — `components.css` (shell, sidebar, topbar, buttons, fields), `content.css` (sections, panels, pipelines, download chooser), `tables.css` (dataset views, cleanup, tables, settings, explorer), `pages.css` (responsive tail and later additions) — plus the existing `tokens.css`, `workspace.css` and `editor.css`. `workspace.css` keeps the workspace spine, including the file settings and file history panels, so its "decide what it keeps" question is settled.
 
-## 5. One menu per column
+Deviation from this plan, deliberate and verified: the first attempt bucketed rules by selector family (layout/controls/tables/pages) as originally sketched, but families interleave through the file, and moving them across files changes the cascade — a rendered comparison across 12 pages × 2 themes showed 12 of 24 screenshots changed. The shipped split is therefore contiguous and byte-identical: concatenating the four files reproduces the original exactly, so load order in `layouts/base.html` cannot change any rule's precedence. While in the files, 44 top-level rules whose classes appear in no template, script or rendered DOM were deleted (`.stat-card`, `.collection-more`, `.export-bar`, …).
 
-Sorting lives in the sort builder, per-column visibility in column controls, filters in the filter builder — three places per column. Consolidate into a single per-column header menu (Sort asc/desc · Filter… · Hide column · Copy values) fed by the same `data-sheet-column`/`data-sheet-cell` state the table already carries. Hidden-column bookkeeping already exists (`fluxport-sheet-<id>` localStorage prefs in `workbench.js`), so Hide/Show can reuse `prefs`; the plain add-record form follows the sheet's visible columns, so hidden columns disappear from it consistently. Keep the Advanced/SQL paths for anything the menu doesn't cover, and respect the plan's one-accent rule (the menu is one more `.workspace-more`-style panel, not a new component family).
+## 5. One menu per column (shipped in 557e41c)
+
+Every column header now carries one `<details class="column-menu">` with Sort ascending / Sort descending / Filter this column (explicit URLs built from the same query state as the sort link), Hide column (reuses the existing `prefs` bookkeeping and the Columns panel as the source of truth for re-showing), Copy values, and — on editable files only — Rename column (the existing editor command). The panel is `position: fixed` and placed by JS on open because the `th`'s `overflow: hidden` and the table's scroll container clip absolutely-positioned children; without JS the panel still opens at its static position rather than being clipped. Hidden-column bookkeeping stays in `prefs`, and the add-record form follows the visible columns as planned.
+
+## What shipped (record)
+
+- `1becfe7` ux: save cell edits when focus leaves the editing input
+- `6081638` dev: make the published Docker port reachable and add a theme contact sheet
+- `fba868b` ux: follow the system theme and mark the current workspace tab
+- `557e41c` ux: give every column one menu for sort, filter, hide and copy
+- `eecbadd` ux: add a command palette and keyboard shortcut sheet
+- `1c03ba2` ux: split the component stylesheet and drop rules nothing renders
+- `7390daa` ux: list recent files and import in the palette; record follow-up status

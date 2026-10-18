@@ -55,6 +55,13 @@
         const label=(link.textContent||link.getAttribute('aria-label')||'').trim();
         if(label)items.push({label,run:()=>link.click()});
       });
+      // Recent files open straight into the file; importing opens the picker.
+      document.querySelectorAll('[data-recent-files] a').forEach(link=>{
+        const name=(link.textContent||'').replace(/^Reopen\s*/,'').trim();
+        if(name)items.push({label:'Open '+name,run:()=>{link.click();}});
+      });
+      const importSummary=document.querySelector('#import>summary');
+      if(importSummary)items.push({label:'Import files',run:()=>{if(!importSummary.closest('details')?.open)importSummary.click();(document.querySelector('.drop-zone')||importSummary)?.scrollIntoView({block:'center'});}});
       for(const [label,path] of [['Files','/collections'],['Saved steps','/pipelines'],['Settings','/settings'],['Convert files','/converter'],['SQL lab','/sql'],['API explorer','/explorer'],['System status','/overview'],['Workflow guide','/workflow']])
         if(!items.some(item=>item.label===label))items.push({label,run:()=>{location.href=path;}});
       return items;

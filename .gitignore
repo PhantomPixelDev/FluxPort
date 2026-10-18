@@ -16,3 +16,4 @@ compose.vps.yaml
 node_modules/
 release/
 .worktrees/
+.superpowers/
