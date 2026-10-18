@@ -1968,6 +1968,65 @@ dialog form {
   justify-content: end;
 }
 
+#command-palette {
+  width: min(560px,calc(100vw - 32px));
+}
+
+#command-palette h2 {
+  margin: 0 0 12px;
+}
+
+#command-palette [data-command-search] {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.command-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(50vh,420px);
+  overflow: auto;
+}
+
+.command-list li {
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.command-list li[aria-selected="true"] {
+  background: var(--accent-bg);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.shortcut-list {
+  display: grid;
+  grid-template-columns: minmax(140px,auto) 1fr;
+  gap: 10px 20px;
+  margin: 0;
+}
+
+.shortcut-list dt {
+  font-weight: 600;
+}
+
+.shortcut-list dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.shortcut-list kbd {
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--panel-raised);
+  font: inherit;
+  font-size: 12px;
+}
+
 .sheet-query>form>label {
   max-width: 600px;
 }

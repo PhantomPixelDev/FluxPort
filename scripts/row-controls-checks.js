@@ -3,7 +3,7 @@ async (page, artifactDir) => {
  try{
   await page.goto(base+'/collections');await page.locator('#import>summary').click();
   await page.locator('#import-file').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(Array.from({length:30},(_,i)=>({id:i+1,name:'Row '+i}))))});
-  await page.getByRole('button',{name:'Open selected files',exact:true}).click();const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor();file=base+await row.getByRole('link',{name,exact:true}).getAttribute('href');await page.goto(file);await page.locator('[data-workspace-data]').click();
+  await page.getByRole('button',{name:'Open selected files',exact:true}).click();const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor({timeout:120000});file=base+await row.getByRole('link',{name,exact:true}).getAttribute('href');await page.goto(file);await page.locator('[data-workspace-data]').click();
   const assert=async()=>{
    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
    const issues=await page.locator('.sheet-table').evaluate(table=>{

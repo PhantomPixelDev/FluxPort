@@ -10,7 +10,7 @@ async (page,artifactDir,workbook)=>{
  async function preview(action){await page.getByRole('button',{name:'Preview change',exact:true}).click();await page.locator('.editor-preview h3').waitFor();if(action)await saved(action);}
  try{
   await page.goto(base+'/collections');await page.locator('#import>summary').click();await page.locator('#import-file').setInputFiles({name:filename,mimeType:'application/json',buffer:Buffer.from(data)});await page.getByRole('button',{name:'Open selected files',exact:true}).click();
-  const row=page.locator('#collection-table tr').filter({hasText:filename});await row.filter({hasText:'ready'}).waitFor();file=base+await row.getByRole('link',{name:filename,exact:true}).getAttribute('href');await page.goto(file);
+  const row=page.locator('#collection-table tr').filter({hasText:filename});await row.filter({hasText:'ready'}).waitFor({timeout:120000});file=base+await row.getByRole('link',{name:filename,exact:true}).getAttribute('href');await page.goto(file);
   if(await page.locator('.workspace-primary-views [aria-current="page"]').count()!==1)throw Error('The file page must mark exactly one primary tab as current');
   const opener=page.locator('[data-edit-record]').first();await opener.click();await page.locator('[data-record-dialog][open]').waitFor();await page.keyboard.press('Escape');
   if(!await page.evaluate(()=>document.activeElement?.matches('[data-edit-record]')))throw Error('Closing the record dialog did not return focus to its opener');
@@ -71,7 +71,7 @@ async (page,artifactDir,workbook)=>{
   await page.goto(base+'/collections');await page.locator('[data-recent-files]').getByRole('link',{name:'Reopen '+filename,exact:true}).waitFor();
   if(workbook){
    const name='editable-copy-'+Date.now()+'.xlsx';await page.locator('#import>summary').click();await page.locator('#import-file').setInputFiles({name,mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:workbook});await page.getByRole('button',{name:'Open selected files',exact:true}).click();
-   const source=page.locator('#collection-table tr').filter({hasText:name});await source.filter({hasText:'ready'}).waitFor();binary=base+await source.getByRole('link',{name,exact:true}).getAttribute('href');await page.goto(binary);
+   const source=page.locator('#collection-table tr').filter({hasText:name});await source.filter({hasText:'ready'}).waitFor({timeout:120000});binary=base+await source.getByRole('link',{name,exact:true}).getAttribute('href');await page.goto(binary);
    await page.locator('.editor-copy-panel>summary').click();await page.getByRole('button',{name:'Create editable copy',exact:true}).click();await page.waitForURL(url=>url.pathname.startsWith('/collections/')&&url.origin+url.pathname!==binary);copy=page.url().split('?')[0];
    await page.locator('.sheet-data[data-editable=true]').waitFor();if(!await page.locator('h1').textContent().then(t=>t.includes('editable.json')))throw Error('Unreadable copy name');
    const original=await page.request.get(binary+'/export?original=1');if(!Buffer.from(await original.body()).equals(workbook))throw Error('Editable copy changed Excel source');

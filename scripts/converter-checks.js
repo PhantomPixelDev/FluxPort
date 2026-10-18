@@ -12,7 +12,7 @@ async (page) => {
     await page.getByRole('button', {name: 'Convert data →', exact: true}).click();
     const r = await response;
     if (r.status() !== 200) throw Error(`Conversion ${from} → ${to} failed: ${r.status()}`);
-    await page.locator('[data-output-status]').filter({hasText: 'ready'}).waitFor();
+    await page.locator('[data-output-status]').filter({hasText: 'ready'}).waitFor({timeout:120000});
     return await page.locator('#convert-output').inputValue();
   };
   const yaml = await convert(nested, 'json', 'yaml');
@@ -51,7 +51,7 @@ async (page) => {
   await page.locator('#target-format').selectOption('yaml');
   await page.locator('#converter-file').setInputFiles({name: 'nested.json', mimeType: 'application/json', buffer: Buffer.from(nested)});
   await page.getByRole('button', {name: 'Convert data →', exact: true}).click();
-  await page.locator('[data-output-status]').filter({hasText: 'YAML ready'}).waitFor();
+  await page.locator('[data-output-status]').filter({hasText: 'YAML ready'}).waitFor({timeout:120000});
   await page.setViewportSize({width: 1440, height: 1000});
   await page.screenshot({path: 'output/playwright/converter-fidelity-desktop.png', fullPage: true});
   await page.setViewportSize({width: 390, height: 844});

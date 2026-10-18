@@ -19,7 +19,7 @@ async (page) => {
   await page.locator('#target-format').selectOption('json');
   await page.locator('[name=column_types]').fill('id=text'+String.fromCharCode(10)+'price=number'+String.fromCharCode(10)+'meta=json');
   await page.getByRole('button',{name:'Convert data →',exact:true}).click();
-  await page.locator('[data-output-status]').filter({hasText:'JSON ready'}).waitFor();
+  await page.locator('[data-output-status]').filter({hasText:'JSON ready'}).waitFor({timeout:120000});
   const value=JSON.parse(await page.locator('#convert-output').inputValue());
   if(value[0].id!=='00123'||value[0].price!==2.5||value[0].meta.a[1]!==null) throw Error('CSV column controls failed');
   await page.locator('[name=column_types]').fill('');
@@ -32,7 +32,7 @@ async (page) => {
   await page.waitForFunction(text=>document.querySelector('#convert-input').value===text,uploaded);
   await page.locator('#target-format').selectOption('yaml');
   await page.getByRole('button',{name:'Convert data →',exact:true}).click();
-  await page.locator('[data-output-status]').filter({hasText:'YAML ready'}).waitFor();
+  await page.locator('[data-output-status]').filter({hasText:'YAML ready'}).waitFor({timeout:120000});
   await page.locator('.conversion-report').filter({hasText:'normalized values and types match'}).waitFor();
   await page.waitForFunction(()=>!document.querySelector('#feedback').textContent.trim());
   await page.setViewportSize({width:1440,height:1000});

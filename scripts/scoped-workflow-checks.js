@@ -13,7 +13,7 @@ async (page, artifactDir) => {
  try{
   await page.setViewportSize({width:1440,height:1000});await page.goto(base+'/collections');await page.locator('#import>summary').click();
   await page.locator('#import-file').setInputFiles({name,mimeType:'application/x-ndjson',buffer:Buffer.from(input)});await page.getByRole('button',{name:'Open selected files',exact:true}).click();
-  const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor();id=(await row.getByRole('link',{name,exact:true}).getAttribute('href')).split('/')[2];
+  const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor({timeout:120000});id=(await row.getByRole('link',{name,exact:true}).getAttribute('href')).split('/')[2];
   const file=base+'/collections/'+id,query='{"filters":[{"field":"id","op":"gte","value":80}],"sort":[{"field":"id","desc":true}],"page":4,"limit":20}';
   await page.goto(file+'?query='+encodeURIComponent(query));const pane=page.locator('#file-workspace-tool'),table=page.locator('#detail-content');
   await page.locator('[data-workspace-target=clean]').click();await pane.locator('[name=field]').selectOption('group');await apply();

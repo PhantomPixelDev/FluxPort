@@ -44,6 +44,43 @@
     const method=$('request-method').value;const body=method==='GET'?undefined:$('request-body').value||undefined;if(body&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');return {url,method,headers,body};
   }
   const shellQuote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+  // Command palette and shortcut sheet (followups 2). Commands are read from
+  // the page's own links so the palette can never drift from the rendered UI.
+  const palette=$('command-palette'),sheet=$('shortcut-sheet');
+  if(palette){
+    const search=palette.querySelector('[data-command-search]'),list=palette.querySelector('[data-command-list]');
+    const commands=()=>{
+      const items=[];
+      document.querySelectorAll('.workspace-primary-views a,.workspace-header-actions a,.workspace-more a,[data-editor-open]').forEach(link=>{
+        const label=(link.textContent||link.getAttribute('aria-label')||'').trim();
+        if(label)items.push({label,run:()=>link.click()});
+      });
+      for(const [label,path] of [['Files','/collections'],['Saved steps','/pipelines'],['Settings','/settings'],['Convert files','/converter'],['SQL lab','/sql'],['API explorer','/explorer'],['System status','/overview'],['Workflow guide','/workflow']])
+        if(!items.some(item=>item.label===label))items.push({label,run:()=>{location.href=path;}});
+      return items;
+    };
+    let visible=[],selected=0;
+    const paint=()=>{
+      const needle=search.value.trim().toLowerCase();
+      visible=commands().filter(item=>!needle||item.label.toLowerCase().includes(needle));
+      selected=Math.min(selected,Math.max(0,visible.length-1));
+      list.replaceChildren(...visible.map((item,index)=>{const li=document.createElement('li');li.textContent=item.label;li.setAttribute('role','option');if(index===selected)li.setAttribute('aria-selected','true');return li;}));
+    };
+    const run=index=>{const item=visible[index];if(!item)return;palette.close();item.run();};
+    search.addEventListener('input',()=>{selected=0;paint();});
+    palette.addEventListener('toggle',()=>{if(palette.open){search.value='';selected=0;paint();search.focus();}});
+    list.addEventListener('click',event=>{const li=event.target.closest('li');if(li)run([...list.children].indexOf(li));});
+    palette.addEventListener('keydown',event=>{
+      // Chromium lets a search input swallow Escape (clear-field), so close here.
+      if(event.key==='Escape'){event.preventDefault();palette.close();return;}
+      if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();if(!visible.length)return;selected=(selected+(event.key==='ArrowDown'?1:-1)+visible.length)%visible.length;paint();}
+      if(event.key==='Enter'){event.preventDefault();run(selected);}
+    });
+    document.addEventListener('keydown',event=>{
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();palette.open?(palette.close()):palette.showModal();return;}
+      if(event.key==='?'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();sheet?.showModal();}
+    });
+  }
   $('copy-curl')?.addEventListener('click',()=>{try{const r=request();let cmd='curl -X '+r.method+' '+shellQuote(r.url.href);r.headers.forEach((v,k)=>{cmd+=' -H '+shellQuote(k+': '+v)});if(r.body)cmd+=' --data-raw '+shellQuote(r.body);copy(cmd)}catch(error){toast(error.message)}});
   $('explorer-form')?.addEventListener('submit',async event=>{
     event.preventDefault();const button=$('request-submit');button.disabled=true;const start=performance.now();
@@ -59,7 +96,7 @@
  const activity=document.getElementById('job-activity');
  if(activity && window.EventSource) {
   const source=new EventSource('/events'); let pending;
-  let refreshDetail=false;source.addEventListener('progress',event=>{try{const message=JSON.parse(event.data);window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:message}));if(message.resource==='*'||(message.resource && message.resource===location.pathname.split('/')[2]))refreshDetail=true;}catch(_){window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:{connected:true}}));if(document.querySelector('#detail-content .notice'))refreshDetail=true;}if(pending)return;pending=setTimeout(()=>{pending=null;
+  let refreshDetail=false;source.addEventListener('progress',event=>{try{const message=JSON.parse(event.data);window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:message}));if(message.resource==='*'||(message.resource && message.resource===location.pathname.split('/')[2]))refreshDetail=true;}catch(_){window.dispatchEvent(new CustomEvent('fluxport:progress',{detail:{connected:true}}));if(document.querySelector('#detail-content .notice'))refreshDetail=true;}clearTimeout(pending);pending=setTimeout(()=>{pending=null;
    if(window.htmx){htmx.ajax('GET',activity.getAttribute('hx-get')||'/jobs',{target:'#job-activity',swap:'innerHTML'});htmx.trigger(document.body,'collectionsChanged');
     const detail=document.getElementById('detail-content');if(detail && !document.querySelector('[data-file-workspace]') && refreshDetail && !detail.querySelector(".sheet-data") && !detail.contains(document.activeElement)){const tab=detail.querySelector('[data-active-tab]')?.dataset.activeTab;if(tab!=='configuration'){const url=new URL(location.href);url.searchParams.set('tab',tab||'preview');url.searchParams.set('page',detail.querySelector('[data-page]')?.dataset.page||'1');htmx.ajax('GET',url.pathname+url.search,{target:detail,swap:'innerHTML'});}}refreshDetail=false;
    }
