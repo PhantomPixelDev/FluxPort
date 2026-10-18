@@ -57,6 +57,42 @@ func TestWorkspaceToolbarFourTabsAndFileMenu(t *testing.T) {
 	}
 }
 
+// Followups section 3: a right rail gathers the file context that used to sit
+// above and below the sheet (facts, saved steps, recent history, quick
+// download, processing activity) so the Data view keeps the full width.
+func TestFileRailGathersFileContext(t *testing.T) {
+	app, _, col := setup(t, "", "")
+	resp, html := call(t, app, "GET", "/collections/"+col.ID, "", nil, nil)
+	if resp.StatusCode != 200 {
+		t.Fatal(resp.StatusCode)
+	}
+	start := strings.Index(html, `<aside class="workspace-rail"`)
+	if start < 0 {
+		t.Fatal("workspace rail missing")
+	}
+	rail := html[start:]
+	if end := strings.Index(rail, "</aside>"); end > 0 {
+		rail = rail[:end]
+	}
+	for _, want := range []string{"File details", "Saved steps", "File history", "data-rail-download"} {
+		if !strings.Contains(rail, want) {
+			t.Fatalf("workspace rail is missing %q", want)
+		}
+	}
+	for _, moved := range []string{`id="collection-metadata"`, `id="activity"`} {
+		if !strings.Contains(rail, moved) {
+			t.Fatalf("%s did not move into the workspace rail", moved)
+		}
+	}
+	header := html[:start]
+	if strings.Contains(header, `id="collection-metadata"`) {
+		t.Fatal("file metadata still sits in the header")
+	}
+	if !strings.Contains(rail, "/collections/"+col.ID+"?tab=downloads") {
+		t.Fatal("rail is missing the quick download link")
+	}
+}
+
 // Exactly one primary tab marks the current view with aria-current="page", so
 // screen readers announce position in the workspace. The Summary tab covers its
 // whole view group (Summary, Checks, Schema, JSON); overlays such as File
@@ -140,6 +176,7 @@ func TestColumnHeaderMenu(t *testing.T) {
 		t.Fatal("old standalone per-column edit button remains")
 	}
 }
+
 // which strict CSP only allows through its sha256 source. This test hashes the
 // script exactly as served and requires the Content-Security-Policy header to
 // carry it, so editing the script without updating the header fails here.

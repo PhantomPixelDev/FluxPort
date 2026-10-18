@@ -2,7 +2,7 @@
 
 These items were explicitly deferred from docs/superpowers/plans/2026-10-17-ui-ux-simplification.md to keep that branch reviewable. Each paragraph below is standalone: if you pick one up, nothing else here is a prerequisite.
 
-Status as of 2026-10-18: items 1, 2, 4 and 5 shipped (see the "What shipped" record at the end); item 3 (right-rail File panel) is still open and needs its own design pass. Two vocabulary rulings in item 1 remain the owner's call.
+Status as of 2026-10-18: all five items shipped (see the "What shipped" record at the end). Two vocabulary rulings in item 1 remain the owner's call.
 
 ## 1. Sync the docs after the branch merges (shipped in 0ac00db)
 
@@ -16,9 +16,9 @@ Both exist as native `<dialog>`s in `ui/templates/layouts/base.html`, wired from
 
 Note: `<input type="search">` swallows Escape for its clear-field behavior, so the palette closes Escape explicitly.
 
-## 3. Right-rail File panel (still open — needs a design pass)
+## 3. Right-rail File panel (shipped)
 
-Deferred in the spec's non-goals; revisit once the four-tab layout has settled. Idea: a collapsible rail (right side) holding file context that today sits above or inside the sheet — source format, row count, generation/status, the applied Saved steps chain, recent File history entries — plus quick Download. It lets the Data sheet keep its full width and turns the top toolbar back into pure navigation. Constraints from the original plan still apply: no route URL changes, existing `data-*` hooks are load-bearing (list in the plan's Global Constraints), and server logic must not move into the client.
+A right rail (`partials/file-rail.html`) gathers the file context that used to sit above and below the sheet: file facts (rows, size, status, format, filename, updated), the applied Saved steps chain, the three most recent File history entries with a link to the full view, a quick Convert / Download link, and the Processing history disclosure, which moved out of the page footer. `#collection-metadata` left the header meta row, so the toolbar is now navigation and actions only. The layout is a grid in `workspace.css`: a 296px sticky rail beside the sheet at 1180px and wider, stacking above it on narrow screens with no JavaScript and no hidden content. All rendering stays server-side; the existing `data-*` hooks (`#collection-metadata`, `#activity`) were relocated, not renamed, so the out-of-band metadata swap after saves and the `#activity` deep links keep working.
 
 ## 4. Split `components.css` (shipped in 1c03ba2, with a deliberate deviation)
 

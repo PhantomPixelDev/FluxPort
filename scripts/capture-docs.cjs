@@ -38,7 +38,7 @@ const path=require('node:path');
   await page.locator('#detail-content tbody tr').first().waitFor();
   await page.setViewportSize({width:1440,height:1100});await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:path.join(dir,'changes.png')});
-  await page.locator('[data-workspace-target=export]').click();await page.locator('#collection-download-format').selectOption('xlsx');
+  await page.locator('.workspace-header-actions [data-workspace-target=export]').click();await page.locator('#collection-download-format').selectOption('xlsx');
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(dir,'download-options.png')});
   const automatic=page.waitForEvent('download');await page.locator('[data-download-submit]').click();
   await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();

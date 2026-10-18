@@ -69,7 +69,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Copy big value',exact:true}).first().click();
   if (await page.evaluate(()=>navigator.clipboard.readText())!=='9007199254740993') throw Error('Clipboard rounded numbers');
   for (const kind of ['empty','null','missing','json']) if (!await page.locator('td[data-display-kind='+kind+']').count()) throw Error('Missing cell state '+kind);
-  await page.locator('[data-workspace-target=export]').click();
+  await page.locator('.workspace-header-actions [data-workspace-target=export]').click();
   if (await page.locator('#collection-download-format').inputValue() !== 'json') throw Error('Download must default to the displayed dataset format');
   // Delay the queued response until processing finishes, and suppress custom
   // progress notifications. A single post-swap catch-up must still reveal ready.
@@ -100,7 +100,7 @@ async (page, artifactDir='output/playwright') => {
   try {
     const nativePage = await nativeContext.newPage();
     await nativePage.goto(`${base}/collections/${collectionID}`);
-    await nativePage.getByRole('link',{name:'Convert / Download',exact:true}).click();
+    await nativePage.locator('.workspace-header-actions').getByRole('link',{name:'Convert / Download',exact:true}).click();
     await nativePage.locator('#collection-download-format').selectOption('original');
     const downloading = nativePage.waitForEvent('download');
     await nativePage.locator('[data-collection-download]').getByRole('button',{name:'Download',exact:true}).click();
@@ -152,7 +152,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Delete steps',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
   if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();
-  await page.locator('[data-workspace-target=export]').click();
+  await page.locator('.workspace-header-actions [data-workspace-target=export]').click();
   await page.locator('#collection-download-format').selectOption('csv');
   const filteredDownload=page.waitForEvent('download');await page.locator('[data-download-submit]').click();
   await page.locator('#collection-download-status').locator('a[href*="/download"]').waitFor();await filteredDownload;
@@ -172,7 +172,7 @@ async (page, artifactDir='output/playwright') => {
   for (const width of [1440,390]) {
     await page.setViewportSize({width,height:width===390?844:1000});
     for (let theme=0;theme<2;theme++) {
-      await page.locator('[data-workspace-target=export]').click();
+      await page.locator('.workspace-header-actions [data-workspace-target=export]').click();
       await page.locator('#collection-download-format').selectOption('xlsx');
       const panel = await page.locator('.download-chooser').boundingBox();
       if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
@@ -225,7 +225,7 @@ async (page, artifactDir='output/playwright') => {
   await page.waitForFunction(()=>!!document.querySelector('[data-cleanup-form]')?.dataset.saved);
   const savedID=await page.locator('[data-cleanup-form]').getAttribute('data-saved');
   if (!savedID) throw Error('Cleanup steps were not saved');
-  await page.locator('[data-workspace-target=export]').click();
+  await page.locator('.workspace-header-actions [data-workspace-target=export]').click();
   await page.locator('#collection-download-format').selectOption('xlsx');
   const cleanedDownload=page.waitForEvent('download');
   await page.locator('[data-download-submit]').click();

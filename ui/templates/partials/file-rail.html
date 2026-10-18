@@ -1,0 +1,21 @@
+<aside class="workspace-rail" aria-label="File details">
+  <section class="rail-section">
+    <h2 class="rail-heading">File</h2>
+    {{template "partials/metadata" .}}
+    <dl class="rail-facts">
+      <dt>Format</dt><dd>{{upper .Collection.Format}}</dd>
+      <dt>Filename</dt><dd>{{.Collection.Filename}}</dd>
+      <dt>Updated</dt><dd>{{.Collection.Updated}}</dd>
+    </dl>
+  </section>
+  <section class="rail-section">
+    <h2 class="rail-heading">Saved steps</h2>
+    {{if .Pipeline}}{{if .Pipeline.Definition.Steps}}<ol class="rail-steps">{{range .Pipeline.Definition.Steps}}<li>{{stepName .}}</li>{{end}}</ol>{{else}}<p class="muted small-text">No saved steps applied.</p>{{end}}{{else}}<p class="muted small-text">No saved steps applied.</p>{{end}}
+  </section>
+  <section class="rail-section">
+    <h2 class="rail-heading">File history</h2>
+    {{if .FileHistory.Revisions}}<ol class="rail-history">{{range $i, $revision := .FileHistory.Revisions}}{{if lt $i 3}}<li>{{$revision.Label}}{{if eq $revision.Revision $.FileHistory.Current}} <span class="status-label" data-state="ready">Current</span>{{end}} <time class="muted" datetime="{{$revision.Created}}" data-file-time>{{$revision.Created}}</time></li>{{end}}{{end}}</ol><a class="subtle-link" href="/collections/{{.Collection.ID}}/file-history" data-workspace-target="revisions">All saved versions</a>{{else}}<p class="muted small-text">Saved changes will appear here.</p>{{end}}
+  </section>
+  <a class="button workspace-rail-download" href="/collections/{{.Collection.ID}}?tab=downloads{{if .Workbench}}&amp;query={{urlquery .Workbench.QueryJSON}}&amp;result_id={{.Workbench.ResultID}}{{else if .PreparedJob}}&amp;result_id={{.PreparedJob.ID}}{{end}}" data-rail-download data-workspace-target="export">Convert / Download</a>
+  <details class="panel activity-panel tools-disclosure" id="activity"><summary>Processing history</summary><div id="job-activity" hx-get="/jobs?collection={{.Collection.ID}}" hx-trigger="load"></div></details>
+</aside>

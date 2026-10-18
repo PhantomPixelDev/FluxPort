@@ -610,6 +610,83 @@ body:has(.collection-workspace) .app-shell {
   display: none;
 }
 
+/* Right rail (followups 3): file context gathers beside the sheet on wide
+   screens and stacks above it on narrow ones. */
+.workspace-body {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0,1fr);
+}
+
+.workspace-primary {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+
+.workspace-rail {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+
+.rail-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--panel);
+}
+
+.rail-heading {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.rail-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.rail-facts dt {
+  color: var(--muted);
+}
+
+.rail-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.rail-steps,
+.rail-history {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.workspace-rail-download {
+  justify-self: start;
+}
+
+@media(min-width:1180px) {
+  .workspace-body {
+    grid-template-columns: minmax(0,1fr) 296px;
+  }
+
+  .workspace-rail {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+  }
+}
+
 .workspace-file-meta {
  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
 }

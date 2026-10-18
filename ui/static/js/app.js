@@ -98,6 +98,21 @@
   });
 })();
 
+/* Imports keep the list honest even if a progress event is missed. */
+(() => {
+ const table=document.querySelector('#collection-table');
+ if(!table||!window.htmx)return;
+ const terminal=new Set(['ready','failed','cancelled']);
+ let timer=null;
+ const refresh=()=>htmx.ajax('GET','/collections',{target:'#collection-table',swap:'innerHTML'});
+ const settled=()=>[...table.querySelectorAll('[data-state]')].every(label=>terminal.has(label.dataset.state));
+ const stop=()=>{if(timer){clearTimeout(timer);timer=null;}};
+ const watch=()=>{stop();let tries=0;const tick=()=>{refresh();if(++tries>=60||settled())return;timer=setTimeout(tick,2000);};timer=setTimeout(tick,1500);};
+ document.body.addEventListener('htmx:afterRequest',event=>{if(event.detail.elt?.closest?.('form[action="/collections/import"]'))watch();});
+ window.addEventListener('pagehide',stop);
+ document.addEventListener('collectionsChanged',()=>{if(timer&&settled())stop();});
+})();
+
 /* Push updates: no periodic polling. */
 (() => {
  const activity=document.getElementById('job-activity');
