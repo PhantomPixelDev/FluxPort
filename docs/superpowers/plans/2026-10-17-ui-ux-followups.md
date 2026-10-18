@@ -2,13 +2,15 @@
 
 These items were explicitly deferred from docs/superpowers/plans/2026-10-17-ui-ux-simplification.md to keep that branch reviewable. Each paragraph below is standalone: if you pick one up, nothing else here is a prerequisite.
 
-Status as of 2026-10-18: all five items shipped (see the "What shipped" record at the end). Two vocabulary rulings in item 1 remain the owner's call.
+Status as of 2026-10-18: all five items shipped (see the "What shipped" record at the end). The two vocabulary rulings in item 1 were applied on 2026-10-18 (see item 1).
 
 ## 1. Sync the docs after the branch merges (shipped in 0ac00db)
 
 `README.md`, `docs/dataset-workspace.md`, and `docs/reference.md` were updated to the shipped vocabulary and flows after the owner committed their own edits: four workspace tabs (Data · Clean · SQL · Summary), the single ⋯ menu (File history / File settings / API settings / Saved views / Processing history), Clean copy, download labels, draft restore, job state words, and the plain add-record form. Historical changelog sections (0.3.14–0.3.20 in `docs/reference.md`) were deliberately left as written history, and the data-engineering guide keeps its own "recipes" vocabulary because its CLI/API domain language is unchanged.
 
 Still the owner's call: whether the upload-status words ("preview"/"rejected") and the file-status words in File settings should join the Uploaded/Working/Done map, and whether "Saved steps" buttons that POST to `/pipelines/…` routes should advertise a friendlier phrase.
+
+Ruled on 2026-10-18: yes to both. Upload results now read "Not imported" and "Preview only" through the same map, and the pickers say "not imported: unsupported file type" and "not converted: unsupported file type". The file-status words joined the map everywhere they render (file list, file facts, recent files, workflow, file pickers, run history): Uploaded, Working, Done, Failed, Cancelled, while `data-state` attributes and API values stay raw. The Saved steps buttons dropped "definition": **Export steps**, **Steps file**, **Load steps into editor**, **Download saved steps** and **Download steps**. "Restore revision", "Save schedule" and "Prepare execution report" stay as written: their names are already explained on the screens that use them. Shipped in `151d7b7` and `5d6f229`.
 
 ## 2. Command palette and a `?` shortcuts sheet (shipped in eecbadd)
 
@@ -40,3 +42,5 @@ Every column header now carries one `<details class="column-menu">` with Sort as
 - `1c03ba2` ux: split the component stylesheet and drop rules nothing renders
 - `7390daa` ux: list recent files and import in the palette; record follow-up status
 - `8011f2d` ux: gather file context in a right rail
+- `151d7b7` ux: drop definition jargon from the Saved steps buttons
+- `5d6f229` ux: read file and upload statuses in plain words
