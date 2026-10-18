@@ -15,3 +15,4 @@ compose.vps.yaml
 .hosting/
 node_modules/
 release/
+.worktrees/

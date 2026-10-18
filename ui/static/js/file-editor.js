@@ -30,24 +30,24 @@
      const sheet=shell.querySelector('#detail-content .sheet-data'),generation=sheet?.querySelector('[data-sheet-edit]')?.elements.generation.value;
      // A watcher may start another index while the table request is in flight.
      // Keep the pending save until SSE supplies a queryable generation.
-     if(sheet?.dataset.sourceStatus!=='ready'||generation!==state.generation){message('Saved · updating table…');return;}
+     if(sheet?.dataset.sourceStatus!=='ready'||generation!==state.generation){message('Saved — refreshing table…');return;}
      pending=false;api.saving=false;jobID='';update(state);message('Saved');
     }
     finally{refreshing=false;}
-   }else if(pending&&state.status==='failed'){api.saving=false;message('File saved; table needs refresh: '+(state.error||'Indexing failed'),true);}
+   }else if(pending&&state.status==='failed'){api.saving=false;message('Saved the file, but the table could not refresh: '+(state.error||'Indexing failed'),true);}
    else if(!api.saving)message(state.status==='ready'?(state.editable?'Saved':'Read-only file'):'Updating table…');
   }catch(e){message(e.message,true);}finally{checking=false;if(checkAgain){checkAgain=false;queueMicrotask(check);}}
  }
  async function submit(form,submitter){
   if(api.saving)return;
-  epoch++;api.saving=true;message(form.matches('[data-file-history-action]')?'Restoring file…':'Saving…');
+  epoch++;api.saving=true;message(form.matches('[data-file-history-action]')?'Restoring file…':'Saving change…');
   const values=new FormData(form);if(submitter?.name)values.set(submitter.name,submitter.value);
   form.setAttribute('aria-busy','true');
   try{
    const r=await fetch(form.getAttribute('action'),{method:'POST',headers:{Accept:'application/json'},body:new URLSearchParams(values)});
    let state;try{state=await r.json();}catch{throw Error('Save failed. Reload to check the file.');}
    if(!r.ok)throw Error(state.message||state.error||'Changes were not saved');
-   pending=true;update({...state,editable:true});message('Saved · updating table…');
+   pending=true;update({...state,editable:true});message('Saved — refreshing table…');
    try{localStorage.removeItem('fluxport-cleanup-'+id);}catch{}
    await check();
   }catch(e){api.saving=false;await check();message(e.message,true);}
@@ -66,15 +66,15 @@
   if(!marker)return;
   epoch++;jobID=marker.dataset.fileJob;
   const state=marker.dataset.state;
-  if(state==='ready'){pending=true;api.saving=true;message('Saved · updating table…');check();}
+  if(state==='ready'){pending=true;api.saving=true;message('Saved — refreshing table…');check();}
   else if(state==='queued'||state==='running'){api.saving=true;message('Saving changes…');check();}
  }
  document.addEventListener('fluxport:file-job',e=>job(e.detail?.node||shell.querySelector('[data-file-job]')));
  window.addEventListener('fluxport:progress',async e=>{
   const m=e.detail||{};
   if(jobID&&m.id===jobID){
-   if(m.state==='ready'){pending=true;message('Saved · updating table…');}
-   if(m.state==='failed'||m.state==='cancelled'){api.saving=false;pending=false;message(m.state==='failed'?'Change failed. Open Clean to retry.':'Change cancelled.',true);window.FluxPortWorkspace?.refreshFile();}
+   if(m.state==='ready'){pending=true;message('Saved — refreshing table…');}
+   if(m.state==='failed'||m.state==='cancelled'){api.saving=false;pending=false;message(m.state==='failed'?'Change failed — apply the steps again from Clean.':'Change cancelled.',true);window.FluxPortWorkspace?.refreshFile();}
   }
   if(m.connected||(m.resource===id&&['ready','failed','cancelled','changed'].includes(m.state)))await check();
  });

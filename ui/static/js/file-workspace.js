@@ -5,7 +5,7 @@
  const id=workspace.dataset.fileWorkspace,base='/collections/'+id;
  const pane=document.getElementById('file-workspace-tool'),host=document.getElementById('workspace-tool-content');
  const heading=document.getElementById('workspace-tool-title'),notice=document.getElementById('workspace-tool-notice');
- const labels={clean:'Clean',sql:'SQL query',export:'Convert / Download',insights:'Column summaries',quality:'Validate data',raw:'Inspect JSON',schema:'Schema',api:'API settings',advanced:'Advanced changes',settings:'File settings',views:'Saved views',history:'Processing history',revisions:'File history'};
+ const labels={clean:'Clean',sql:'SQL query',export:'Convert / Download',insights:'Summary',quality:'Checks',raw:'File data (JSON)',schema:'Schema',api:'API settings',advanced:'Saved steps',settings:'File settings',views:'Saved views',history:'Processing history',revisions:'File history'};
  const routes={clean:base+'/changes',sql:base+'/sql',export:base+'?tab=downloads',insights:base+'/insights',quality:base+'/quality',raw:base+'?tab=raw',schema:base+'?tab=schema',api:base+'?tab=configuration',advanced:'/pipelines?collection='+id,settings:base+'#file-settings',views:base+'#saved-views',history:base+'#activity',revisions:base+'/file-history'};
  const cache=new Map();let active='',lastTrigger=null;
  const sourceArea=workspace.querySelector('.file-workspace-data'),main=workspace.querySelector('.workspace-main');
@@ -364,7 +364,7 @@
    if(button){button.textContent=original?'Download original file':'Download';button.disabled=!select.selectedOptions[0]||select.selectedOptions[0].disabled;}
    const rowScope=form.querySelector('.download-row-scope');if(rowScope)rowScope.hidden=original;
    const sourceOptions=form.querySelector('.download-source-options');if(sourceOptions)sourceOptions.hidden=original;
-   const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=original?'Exact source bytes.':form.elements.scope.value==='entire'?'All rows in this dataset.':'Matching rows, in table order.';
+   const scope=form.querySelector('[data-download-scope]');if(scope)scope.textContent=original?'Exact source bytes, every row.':form.elements.scope.value==='entire'?'Every row in the file.':'Rows matching the current search and filters, in table order.';
    const context=form.querySelector('[data-download-context]');if(context)context.textContent=(source.value==='original'?'File data':source.value==='current'?'Changes preview':source.selectedOptions[0].textContent)+' · Change';
   }
   const target=form?.querySelector('[data-download-note]');if(target){target.textContent=select.value==='original'?'Exact source file · all rows':select.selectedOptions[0]?.dataset.formatNote||'';target.hidden=!target.textContent;}

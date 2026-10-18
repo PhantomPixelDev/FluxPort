@@ -21,7 +21,7 @@
   const stale=!!draft.generation&&draft.generation!==form.elements.source_generation?.value;
   const same=JSON.stringify(draft.steps)===JSON.stringify(values())&&draft.name===form.elements.name.value&&(!draft.inputQuery||draft.inputQuery===form.elements.input_query?.value);
   if(!same&&!form.dataset.posted){
-   const notice=document.querySelector('[data-draft-notice]');notice.className='notice';notice.append(document.createTextNode(stale?'The source changed. Restore your steps, then update the input. ':'You have unsaved changes. '));
+   const notice=document.querySelector('[data-draft-notice]');notice.className='notice';notice.append(document.createTextNode(stale?'The source changed since you saved these steps. ':'You have saved steps from an earlier visit. '));
    const restore=document.createElement('button');restore.type='button';restore.className='button small';restore.textContent='Restore changes';
    restore.addEventListener('click',()=>{
     form.querySelectorAll('[name=steps]').forEach(el=>el.remove());
@@ -33,8 +33,8 @@
     if(form.elements.source_generation&&draft.generation)form.elements.source_generation.value=draft.generation;
     if(typeof draft.validation==='string')form.elements.validation.value=draft.validation;
     field.required=false;form.requestSubmit(form.querySelector('[value=preview]'));
-   });notice.append(restore);
-   try{const session=JSON.parse(sessionStorage.getItem('fluxport-workspace-'+form.dataset.collection)||'{}');if(session.active==='clean'&&!stale)queueMicrotask(()=>restore.click());}catch{}
+   });const discard=document.createElement('button');discard.type='button';discard.className='button small ghost';discard.textContent='Discard';discard.addEventListener('click',()=>{try{localStorage.removeItem(key);}catch{}notice.replaceChildren();});notice.append(restore,discard);
+   
   }
  }
  if(form.dataset.posted)remember();

@@ -8,7 +8,7 @@ async (page, artifactDir='output/playwright') => {
   await page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy]')&&document.querySelector('[data-file-edit-status]')?.textContent==='Saved'&&!document.querySelector('[data-file-job]'));
  };
   const settled=()=>page.waitForFunction(()=>!document.querySelector('#file-workspace-tool[aria-busy=true],#detail-content[aria-busy=true]'));
-  const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await summary.isVisible())await summary.click();};
+  const openMore=async()=>{const summary=page.locator('.workspace-more>summary');if(await page.locator('.workspace-more').evaluate(el=>el.open))return;if(await summary.isVisible())await summary.click();};
   const openSettings=async()=>{if(await page.locator('.workspace-file-action').isVisible())await page.locator('.workspace-file-action').click();else{await openMore();await page.locator('.workspace-extra-tools [data-workspace-target=settings]').click();}};
   const base = new URL(page.url()).origin;
   const prefix = `browser-check-${Date.now()}`;
@@ -134,7 +134,7 @@ async (page, artifactDir='output/playwright') => {
   await page.getByRole('button',{name:'Save rules and check',exact:true}).click();
   await page.getByText('Validation rules saved.',{exact:true}).waitFor();
   await page.goto(`${base}/pipelines?collection=${collectionID}`);
-  await page.getByLabel('Recipe name').fill(prefix);
+  await page.getByLabel('Name these steps').fill(prefix);
   await page.locator('[data-new-operation]').selectOption('transform');
   await page.locator('[data-add-step]').click();
   await page.locator('[data-step-json]').fill('{"op":"transform","transform":{"kind":"upper","field":"name"}}');
@@ -146,10 +146,10 @@ async (page, artifactDir='output/playwright') => {
   if (await page.locator('.pipeline-step').count() !== 2) throw Error('Pipeline redo failed');
   await page.getByRole('button',{name:'Preview final result',exact:true}).click();
   await page.getByRole('heading',{name:'Preview through step 2',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Save recipe',exact:true}).click();
-  await page.getByText('Recipe revisions',{exact:true}).waitFor();
-  await page.getByText('Recipe settings and API',{exact:true}).click();
-  await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
+  await page.getByRole('button',{name:'Save steps',exact:true}).click();
+  await page.getByText('Step revisions',{exact:true}).waitFor();
+  await page.getByText('Step settings and API',{exact:true}).click();
+  await page.getByRole('button',{name:'Delete steps',exact:true}).click();
   await page.goto(`${base}/collections/${collectionID}`);
   if(await page.locator('#file-workspace-tool').isVisible())await page.getByRole('link',{name:'Data',exact:true}).click();
   await page.locator('[data-workspace-target=export]').click();
@@ -178,7 +178,7 @@ async (page, artifactDir='output/playwright') => {
       if (!panel || panel.x < 0 || panel.x + panel.width > width + 1) throw Error('Download chooser overflows');
       await page.screenshot({path:`${artifactDir}/download-${width}-${theme}.png`});
       await page.keyboard.press('Escape');
-      await openMore();await page.getByRole('button',{name:'Switch color theme',exact:true}).click();if(await page.locator('.workspace-more>summary').isVisible())await page.keyboard.press('Escape');
+      await openMore();await page.getByRole('button',{name:'Switch color theme',exact:true}).click();if(await page.locator('.workspace-more').evaluate(el=>el.open))await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
     }
   }
@@ -188,7 +188,7 @@ async (page, artifactDir='output/playwright') => {
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw Error('Page overflow');
     const box = await page.locator('.delete-source .checkbox-setting span').boundingBox();
     if (!box || box.x + box.width > width) throw Error('Confirmation text overflow');
-    await openMore();await page.getByRole('button', {name: 'Switch color theme', exact: true}).click();if(await page.locator('.workspace-more>summary').isVisible())await page.keyboard.press('Escape');
+    await openMore();await page.getByRole('button', {name: 'Switch color theme', exact: true}).click();if(await page.locator('.workspace-more').evaluate(el=>el.open))await page.keyboard.press('Escape');
   }
   await page.setViewportSize({width: 1440, height: 1000});
   await page.goto(`${base}/collections`);
@@ -233,8 +233,8 @@ async (page, artifactDir='output/playwright') => {
   if (await page.locator('#collection-download-format').inputValue()!=='xlsx') throw Error('Downloads must show the prepared format');
   if (await (await cleanedDownload).failure()) throw Error('Cleaned Excel download failed');
   await page.goto(`${base}/pipelines?saved=${savedID}`);
-  await page.getByText('Recipe settings and API',{exact:true}).click();
-  await page.getByRole('button',{name:'Delete recipe',exact:true}).click();
+  await page.getByText('Step settings and API',{exact:true}).click();
+  await page.getByRole('button',{name:'Delete steps',exact:true}).click();
   for (const name of [display, csvname, badname]) {
     await page.goto(`${base}/collections`);
     await page.getByRole('link', {name, exact: true}).click();

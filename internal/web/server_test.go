@@ -83,7 +83,7 @@ func TestPagesFragmentsAndCaching(t *testing.T) {
 		}
 	}
 	resp, body := call(t, app, "GET", "/collections?q=missing", "", map[string]string{"HX-Request": "true"}, nil)
-	if resp.StatusCode != 200 || strings.Contains(body, "<!doctype") || !strings.Contains(body, "No matching collections") {
+	if resp.StatusCode != 200 || strings.Contains(body, "<!doctype") || !strings.Contains(body, "No matching files") {
 		t.Fatal(body)
 	}
 	resp, _ = call(t, app, "GET", "/static/js/htmx.min.js", "", nil, nil)

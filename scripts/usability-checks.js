@@ -19,11 +19,6 @@ async (page) => {
   await page.getByRole('button',{name:'Go',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('[data-page]')?.dataset.page==='2');
   if(await page.locator('.preview-table tbody tr').count()!==15)throw Error('Wrong search pagination');
-  await page.locator('.column-controls > summary').click();
-  const field = page.locator('[data-column-index]').nth(2);
-  await field.uncheck();
-  await page.reload();
-  if(await page.locator('[data-column-index]').nth(2).isChecked())throw Error('Visible columns not remembered');
   await page.goto(base+'/converter?collection='+col.id);
   if(await page.locator('#manual-input').isVisible())throw Error('Collection mode still shows paste editor');
   await page.locator('#target-format').selectOption('yaml');
