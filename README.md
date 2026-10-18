@@ -16,7 +16,7 @@ Each file opens a focused workspace: **Data · Clean · SQL · Summary**. Tables
 
 1. **Open:** choose **Add files**, or **Try an example** to load small synthetic datasets.
 2. **Explore:** search and filter rows, sort columns, resize or hide fields, and inspect complete values. Compact and Comfortable densities suit different screens.
-3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Escape cancels. Nested values open a larger JSON editor. Select cells with the keyboard or pointer, copy TSV or exact JSON records, and use **Edit** for bounded spreadsheet paste, rows, columns and fill-down. Each action has a preview and one Undo step. **Undo**, **Redo** and **History** stay beside the file information.
+3. **Edit:** double-click a cell (or focus it and press Enter), enter a value and press Enter to save. Clicking another part of the page also saves the pending value; Escape cancels. Nested values open a larger JSON editor. Select cells with the keyboard or pointer, copy TSV or exact JSON records, and use **Edit** for bounded spreadsheet paste, rows, columns and fill-down. Each action has a preview and one Undo step. **Undo**, **Redo** and **History** stay beside the file information.
 4. **Clean:** find and replace text, trim spaces, remove duplicates, fill empty values or rename columns. **Apply change** updates editable text files; read-only files get a prepared result to review and download. Choose matching rows across every page or the entire file; unmatched rows remain untouched.
 5. **Convert / Download:** choose rows and an output format. Downloads follow the current file and filters. **Original file** downloads its exact current bytes.
 

@@ -15,6 +15,13 @@ async (page,artifactDir,workbook)=>{
   const index=async name=>page.locator('[data-sheet-column]').evaluateAll((es,name)=>es.find(e=>e.value===name).dataset.sheetColumn,name);
   const nameIndex=await index('name'),literalIndex=await index('a.b/x');
   const first=page.locator('tbody td[data-sheet-cell="'+literalIndex+'"]').first();
+  const nameCell=page.locator('tbody td[data-sheet-cell="'+nameIndex+'"]').first();
+  await nameCell.dblclick();await page.locator('tbody input[aria-label="New field value"]').waitFor();
+  await page.mouse.click(400,860);if(await page.locator('tbody input[aria-label="New field value"]').count())throw Error('Clicking away left the cell in edit mode');
+  await nameCell.dblclick();await page.locator('tbody input[aria-label="New field value"]').fill('Adaa');await page.locator('tbody td[data-sheet-cell="'+nameIndex+'"]').nth(1).dblclick();
+  if(await page.locator('tbody input[aria-label="New field value"]').count()!==1)throw Error('Opening another cell left two editors open');
+  await saved(()=>page.mouse.click(400,860));if(!await page.locator('tbody').textContent().then(t=>t.includes('Adaa')))throw Error('Clicking away did not commit the edited value');
+  await saved(()=>page.locator('[data-file-undo]').click());if(await (await page.request.get(file+'/export?original=1')).text()!==data)throw Error('Blur-commit Undo not exact');
   await first.click({position:{x:25,y:20}});await first.press('ArrowDown');if(await page.locator('[data-grid-active]').getAttribute('data-sheet-cell')!==literalIndex)throw Error('Keyboard navigation failed');
   await page.locator('[data-grid-active]').press('ArrowUp');await page.locator('[data-grid-active]').press('Shift+ArrowDown');if(await page.locator('[data-grid-selected]').count()!==2)throw Error('Range selection failed');
   await page.evaluate(()=>{navigator.clipboard.writeText=async text=>{window.__copied=text;};});

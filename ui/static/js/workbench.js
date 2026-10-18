@@ -104,13 +104,29 @@ if(sheet.dataset.editable==='true'){
    hint.append(close);sheet.before(hint);
   }
  }
+	let currentEdit=null;
+	function closeEdit(save){
+		const open=currentEdit;if(!open)return;currentEdit=null;
+		if(!open.cell.isConnected)return;
+		if(!save||open.input.value===open.original){open.cell.innerHTML=open.originalHTML;return;}
+		let valid=true;try{JSON.parse(open.cell.dataset.valueKind==='string'?JSON.stringify(open.input.value):open.input.value);}catch{valid=false;}
+		if(valid)submitCellEdit(open.cell,open.input,open.id);else open.cell.innerHTML=open.originalHTML;
+	}
+	function submitCellEdit(cell,input,id){
+		const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;
+		const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;
+		boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();
+	}
 	function inlineEdit(cell){
 		if(sheet.dataset.editable!=='true'||window.FluxPortEditor?.saving||cell.querySelector('input'))return;
+		if(currentEdit)closeEdit(true);
 		const row=cell.closest('tr'),id=row.querySelector('[name=record_id]').value;
 		const original=cell.querySelector('[data-cell-raw]')?.value||'',originalHTML=cell.innerHTML;
 		if(original.length>=512||cell.dataset.displayKind==='json'||sheet.dataset.scalar==='true'){activeID=id;activeField=sheet.dataset.scalar==='true'?null:columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(original):original;inspect(raw||'null','Edit value',true);return;}
 		const input=document.createElement('input');input.className='field-control';input.value=original;input.setAttribute('aria-label','New field value');cell.replaceChildren(input);input.focus();input.select();
-		input.addEventListener('keydown',event=>{if(event.key==='Escape'){cell.innerHTML=originalHTML;cell.focus();}if(event.key==='Enter'){event.preventDefault();const field=columns.find(c=>c.dataset.sheetColumn===cell.dataset.sheetCell)?.value;const raw=cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value;try{JSON.parse(raw);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}boxes().forEach(b=>b.checked=b.value===id);let option=edit.elements.method.querySelector('[value=FIELD]');if(!option){option=new Option('Edit one field','FIELD');edit.elements.method.add(option);}edit.elements.method.value='FIELD';edit.elements.value.value='{"field":'+JSON.stringify("/"+field.replaceAll("~","~0").replaceAll("/","~1"))+',"value":'+raw+'}';edit.requestSubmit();}});
+		currentEdit={cell,input,id,original,originalHTML};
+		input.addEventListener('blur',()=>{if(currentEdit?.input===input)closeEdit(true);});
+		input.addEventListener('keydown',event=>{if(event.key==='Escape'){if(currentEdit?.input===input)currentEdit=null;cell.innerHTML=originalHTML;cell.focus();}if(event.key==='Enter'){event.preventDefault();try{JSON.parse(cell.dataset.valueKind==='string'?JSON.stringify(input.value):input.value);}catch{input.setCustomValidity('Enter a valid JSON value.');input.reportValidity();return;}if(currentEdit?.input===input)currentEdit=null;submitCellEdit(cell,input,id);}});
 	}
 	sheet.addEventListener('dblclick',event=>{const cell=event.target.closest('td[data-sheet-cell]');if(cell)inlineEdit(cell);});
 	sheet.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('td[data-sheet-cell]')){event.preventDefault();inlineEdit(event.target);}});

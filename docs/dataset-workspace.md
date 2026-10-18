@@ -8,7 +8,7 @@ This guide covers the everyday file workflow. For team and production workflows,
 
 Search, filter, sort, resize or hide columns in **Data**. Numbered pagination browses the complete file. Comfortable is the default density; saved Compact preferences are retained. Missing, null and empty text have distinct markers. Copy preserves complete values, including large integers.
 
-Double-click a cell, or focus it and press Enter, to edit. Enter saves; Escape cancels. JSON objects, arrays, long values and scalar documents open a larger editor. JSON edits are validated without rounding numbers. Strings in CSV remain text. Selected rows can also be updated, replaced or deleted through **Edit selected rows**; deletion requires confirmation.
+Double-click a cell, or focus it and press Enter, to edit. Enter saves; clicking another part of the page saves the pending value; Escape cancels. JSON objects, arrays, long values and scalar documents open a larger editor. JSON edits are validated without rounding numbers. Strings in CSV remain text. Selected rows can also be updated, replaced or deleted through **Edit selected rows**; deletion requires confirmation.
 
 Direct editing supports text formats within the configured buffered-file limit (16 MiB by default) and 100,000 rows. Excel, Parquet and larger files stay read-only. Editing the dashboard file does not enable the public REST API or its CRUD flag.
 
