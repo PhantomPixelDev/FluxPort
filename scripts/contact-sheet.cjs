@@ -18,7 +18,7 @@ const fs=require('fs');
   await page.locator('#import-file').setInputFiles({name:'contact-sheet-sample.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(records))});
   await page.getByRole('button',{name:'Open selected files',exact:true}).click();
   const row=page.locator('#collection-table tr').filter({hasText:'contact-sheet-sample.json'}).last();
-  await row.filter({hasText:'ready'}).waitFor({timeout:60000});
+  await row.filter({hasText:'Done'}).waitFor({timeout:60000});
   const file=base+await row.getByRole('link',{name:'contact-sheet-sample.json',exact:true}).getAttribute('href');
   const pages=[['files','/collections'],['file-data',file],['clean',file+'/changes'],['sql',file+'/sql'],['summary',file+'/insights'],['checks',file+'/quality'],['downloads',file+'?tab=downloads'],['converter','/converter'],['sql-lab','/sql'],['saved-steps','/pipelines'],['api','/api'],['overview','/overview']];
   for(const theme of ['light','dark']){

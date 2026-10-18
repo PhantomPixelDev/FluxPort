@@ -163,8 +163,28 @@ func New(cfg config.Config, s *collections.Service) (*fiber.App, error) {
 			return "Failed"
 		case "cancelled", "interrupted":
 			return "Cancelled"
+		case "preview":
+			return "Preview only"
+		case "rejected":
+			return "Not imported"
 		default:
 			return state
+		}
+	})
+	engine.AddFunc("fileState", func(status string) string {
+		switch status {
+		case "pending":
+			return "Uploaded"
+		case "indexing":
+			return "Working"
+		case "ready":
+			return "Done"
+		case "failed":
+			return "Failed"
+		case "interrupted":
+			return "Cancelled"
+		default:
+			return status
 		}
 	})
 	engine.AddFunc("has", func(s string) bool { return s != "" })

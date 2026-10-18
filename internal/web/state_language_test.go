@@ -38,6 +38,19 @@ func TestStateLanguageReadsPlainly(t *testing.T) {
 	if !strings.Contains(jobsBody, "Done") {
 		t.Fatal("finished jobs do not read Done")
 	}
+	_, filesBody := call(t, app, "GET", "/collections", "", nil, visit.Cookies())
+	if !strings.Contains(filesBody, `later.csv</a><small class="block"><span class="state-label" data-state="ready">Done<`) {
+		t.Fatalf("ready files do not read Done: %s", snippet(filesBody, "state-label"))
+	}
+	for _, raw := range []string{">pending<", ">indexing<", ">ready<", ">interrupted<"} {
+		if strings.Contains(filesBody, raw) {
+			t.Fatalf("raw file state %q leaked to the file list: %s", strings.Trim(raw, "<>"), snippet(filesBody, "state-label"))
+		}
+	}
+	_, workspaceBody := call(t, app, "GET", "/collections/"+col.ID, "", nil, visit.Cookies())
+	if !strings.Contains(workspaceBody, "collection-meta") || strings.Contains(workspaceBody, ">ready<") {
+		t.Fatalf("the workspace file facts still show a raw state: %s", snippet(workspaceBody, "collection-metadata"))
+	}
 	if _, err := service.SavePipeline(collections.Pipeline{Name: "Trim names", Source: col.ID, Steps: []collections.PipelineStep{{Op: "transform", Transform: &transformations.Operation{Kind: "trim", Field: "name"}}}}); err != nil {
 		t.Fatal(err)
 	}

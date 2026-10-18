@@ -23,7 +23,7 @@ const path=require('node:path');
   const records=[a,a,{order_id:1002,customer:'Grace',total:129,status:'Pending',details:{region:'North America'}},{order_id:1003,customer:' 山田 ',total:25,status:'Paid',details:{region:'Asia'}}];
   await page.locator('#import-file').setInputFiles({name:'sales-example.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(records))});
   await page.getByRole('button',{name:'Open selected files',exact:true}).click();
-  await page.locator('#collection-table tr').filter({hasText:'sales-example.json'}).filter({hasText:'ready'}).last().waitFor();
+  await page.locator('#collection-table tr').filter({hasText:'sales-example.json'}).filter({hasText:'Done'}).last().waitFor();
   await page.getByRole('link',{name:'sales-example.json',exact:true}).last().click();
   const id=new URL(page.url()).pathname.split('/')[2];
   await page.waitForTimeout(350);

@@ -12,7 +12,7 @@ async (page,artifactDir,workbook) => {
   for(const name of [...sources.map(s=>s.name),prefix+'.xlsx']){
    // First-run Excel indexing loads DuckDB's excel extension and can outlast the
    // default wait; the job itself completes.
-   await page.locator('#collection-table tr').filter({hasText:name}).filter({hasText:'ready'}).waitFor({timeout:180000});
+   await page.locator('#collection-table tr').filter({hasText:name}).filter({hasText:'Done'}).waitFor({timeout:180000});
    const href=await page.getByRole('link',{name,exact:true}).getAttribute('href');imported.push(href.split('/')[2]);
   }
   const [left,right,next,xlsx]=imported;

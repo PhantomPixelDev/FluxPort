@@ -24,8 +24,8 @@ async (page, artifactDir='output/playwright') => {
     {name: badname, mimeType: 'application/json', buffer: Buffer.from('[{"unfinished":')}
   ]);
   await page.getByRole('button', {name: 'Open selected files', exact: true}).click();
-  await page.locator('#collection-table tr').filter({hasText: filename}).filter({hasText: 'ready'}).waitFor({timeout:120000});
-  await page.locator('#collection-table tr').filter({hasText: csvname}).filter({hasText: 'ready'}).waitFor({timeout:120000});
+  await page.locator('#collection-table tr').filter({hasText: filename}).filter({hasText: 'Done'}).waitFor({timeout:120000});
+  await page.locator('#collection-table tr').filter({hasText: csvname}).filter({hasText: 'Done'}).waitFor({timeout:120000});
   await page.locator('#job-activity .job-row').filter({hasText: badname}).filter({hasText: 'failed'}).first().waitFor();
   await page.getByRole('link', {name: filename, exact: true}).click();
   await page.getByRole('link', {name: 'Page 5', exact: true}).click();

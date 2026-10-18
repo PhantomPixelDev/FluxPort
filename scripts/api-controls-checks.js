@@ -31,7 +31,7 @@ async (page,artifactDir)=>{
   const name='api-controls-'+Date.now()+'.json';
   await page.goto(base+'/collections');await page.locator('#import>summary').click();
   await page.locator('#import-file').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from('[{"name":"API fixture"}]')});
-  await page.getByRole('button',{name:'Open selected files',exact:true}).click();const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'ready'}).waitFor({timeout:120000});
+  await page.getByRole('button',{name:'Open selected files',exact:true}).click();const row=page.locator('#collection-table tr').filter({hasText:name});await row.filter({hasText:'Done'}).waitFor({timeout:120000});
   file=base+await row.getByRole('link',{name,exact:true}).getAttribute('href');
   await page.goto(file+'?tab=configuration');const collection=page.locator('.api-policy form');
   await collection.locator('[name=rate_enabled]').check();await collection.locator('[name=read_limit]').fill('1');
